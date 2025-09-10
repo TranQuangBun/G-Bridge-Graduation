@@ -1,0 +1,45 @@
+/* Header Styles */
+.header {
+  background-color: #282c34;
+  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  padding: 2rem 0;
+  margin-top: auto;
+  border-top: 1px solid #dee2e6;
+  text-align: center;
+}
+
+/* Page Styles */
+.home-page,
+.about-page,
+.contact-page {
+  padding: 2rem 0;
+}
+
+.home-page h1,
+.about-page h1,
+.contact-page h1 {
+  color: #282c34;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.home-page p,
+.about-page p,
+.contact-page p {
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
