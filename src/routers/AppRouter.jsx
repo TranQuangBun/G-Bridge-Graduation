@@ -7,6 +7,7 @@ import {
   LoginPage,
   RegisterPage,
   PricingPage,
+  FindJobPage,
 } from "../pages";
 import { ROUTES } from "../constants";
 
@@ -15,6 +16,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
     element: <HomePage />,
+  },
+  {
+    path: ROUTES.FIND_JOB,
+    element: <FindJobPage />,
   },
   {
     path: ROUTES.ABOUT,

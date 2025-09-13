@@ -185,7 +185,7 @@ const Footer = () => {
                   <Link to={ROUTES.HOME}>{t.home}</Link>
                 </li>
                 <li>
-                  <Link to="/find-job">{t.findJob}</Link>
+                  <Link to={ROUTES.FIND_JOB}>{t.findJob}</Link>
                 </li>
                 <li>
                   <Link to="/candidates">{t.candidates}</Link>

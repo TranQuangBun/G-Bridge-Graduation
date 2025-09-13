@@ -5,3 +5,4 @@ export { default as ContactPage } from "./Contact";
 export { default as LoginPage } from "./Login";
 export { default as RegisterPage } from "./Register";
 export { default as PricingPage } from "./Pricing";
+export { default as FindJobPage } from "./FindJob/FindJobPage";

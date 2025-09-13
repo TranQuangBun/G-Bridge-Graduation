@@ -215,6 +215,28 @@ const vi = {
       activate: "Thanh toán & kích hoạt",
     },
   },
+  findJob: {
+    title: "Tìm Việc Phiên Dịch",
+    subtitle:
+      "Khám phá cơ hội phiên dịch trong nhiều chuyên ngành và lĩnh vực khác nhau",
+    keywordLabel: "Từ khóa / Chuyên ngành",
+    keywordPlaceholder: "vd. Y tế, Hội nghị, Pháp lý",
+    locationLabel: "Địa điểm",
+    allLocations: "Tất cả địa điểm",
+    specializationLabel: "Chuyên ngành",
+    allSpecializations: "Tất cả chuyên ngành",
+    levelLabel: "Cấp độ kinh nghiệm",
+    allLevels: "Tất cả cấp độ",
+    salaryLabel: "Mức lương",
+    allSalaryRanges: "Tất cả mức lương",
+    salaryUnder1000: "Dưới $1,000",
+    salary1000to2000: "$1,000 - $2,000",
+    salary2000to3000: "$2,000 - $3,000",
+    salary3000plus: "$3,000+",
+    searchBtn: "Tìm kiếm",
+    clearBtn: "Xóa",
+    noJobsFound: "Không tìm thấy công việc phiên dịch phù hợp với tiêu chí",
+  },
 };
 
 export default vi;

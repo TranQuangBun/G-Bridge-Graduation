@@ -211,6 +211,28 @@ const en = {
       activate: "Pay & Activate",
     },
   },
+  findJob: {
+    title: "Find Interpreter Jobs",
+    subtitle:
+      "Discover interpretation opportunities across various specializations and industries",
+    keywordLabel: "Keywords / Specialization",
+    keywordPlaceholder: "e.g. Medical, Conference, Legal",
+    locationLabel: "Location",
+    allLocations: "All Locations",
+    specializationLabel: "Specialization",
+    allSpecializations: "All Specializations",
+    levelLabel: "Experience Level",
+    allLevels: "All Levels",
+    salaryLabel: "Salary Range",
+    allSalaryRanges: "All Salary Ranges",
+    salaryUnder1000: "Under $1,000",
+    salary1000to2000: "$1,000 - $2,000",
+    salary2000to3000: "$2,000 - $3,000",
+    salary3000plus: "$3,000+",
+    searchBtn: "Search Jobs",
+    clearBtn: "Clear",
+    noJobsFound: "No interpreter jobs found matching your criteria",
+  },
 };
 
 export default en;
