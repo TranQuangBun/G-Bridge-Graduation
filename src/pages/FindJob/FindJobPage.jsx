@@ -18,14 +18,26 @@ const INTERPRETER_JOBS = [
     salary: "$2,500-3,500",
     tags: ["EN-VI", "Conference", "Business"],
     desc: "Lead simultaneous interpretation for international conferences, business summits, and diplomatic events.",
-    fullDesc: "We are seeking an experienced Senior English-Vietnamese Conference Interpreter to join our dynamic team. You will be responsible for providing high-quality simultaneous and consecutive interpretation services for international conferences, business meetings, and diplomatic events. The ideal candidate will have excellent command of both English and Vietnamese, with deep cultural understanding and professional presentation skills.",
-    requirements: ["5+ years of conference interpretation experience", "Certified interpretation credentials", "Fluency in English and Vietnamese", "Strong cultural awareness", "Professional presentation skills"],
-    benefits: ["Competitive salary package", "Health insurance", "Professional development opportunities", "Flexible working arrangements"],
+    fullDesc:
+      "We are seeking an experienced Senior English-Vietnamese Conference Interpreter to join our dynamic team. You will be responsible for providing high-quality simultaneous and consecutive interpretation services for international conferences, business meetings, and diplomatic events. The ideal candidate will have excellent command of both English and Vietnamese, with deep cultural understanding and professional presentation skills.",
+    requirements: [
+      "5+ years of conference interpretation experience",
+      "Certified interpretation credentials",
+      "Fluency in English and Vietnamese",
+      "Strong cultural awareness",
+      "Professional presentation skills",
+    ],
+    benefits: [
+      "Competitive salary package",
+      "Health insurance",
+      "Professional development opportunities",
+      "Flexible working arrangements",
+    ],
     contact: {
       email: "hr@globalspeak.com",
       phone: "+84 28 1234 5678",
-      address: "123 Nguyen Hue St, District 1, Ho Chi Minh City"
-    }
+      address: "123 Nguyen Hue St, District 1, Ho Chi Minh City",
+    },
   },
   {
     id: 2,
@@ -38,14 +50,26 @@ const INTERPRETER_JOBS = [
     salary: "$1,800-2,200",
     tags: ["JA-VI", "Medical", "Healthcare"],
     desc: "Provide interpretation services for Japanese patients in Vietnamese hospitals and medical facilities.",
-    fullDesc: "Join our specialized medical interpretation team to bridge communication gaps between Japanese patients and Vietnamese healthcare providers. This role requires deep understanding of medical terminology in both languages and sensitivity to cultural differences in healthcare settings.",
-    requirements: ["Medical interpretation certification", "3+ years healthcare experience", "Fluency in Japanese and Vietnamese", "Medical terminology knowledge", "Patient confidentiality awareness"],
-    benefits: ["Contract-based flexibility", "Medical training provided", "Competitive hourly rates", "Professional development"],
+    fullDesc:
+      "Join our specialized medical interpretation team to bridge communication gaps between Japanese patients and Vietnamese healthcare providers. This role requires deep understanding of medical terminology in both languages and sensitivity to cultural differences in healthcare settings.",
+    requirements: [
+      "Medical interpretation certification",
+      "3+ years healthcare experience",
+      "Fluency in Japanese and Vietnamese",
+      "Medical terminology knowledge",
+      "Patient confidentiality awareness",
+    ],
+    benefits: [
+      "Contract-based flexibility",
+      "Medical training provided",
+      "Competitive hourly rates",
+      "Professional development",
+    ],
     contact: {
       email: "careers@medlingua.vn",
       phone: "+84 24 9876 5432",
-      address: "456 Ba Trieu St, Hai Ba Trung, Hanoi"
-    }
+      address: "456 Ba Trieu St, Hai Ba Trung, Hanoi",
+    },
   },
   {
     id: 3,
@@ -58,14 +82,26 @@ const INTERPRETER_JOBS = [
     salary: "$150-250/day",
     tags: ["EN-VI", "Legal", "Court"],
     desc: "Certified court interpreter for legal proceedings, depositions, and legal consultations.",
-    fullDesc: "Provide certified interpretation services for court proceedings, legal depositions, and attorney-client consultations. This position requires precision, neutrality, and deep understanding of legal terminology and procedures.",
-    requirements: ["Court interpreter certification", "Legal terminology expertise", "5+ years legal interpretation", "Sworn interpreter status", "Confidentiality clearance"],
-    benefits: ["Daily rate compensation", "Flexible scheduling", "Legal training opportunities", "Professional certification support"],
+    fullDesc:
+      "Provide certified interpretation services for court proceedings, legal depositions, and attorney-client consultations. This position requires precision, neutrality, and deep understanding of legal terminology and procedures.",
+    requirements: [
+      "Court interpreter certification",
+      "Legal terminology expertise",
+      "5+ years legal interpretation",
+      "Sworn interpreter status",
+      "Confidentiality clearance",
+    ],
+    benefits: [
+      "Daily rate compensation",
+      "Flexible scheduling",
+      "Legal training opportunities",
+      "Professional certification support",
+    ],
     contact: {
       email: "legal@justicewords.vn",
       phone: "+84 236 789 0123",
-      address: "789 Tran Phu St, Hai Chau, Da Nang"
-    }
+      address: "789 Tran Phu St, Hai Chau, Da Nang",
+    },
   },
   {
     id: 4,
@@ -78,14 +114,26 @@ const INTERPRETER_JOBS = [
     salary: "$80-120/hour",
     tags: ["EN-VI", "Remote", "Business"],
     desc: "Provide remote interpretation for business meetings, negotiations, and client calls via video platforms.",
-    fullDesc: "Join our remote interpretation team to facilitate international business communications. Work from anywhere while connecting global businesses through professional interpretation services via video conferencing platforms.",
-    requirements: ["Business interpretation experience", "Reliable internet connection", "Professional home office setup", "Video conferencing proficiency", "Flexible schedule availability"],
-    benefits: ["Remote work flexibility", "Hourly rate compensation", "Technology allowance", "International client exposure"],
+    fullDesc:
+      "Join our remote interpretation team to facilitate international business communications. Work from anywhere while connecting global businesses through professional interpretation services via video conferencing platforms.",
+    requirements: [
+      "Business interpretation experience",
+      "Reliable internet connection",
+      "Professional home office setup",
+      "Video conferencing proficiency",
+      "Flexible schedule availability",
+    ],
+    benefits: [
+      "Remote work flexibility",
+      "Hourly rate compensation",
+      "Technology allowance",
+      "International client exposure",
+    ],
     contact: {
       email: "remote@virtuallink.com",
       phone: "+84 90 1234 5678",
-      address: "Virtual Office - Remote Position"
-    }
+      address: "Virtual Office - Remote Position",
+    },
   },
   {
     id: 5,
@@ -98,14 +146,26 @@ const INTERPRETER_JOBS = [
     salary: "$1,200-1,800",
     tags: ["EN-VI", "Tourism", "Culture"],
     desc: "Guide international tourists, provide cultural interpretation and assist with travel experiences.",
-    fullDesc: "Enhance tourist experiences by providing interpretation and cultural guidance services. Perfect opportunity for those passionate about Vietnamese culture and hospitality industry.",
-    requirements: ["Tourism industry knowledge", "Cultural expertise", "Friendly personality", "Physical stamina for tours", "Basic first aid certification"],
-    benefits: ["Seasonal employment", "Tourism perks", "Cultural exchange opportunities", "Performance bonuses"],
+    fullDesc:
+      "Enhance tourist experiences by providing interpretation and cultural guidance services. Perfect opportunity for those passionate about Vietnamese culture and hospitality industry.",
+    requirements: [
+      "Tourism industry knowledge",
+      "Cultural expertise",
+      "Friendly personality",
+      "Physical stamina for tours",
+      "Basic first aid certification",
+    ],
+    benefits: [
+      "Seasonal employment",
+      "Tourism perks",
+      "Cultural exchange opportunities",
+      "Performance bonuses",
+    ],
     contact: {
       email: "tours@vietnamtours.vn",
       phone: "+84 28 5555 6666",
-      address: "321 Le Loi St, District 1, Ho Chi Minh City"
-    }
+      address: "321 Le Loi St, District 1, Ho Chi Minh City",
+    },
   },
   {
     id: 6,
@@ -118,14 +178,26 @@ const INTERPRETER_JOBS = [
     salary: "$2,000-2,800",
     tags: ["EN-VI", "Manufacturing", "Technical"],
     desc: "Support technical training, equipment installation, and manufacturing process documentation.",
-    fullDesc: "Join our technical interpretation team to support manufacturing operations and training programs. You'll work with international technical teams to ensure smooth knowledge transfer and operational excellence.",
-    requirements: ["Technical background preferred", "Manufacturing experience", "EN-VI fluency", "Technical documentation skills", "Team collaboration"],
-    benefits: ["Manufacturing industry exposure", "Technical training", "Career advancement", "Competitive package"],
+    fullDesc:
+      "Join our technical interpretation team to support manufacturing operations and training programs. You'll work with international technical teams to ensure smooth knowledge transfer and operational excellence.",
+    requirements: [
+      "Technical background preferred",
+      "Manufacturing experience",
+      "EN-VI fluency",
+      "Technical documentation skills",
+      "Team collaboration",
+    ],
+    benefits: [
+      "Manufacturing industry exposure",
+      "Technical training",
+      "Career advancement",
+      "Competitive package",
+    ],
     contact: {
       email: "hr@techtrans.vn",
       phone: "+84 274 333 4444",
-      address: "Industrial Zone 1, Thu Dau Mot, Binh Duong"
-    }
+      address: "Industrial Zone 1, Thu Dau Mot, Binh Duong",
+    },
   },
   {
     id: 7,
@@ -138,14 +210,26 @@ const INTERPRETER_JOBS = [
     salary: "$60-90/hour",
     tags: ["EN-VI", "Education", "Campus"],
     desc: "Assist international students with academic interpretation, orientation, and campus life support.",
-    fullDesc: "Support international students' academic journey by providing interpretation services for lectures, orientation sessions, and campus activities. Perfect role for those passionate about education and cultural exchange.",
-    requirements: ["Education background preferred", "Student-friendly approach", "Cultural sensitivity", "Flexible schedule", "Campus familiarity"],
-    benefits: ["Educational environment", "Student interaction", "Flexible hours", "Professional growth"],
+    fullDesc:
+      "Support international students' academic journey by providing interpretation services for lectures, orientation sessions, and campus activities. Perfect role for those passionate about education and cultural exchange.",
+    requirements: [
+      "Education background preferred",
+      "Student-friendly approach",
+      "Cultural sensitivity",
+      "Flexible schedule",
+      "Campus familiarity",
+    ],
+    benefits: [
+      "Educational environment",
+      "Student interaction",
+      "Flexible hours",
+      "Professional growth",
+    ],
     contact: {
       email: "campus@edubridge.edu.vn",
       phone: "+84 24 7777 8888",
-      address: "Cau Giay Campus, Hanoi University District"
-    }
+      address: "Cau Giay Campus, Hanoi University District",
+    },
   },
   {
     id: 8,
@@ -158,14 +242,26 @@ const INTERPRETER_JOBS = [
     salary: "$2,800-3,500",
     tags: ["ZH-VI", "Business", "Trade"],
     desc: "Facilitate China-Vietnam business partnerships, trade negotiations, and investment meetings.",
-    fullDesc: "Lead interpretation for high-level business negotiations between Chinese and Vietnamese companies. This role requires deep understanding of both business cultures and expertise in trade terminology.",
-    requirements: ["Advanced Chinese-Vietnamese skills", "Business interpretation experience", "Trade knowledge", "Cultural expertise", "Professional presentation"],
-    benefits: ["High-level business exposure", "International networking", "Premium compensation", "Career advancement"],
+    fullDesc:
+      "Lead interpretation for high-level business negotiations between Chinese and Vietnamese companies. This role requires deep understanding of both business cultures and expertise in trade terminology.",
+    requirements: [
+      "Advanced Chinese-Vietnamese skills",
+      "Business interpretation experience",
+      "Trade knowledge",
+      "Cultural expertise",
+      "Professional presentation",
+    ],
+    benefits: [
+      "High-level business exposure",
+      "International networking",
+      "Premium compensation",
+      "Career advancement",
+    ],
     contact: {
       email: "business@sinoviet.com.vn",
       phone: "+84 28 9999 0000",
-      address: "Bitexco Tower, District 1, Ho Chi Minh City"
-    }
+      address: "Bitexco Tower, District 1, Ho Chi Minh City",
+    },
   },
   {
     id: 9,
@@ -178,14 +274,26 @@ const INTERPRETER_JOBS = [
     salary: "$1,500-2,200",
     tags: ["KO-VI", "Entertainment", "Media"],
     desc: "Support Korean entertainment events, celebrity interviews, and cultural exchange programs.",
-    fullDesc: "Be part of the Korean entertainment wave in Vietnam! Provide interpretation for K-pop events, drama productions, celebrity interviews, and cultural exchange programs between Korea and Vietnam.",
-    requirements: ["Korean-Vietnamese fluency", "Entertainment industry knowledge", "Media experience", "Fan culture understanding", "Event coordination"],
-    benefits: ["Entertainment industry access", "Celebrity interactions", "Cultural experiences", "Media exposure"],
+    fullDesc:
+      "Be part of the Korean entertainment wave in Vietnam! Provide interpretation for K-pop events, drama productions, celebrity interviews, and cultural exchange programs between Korea and Vietnam.",
+    requirements: [
+      "Korean-Vietnamese fluency",
+      "Entertainment industry knowledge",
+      "Media experience",
+      "Fan culture understanding",
+      "Event coordination",
+    ],
+    benefits: [
+      "Entertainment industry access",
+      "Celebrity interactions",
+      "Cultural experiences",
+      "Media exposure",
+    ],
     contact: {
       email: "talent@kwavemedia.vn",
       phone: "+84 28 5678 9012",
-      address: "Entertainment District, District 7, Ho Chi Minh City"
-    }
+      address: "Entertainment District, District 7, Ho Chi Minh City",
+    },
   },
   {
     id: 10,
@@ -198,15 +306,27 @@ const INTERPRETER_JOBS = [
     salary: "$3,000-4,200",
     tags: ["EN-VI", "Pharmaceutical", "Research"],
     desc: "Specialized interpretation for clinical trials, research meetings, and regulatory compliance discussions.",
-    fullDesc: "Provide highly specialized interpretation services for pharmaceutical research, clinical trials, and regulatory affairs. This role requires deep understanding of medical and pharmaceutical terminology with strict confidentiality requirements.",
-    requirements: ["Pharmaceutical background", "Clinical research experience", "Medical terminology mastery", "Regulatory knowledge", "Confidentiality clearance"],
-    benefits: ["Premium compensation", "Research exposure", "Professional development", "Remote flexibility"],
+    fullDesc:
+      "Provide highly specialized interpretation services for pharmaceutical research, clinical trials, and regulatory affairs. This role requires deep understanding of medical and pharmaceutical terminology with strict confidentiality requirements.",
+    requirements: [
+      "Pharmaceutical background",
+      "Clinical research experience",
+      "Medical terminology mastery",
+      "Regulatory knowledge",
+      "Confidentiality clearance",
+    ],
+    benefits: [
+      "Premium compensation",
+      "Research exposure",
+      "Professional development",
+      "Remote flexibility",
+    ],
     contact: {
       email: "research@pharmaglobal.com",
       phone: "+84 90 3456 7890",
-      address: "Remote Position - Global Operations"
-    }
-  }
+      address: "Remote Position - Global Operations",
+    },
+  },
 ];
 
 const unique = (arr) => Array.from(new Set(arr));
@@ -253,7 +373,7 @@ export default function FindJobPage() {
   // Helper function to extract salary range for filtering
   const getSalaryValue = (salaryStr) => {
     const match = salaryStr.match(/\$(\d+(?:,\d+)*)/);
-    return match ? parseInt(match[1].replace(/,/g, '')) : 0;
+    return match ? parseInt(match[1].replace(/,/g, "")) : 0;
   };
 
   const filtered = useMemo(() => {
@@ -271,7 +391,7 @@ export default function FindJobPage() {
       if (location && j.location !== location) return false;
       if (category && j.category !== category) return false;
       if (level && j.level !== level) return false;
-      
+
       // Salary range filtering
       if (salaryRange) {
         const jobSalary = getSalaryValue(j.salary);
@@ -292,7 +412,7 @@ export default function FindJobPage() {
             break;
         }
       }
-      
+
       return true;
     });
   }, [keyword, location, category, level, salaryRange]);
@@ -344,34 +464,41 @@ export default function FindJobPage() {
           <header className={styles.header}>
             <h1 className={styles.title}>{t("findJob.title")}</h1>
             <p className={styles.subtitle}>{t("findJob.subtitle")}</p>
-            
+
             {/* Demo buttons for testing - remove in production */}
-            <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button 
+            <div
+              style={{
+                marginTop: "20px",
+                display: "flex",
+                gap: "10px",
+                justifyContent: "center",
+              }}
+            >
+              <button
                 onClick={toggleUserLogin}
-                style={{ 
-                  padding: '8px 16px', 
-                  borderRadius: '8px', 
-                  border: '1px solid #ccc',
-                  background: user ? '#22c55e' : '#f3f4f6',
-                  color: user ? 'white' : 'black',
-                  cursor: 'pointer'
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                  background: user ? "#22c55e" : "#f3f4f6",
+                  color: user ? "white" : "black",
+                  cursor: "pointer",
                 }}
               >
-                {user ? '✓ Logged In' : '⚪ Not Logged In'}
+                {user ? "✓ Logged In" : "⚪ Not Logged In"}
               </button>
-              <button 
+              <button
                 onClick={togglePremium}
-                style={{ 
-                  padding: '8px 16px', 
-                  borderRadius: '8px', 
-                  border: '1px solid #ccc',
-                  background: hasPremium ? '#f59e0b' : '#f3f4f6',
-                  color: hasPremium ? 'white' : 'black',
-                  cursor: 'pointer'
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                  background: hasPremium ? "#f59e0b" : "#f3f4f6",
+                  color: hasPremium ? "white" : "black",
+                  cursor: "pointer",
                 }}
               >
-                {hasPremium ? '👑 Premium' : '🔒 Free'}
+                {hasPremium ? "👑 Premium" : "🔒 Free"}
               </button>
             </div>
           </header>
@@ -415,10 +542,7 @@ export default function FindJobPage() {
             </div>
             <div className={styles.field}>
               <label>{t("findJob.levelLabel")}</label>
-              <select
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-              >
+              <select value={level} onChange={(e) => setLevel(e.target.value)}>
                 <option value="">{t("findJob.allLevels")}</option>
                 {levels.map((l) => (
                   <option key={l} value={l}>
@@ -435,8 +559,12 @@ export default function FindJobPage() {
               >
                 <option value="">{t("findJob.allSalaryRanges")}</option>
                 <option value="0-1000">{t("findJob.salaryUnder1000")}</option>
-                <option value="1000-2000">{t("findJob.salary1000to2000")}</option>
-                <option value="2000-3000">{t("findJob.salary2000to3000")}</option>
+                <option value="1000-2000">
+                  {t("findJob.salary1000to2000")}
+                </option>
+                <option value="2000-3000">
+                  {t("findJob.salary2000to3000")}
+                </option>
                 <option value="3000+">{t("findJob.salary3000plus")}</option>
               </select>
             </div>
@@ -477,7 +605,7 @@ export default function FindJobPage() {
                   ))}
                 </div>
                 <div className={styles.cardActions}>
-                  <button 
+                  <button
                     className={styles.applyBtn}
                     onClick={() => openJobModal(job)}
                   >
@@ -510,11 +638,14 @@ export default function FindJobPage() {
         {/* Job Details Modal */}
         {isModalOpen && selectedJob && (
           <div className={styles.modalOverlay} onClick={closeJobModal}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
               <button className={styles.closeBtn} onClick={closeJobModal}>
                 ×
               </button>
-              
+
               <div className={styles.modalHeader}>
                 <div className={styles.modalLogo}>{selectedJob.company[0]}</div>
                 <div className={styles.modalJobInfo}>
@@ -529,7 +660,10 @@ export default function FindJobPage() {
                   </div>
                 </div>
                 <div className={styles.modalHeaderActions}>
-                  <button className={styles.modalApplyBtn} onClick={handleApply}>
+                  <button
+                    className={styles.modalApplyBtn}
+                    onClick={handleApply}
+                  >
                     {t("common.apply")}
                   </button>
                   <button className={styles.modalSaveBtn}>
@@ -542,24 +676,48 @@ export default function FindJobPage() {
                 <div className={styles.modalLeft}>
                   <h3>Contact Information</h3>
                   <div className={styles.contactInfo}>
-                    <div className={`${styles.contactItem} ${!user || !hasPremium ? styles.blurred : ''}`}>
+                    <div
+                      className={`${styles.contactItem} ${
+                        !user || !hasPremium ? styles.blurred : ""
+                      }`}
+                    >
                       <span className={styles.contactLabel}>📧 Email:</span>
-                      <span className={styles.contactValue}>{selectedJob.contact?.email}</span>
+                      <span className={styles.contactValue}>
+                        {selectedJob.contact?.email}
+                      </span>
                     </div>
-                    <div className={`${styles.contactItem} ${!user || !hasPremium ? styles.blurred : ''}`}>
+                    <div
+                      className={`${styles.contactItem} ${
+                        !user || !hasPremium ? styles.blurred : ""
+                      }`}
+                    >
                       <span className={styles.contactLabel}>📞 Phone:</span>
-                      <span className={styles.contactValue}>{selectedJob.contact?.phone}</span>
+                      <span className={styles.contactValue}>
+                        {selectedJob.contact?.phone}
+                      </span>
                     </div>
-                    <div className={`${styles.contactItem} ${!user || !hasPremium ? styles.blurred : ''}`}>
+                    <div
+                      className={`${styles.contactItem} ${
+                        !user || !hasPremium ? styles.blurred : ""
+                      }`}
+                    >
                       <span className={styles.contactLabel}>📍 Address:</span>
-                      <span className={styles.contactValue}>{selectedJob.contact?.address}</span>
+                      <span className={styles.contactValue}>
+                        {selectedJob.contact?.address}
+                      </span>
                     </div>
                   </div>
-                  
+
                   {(!user || !hasPremium) && (
                     <div className={styles.premiumNotice}>
-                      <p>🔒 Contact information is only available for premium members.</p>
-                      <button className={styles.upgradeBtn} onClick={handleUpgradeToPremium}>
+                      <p>
+                        🔒 Contact information is only available for premium
+                        members.
+                      </p>
+                      <button
+                        className={styles.upgradeBtn}
+                        onClick={handleUpgradeToPremium}
+                      >
                         Upgrade to Premium
                       </button>
                     </div>
@@ -594,13 +752,18 @@ export default function FindJobPage() {
                     <h3>Skills & Tags</h3>
                     <div className={styles.modalTags}>
                       {selectedJob.tags.map((tag) => (
-                        <span key={tag} className={styles.modalTag}>{tag}</span>
+                        <span key={tag} className={styles.modalTag}>
+                          {tag}
+                        </span>
                       ))}
                     </div>
                   </div>
 
                   <div className={styles.modalActions}>
-                    <button className={styles.modalApplyBtn} onClick={handleApply}>
+                    <button
+                      className={styles.modalApplyBtn}
+                      onClick={handleApply}
+                    >
                       {t("common.apply")}
                     </button>
                     <button className={styles.modalSaveBtn}>
