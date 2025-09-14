@@ -61,12 +61,12 @@ const Header = () => {
                 <span>{t("common.findJob")}</span>
               </Link>
               <Link
-                to="/candidates"
+                to={ROUTES.DASHBOARD}
                 className={`nav-item ${
-                  isActiveRoute("/candidates") ? "active" : ""
+                  isActiveRoute(ROUTES.DASHBOARD) ? "active" : ""
                 }`}
               >
-                <span>{t("common.candidates")}</span>
+                <span>{t("common.dashboard")}</span>
               </Link>
               <Link
                 to="/pricing"
@@ -150,13 +150,13 @@ const Header = () => {
                 {t("common.findJob")}
               </Link>
               <Link
-                to="/candidates"
+                to={ROUTES.DASHBOARD}
                 className={`mobile-nav-item ${
-                  isActiveRoute("/candidates") ? "active" : ""
+                  isActiveRoute(ROUTES.DASHBOARD) ? "active" : ""
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                {t("common.candidates")}
+                {t("common.dashboard")}
               </Link>
               <Link
                 to="/pricing"

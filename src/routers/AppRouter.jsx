@@ -8,6 +8,7 @@ import {
   RegisterPage,
   PricingPage,
   FindJobPage,
+  DashboardPage,
 } from "../pages";
 import { ROUTES } from "../constants";
 
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.FIND_JOB,
     element: <FindJobPage />,
+  },
+  {
+    path: ROUTES.DASHBOARD,
+    element: <DashboardPage />,
   },
   {
     path: ROUTES.ABOUT,
@@ -40,9 +45,6 @@ const router = createBrowserRouter([
   {
     path: ROUTES.PRICING,
     element: <PricingPage />,
-  },
-  {
-    // Support route removed
   },
 ]);
 

@@ -6,3 +6,4 @@ export { default as LoginPage } from "./Login";
 export { default as RegisterPage } from "./Register";
 export { default as PricingPage } from "./Pricing";
 export { default as FindJobPage } from "./FindJob/FindJobPage";
+export { default as DashboardPage } from "./Dashboard/DashboardPage";

@@ -342,6 +342,29 @@ export default function FindJobPage() {
   const [page, setPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Application modal state
+  const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false);
+  const [applicationData, setApplicationData] = useState({
+    pdfFile: null,
+    introduction: "",
+    profileLink: "",
+  });
+  // Notification state
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "error", // error, success, warning, info
+  });
+  // Advanced filter state
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    salaryRange: "",
+    languages: "",
+    jobType: "",
+    certificate: "",
+    experience: "",
+    workLocation: "",
+  });
   const pageSize = 9; // 3 x 3 layout
 
   // Mock user state - replace with actual auth state later
@@ -355,6 +378,23 @@ export default function FindJobPage() {
 
   function togglePremium() {
     setHasPremium(!hasPremium);
+  }
+
+  // Notification functions
+  function showNotification(message, type = "error") {
+    setNotification({
+      show: true,
+      message,
+      type,
+    });
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      setNotification((prev) => ({ ...prev, show: false }));
+    }, 5000);
+  }
+
+  function hideNotification() {
+    setNotification((prev) => ({ ...prev, show: false }));
   }
 
   const categories = useMemo(
@@ -445,10 +485,60 @@ export default function FindJobPage() {
   }
 
   function handleApply() {
-    // Handle apply logic here
-    console.log("Applied to:", selectedJob?.title);
-    // Can add API call to submit application
+    // Open application modal instead of directly applying
+    setIsApplicationModalOpen(true);
+  }
+
+  function closeApplicationModal() {
+    setIsApplicationModalOpen(false);
+    setApplicationData({
+      pdfFile: null,
+      introduction: "",
+      profileLink: "",
+    });
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file && file.type === "application/pdf") {
+      setApplicationData((prev) => ({
+        ...prev,
+        pdfFile: file,
+      }));
+    } else {
+      showNotification(t("findJob.applicationModal.pdfOnlyError"), "error");
+    }
+  }
+
+  function handleApplicationSubmit() {
+    // Validate required fields with specific error messages
+    if (!applicationData.pdfFile && !applicationData.introduction.trim()) {
+      showNotification(t("findJob.applicationModal.validationError"), "error");
+      return;
+    }
+
+    if (!applicationData.pdfFile) {
+      showNotification(t("findJob.applicationModal.missingCV"), "error");
+      return;
+    }
+
+    if (!applicationData.introduction.trim()) {
+      showNotification(t("findJob.applicationModal.missingIntro"), "error");
+      return;
+    }
+
+    // Submit application logic here
+    console.log("Application submitted:", {
+      job: selectedJob?.title,
+      pdfFile: applicationData.pdfFile.name,
+      introduction: applicationData.introduction,
+      profileLink: applicationData.profileLink,
+    });
+
+    // Close both modals
+    closeApplicationModal();
     closeJobModal();
+    showNotification(t("findJob.applicationModal.successMessage"), "success");
   }
 
   function handleUpgradeToPremium() {
@@ -575,8 +665,17 @@ export default function FindJobPage() {
               <button type="button" onClick={reset} className={styles.resetBtn}>
                 {t("findJob.clearBtn")}
               </button>
+              <button
+                type="button"
+                onClick={() => setShowAdvancedFilter(true)}
+                className={styles.advancedBtn}
+              >
+                🔍 {t("findJob.advancedFilter")}
+              </button>
             </div>
           </form>
+
+          {/* Jobs Grid và các phần khác */}
 
           <div className={styles.jobsGrid}>
             {slice.length === 0 && (
@@ -664,7 +763,7 @@ export default function FindJobPage() {
                     className={styles.modalApplyBtn}
                     onClick={handleApply}
                   >
-                    {t("common.apply")}
+                    {t("common.applyNow")}
                   </button>
                   <button className={styles.modalSaveBtn}>
                     {t("common.save")}
@@ -758,19 +857,323 @@ export default function FindJobPage() {
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                  <div className={styles.modalActions}>
-                    <button
-                      className={styles.modalApplyBtn}
-                      onClick={handleApply}
+        {/* Application Modal */}
+        {isApplicationModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.applicationModal}>
+              <div className={styles.applicationModalHeader}>
+                <h2>
+                  {t("findJob.applicationModal.title")} {selectedJob?.title}
+                </h2>
+                <button
+                  className={styles.closeBtn}
+                  onClick={closeApplicationModal}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.applicationModalBody}>
+                <div className={styles.formField}>
+                  <label className={styles.fieldLabel}>
+                    {t("findJob.applicationModal.uploadCV")}{" "}
+                    <span className={styles.required}>
+                      {t("findJob.applicationModal.required")}
+                    </span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className={styles.fileInput}
+                  />
+                  {applicationData.pdfFile && (
+                    <div className={styles.filePreview}>
+                      📄 {t("findJob.applicationModal.fileSelected")}{" "}
+                      {applicationData.pdfFile.name}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.formField}>
+                  <label className={styles.fieldLabel}>
+                    {t("findJob.applicationModal.introduction")}{" "}
+                    <span className={styles.required}>
+                      {t("findJob.applicationModal.required")}
+                    </span>
+                  </label>
+                  <textarea
+                    value={applicationData.introduction}
+                    onChange={(e) =>
+                      setApplicationData((prev) => ({
+                        ...prev,
+                        introduction: e.target.value,
+                      }))
+                    }
+                    placeholder={t("findJob.applicationModal.introPlaceholder")}
+                    className={styles.textArea}
+                    rows={5}
+                  />
+                </div>
+
+                <div className={styles.formField}>
+                  <label className={styles.fieldLabel}>
+                    {t("findJob.applicationModal.profileLink")}
+                  </label>
+                  <input
+                    type="url"
+                    value={applicationData.profileLink}
+                    onChange={(e) =>
+                      setApplicationData((prev) => ({
+                        ...prev,
+                        profileLink: e.target.value,
+                      }))
+                    }
+                    placeholder={t(
+                      "findJob.applicationModal.profilePlaceholder"
+                    )}
+                    className={styles.textInput}
+                  />
+                </div>
+
+                <div className={styles.applicationModalActions}>
+                  <button
+                    className={styles.cancelBtn}
+                    onClick={closeApplicationModal}
+                  >
+                    {t("findJob.applicationModal.cancel")}
+                  </button>
+                  <button
+                    className={styles.submitBtn}
+                    onClick={handleApplicationSubmit}
+                  >
+                    {t("findJob.applicationModal.submit")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Advanced Filter Modal */}
+        {showAdvancedFilter && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.advancedFilterModal}>
+              <div className={styles.advancedFilterHeader}>
+                <h2>{t("findJob.advancedFilter")}</h2>
+                <button
+                  className={styles.closeBtn}
+                  onClick={() => setShowAdvancedFilter(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.advancedFilterBody}>
+                <div className={styles.advancedFilterGrid}>
+                  {/* Salary Range */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.advancedSalaryRange")}</label>
+                    <select
+                      value={advancedFilters.salaryRange}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          salaryRange: e.target.value,
+                        }))
+                      }
                     >
-                      {t("common.apply")}
-                    </button>
-                    <button className={styles.modalSaveBtn}>
-                      {t("common.save")}
-                    </button>
+                      <option value="">{t("findJob.allSalaryRanges")}</option>
+                      <option value="0-1000">
+                        {t("findJob.salaryUnder1000")}
+                      </option>
+                      <option value="1000-2000">
+                        {t("findJob.salary1000to2000")}
+                      </option>
+                      <option value="2000-3000">
+                        {t("findJob.salary2000to3000")}
+                      </option>
+                      <option value="3000-4000">
+                        {t("findJob.salary3000to4000")}
+                      </option>
+                      <option value="4000-5000">
+                        {t("findJob.salary4000to5000")}
+                      </option>
+                      <option value="5000+">
+                        {t("findJob.salary5000plus")}
+                      </option>
+                    </select>
+                  </div>
+
+                  {/* Languages */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.advancedLanguages")}</label>
+                    <select
+                      value={advancedFilters.languages}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          languages: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">{t("findJob.allLanguages")}</option>
+                      <option value="EN-VI">English - Vietnamese</option>
+                      <option value="JA-VI">Japanese - Vietnamese</option>
+                      <option value="KO-VI">Korean - Vietnamese</option>
+                      <option value="ZH-VI">Chinese - Vietnamese</option>
+                      <option value="FR-VI">French - Vietnamese</option>
+                      <option value="DE-VI">German - Vietnamese</option>
+                      <option value="ES-VI">Spanish - Vietnamese</option>
+                    </select>
+                  </div>
+
+                  {/* Job Type */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.advancedJobType")}</label>
+                    <select
+                      value={advancedFilters.jobType}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          jobType: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">{t("findJob.allJobTypes")}</option>
+                      <option value="Full-time">{t("findJob.fullTime")}</option>
+                      <option value="Part-time">{t("findJob.partTime")}</option>
+                      <option value="Contract">{t("findJob.contract")}</option>
+                      <option value="Freelance">
+                        {t("findJob.freelance")}
+                      </option>
+                    </select>
+                  </div>
+
+                  {/* Certificate */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.advancedCertificate")}</label>
+                    <select
+                      value={advancedFilters.certificate}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          certificate: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">{t("findJob.allCertificates")}</option>
+                      <option value="TOEIC">{t("findJob.toeic")}</option>
+                      <option value="IELTS">{t("findJob.ielts")}</option>
+                      <option value="TOPIK">{t("findJob.topik")}</option>
+                      <option value="JLPT">{t("findJob.jlpt")}</option>
+                      <option value="HSK">{t("findJob.hsk")}</option>
+                      <option value="DELF">{t("findJob.delf")}</option>
+                    </select>
+                  </div>
+
+                  {/* Experience */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.advancedExperience")}</label>
+                    <select
+                      value={advancedFilters.experience}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          experience: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">{t("findJob.allExperience")}</option>
+                      <option value="0-1">{t("findJob.experience01")}</option>
+                      <option value="1-3">{t("findJob.experience13")}</option>
+                      <option value="3-5">{t("findJob.experience35")}</option>
+                      <option value="5+">{t("findJob.experience5plus")}</option>
+                    </select>
+                  </div>
+
+                  {/* Work Location */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.advancedWorkLocation")}</label>
+                    <select
+                      value={advancedFilters.workLocation}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          workLocation: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">{t("findJob.allWorkLocations")}</option>
+                      <option value="On-site">{t("findJob.onSite")}</option>
+                      <option value="Remote">{t("findJob.remote")}</option>
+                      <option value="Hybrid">{t("findJob.hybrid")}</option>
+                    </select>
                   </div>
                 </div>
+
+                <div className={styles.advancedFilterActions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdvancedFilters({
+                        salaryRange: "",
+                        languages: "",
+                        jobType: "",
+                        certificate: "",
+                        experience: "",
+                        workLocation: "",
+                      });
+                    }}
+                    className={styles.clearAdvancedBtn}
+                  >
+                    {t("findJob.clearAdvanced")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPage(1);
+                      setShowAdvancedFilter(false);
+                      // Apply filters will be implemented
+                    }}
+                    className={styles.applyAdvancedBtn}
+                  >
+                    {t("findJob.applyFilters")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Notification */}
+        {notification.show && (
+          <div className={styles.notificationOverlay}>
+            <div
+              className={`${styles.notification} ${styles[notification.type]}`}
+            >
+              <div className={styles.notificationContent}>
+                <div className={styles.notificationIcon}>
+                  {notification.type === "error" && "⚠️"}
+                  {notification.type === "success" && "✅"}
+                  {notification.type === "warning" && "🔔"}
+                  {notification.type === "info" && "ℹ️"}
+                </div>
+                <div className={styles.notificationMessage}>
+                  {notification.message}
+                </div>
+                <button
+                  className={styles.notificationClose}
+                  onClick={hideNotification}
+                >
+                  ×
+                </button>
               </div>
             </div>
           </div>
