@@ -9,6 +9,7 @@ import {
   PricingPage,
   FindJobPage,
   DashboardPage,
+  MyApplicationsPage,
 } from "../pages";
 import { ROUTES } from "../constants";
 
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.DASHBOARD,
     element: <DashboardPage />,
+  },
+  {
+    path: ROUTES.MY_APPLICATIONS,
+    element: <MyApplicationsPage />,
   },
   {
     path: ROUTES.ABOUT,

@@ -9,39 +9,156 @@
   --fj-primary: #0369a1;
   --fj-primary-light: #0ea5e9;
   min-height: 100vh;
-  padding: 110px 0 80px;
   background: var(--fj-bg);
   color: var(--fj-text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
+  position: relative;
 }
+
+/* Header Background - inspired by Home page */
+.header {
+  position: relative;
+  text-align: center;
+  max-width: 100%;
+  margin: 0;
+  padding: 120px 0 80px;
+  background: linear-gradient(
+    135deg,
+    #0f0f23 0%,
+    #1a1a2e 25%,
+    #16213e 50%,
+    #0f3460 75%,
+    #0a65cc 100%
+  );
+  overflow: hidden;
+}
+
+/* Background Animation for Header */
+.header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(15, 15, 35, 0.8) 0%,
+    rgba(26, 26, 46, 0.6) 25%,
+    rgba(22, 33, 62, 0.7) 50%,
+    rgba(15, 52, 96, 0.8) 75%,
+    rgba(10, 101, 204, 0.9) 100%
+  );
+  z-index: 1;
+}
+
+/* Floating shapes in header */
+.header::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+      circle at 20% 20%,
+      rgba(10, 101, 204, 0.2) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(59, 130, 246, 0.15) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 60% 40%,
+      rgba(6, 182, 212, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 30% 70%,
+      rgba(16, 185, 129, 0.1) 0%,
+      transparent 50%
+    );
+  z-index: 1;
+  animation: headerFloat 20s ease-in-out infinite;
+}
+
+@keyframes headerFloat {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.8;
+  }
+  33% {
+    transform: translateY(-10px) rotate(120deg);
+    opacity: 1;
+  }
+  66% {
+    transform: translateY(10px) rotate(240deg);
+    opacity: 0.6;
+  }
+}
+
 .container {
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 28px;
+  position: relative;
+  z-index: 2;
 }
-.header {
-  text-align: center;
-  max-width: 880px;
-  margin: 0 auto 46px;
+
+/* Content area after header */
+.contentArea {
+  padding-top: 40px;
+  padding-bottom: 80px;
 }
 .title {
   font-size: clamp(2.2rem, 5vw, 3.1rem);
-  background: linear-gradient(
-    90deg,
-    var(--fj-primary),
-    var(--fj-primary-light)
-  );
+  background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
   -webkit-background-clip: text;
-  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0 0 14px;
   font-weight: 700;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  animation: titleFadeIn 1.5s ease-out;
 }
+
+@keyframes titleFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .subtitle {
   font-size: 1rem;
-  color: var(--fj-muted);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.55;
-  margin: 0;
+  margin: 0 0 46px;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: subtitleSlideIn 1.5s ease-out 0.3s both;
+}
+
+@keyframes subtitleSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .searchBar {
   display: flex;
@@ -53,6 +170,8 @@
   border-radius: var(--fj-radius);
   box-shadow: var(--fj-shadow);
   margin-bottom: 42px;
+  position: relative;
+  z-index: 2;
 }
 .field {
   flex: 1 1 180px;
@@ -508,6 +627,19 @@
   border-radius: var(--fj-radius);
 }
 @media (max-width: 768px) {
+  .header {
+    padding: 100px 0 60px;
+  }
+
+  .title {
+    font-size: clamp(1.8rem, 6vw, 2.5rem);
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+  }
+
   .searchBar {
     padding: 20px;
     gap: 12px;

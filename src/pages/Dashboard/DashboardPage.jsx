@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import styles from "./DashboardPage.module.css";
 import { MainLayout } from "../../layouts";
+import { useLanguage } from "../../translet/LanguageContext";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../constants";
 
 // Mock data for dashboard
 const MOCK_STATS = {
@@ -49,15 +52,17 @@ const MOCK_RECENT_JOBS = [
 ];
 
 const SIDEBAR_MENU = [
-  { id: "overview", icon: "📊", label: "Overview", active: true },
-  { id: "applications", icon: "📋", label: "My Applications", active: false },
-  { id: "favorites", icon: "❤️", label: "Saved Jobs", active: false },
-  { id: "alerts", icon: "🔔", label: "Job Alerts", active: false },
-  { id: "profile", icon: "👤", label: "Profile", active: false },
-  { id: "settings", icon: "⚙️", label: "Settings", active: false },
+  { id: "overview", icon: "📊", labelKey: "overview", active: true },
+  { id: "applications", icon: "📋", labelKey: "applications", active: false },
+  { id: "favorites", icon: "❤️", labelKey: "favorites", active: false },
+  { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
+  { id: "profile", icon: "👤", labelKey: "profile", active: false },
+  { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
 ];
 
 function DashboardPage() {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState("overview");
   const [userName] = useState("John Doe"); // Mock user name
 
@@ -83,13 +88,26 @@ function DashboardPage() {
     }
   };
 
+  const getStatusText = (status) => {
+    switch (status.toLowerCase()) {
+      case "active":
+        return t("dashboard.recentJobs.statusActive");
+      case "under review":
+        return t("dashboard.recentJobs.statusReview");
+      case "shortlisted":
+        return t("dashboard.recentJobs.statusShortlisted");
+      default:
+        return status;
+    }
+  };
+
   return (
     <MainLayout>
       <div className={styles.dashboardRoot}>
         {/* Sidebar */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
-            <h2 className={styles.sidebarTitle}>Dashboard</h2>
+            <h2 className={styles.sidebarTitle}>{t("dashboard.pageTitle")}</h2>
           </div>
           <nav className={styles.sidebarNav}>
             {SIDEBAR_MENU.map((item) => (
@@ -98,10 +116,17 @@ function DashboardPage() {
                 className={`${styles.menuItem} ${
                   activeMenu === item.id ? styles.menuItemActive : ""
                 }`}
-                onClick={() => setActiveMenu(item.id)}
+                onClick={() => {
+                  setActiveMenu(item.id);
+                  if (item.id === "applications") {
+                    navigate(ROUTES.MY_APPLICATIONS);
+                  }
+                }}
               >
                 <span className={styles.menuIcon}>{item.icon}</span>
-                <span className={styles.menuLabel}>{item.label}</span>
+                <span className={styles.menuLabel}>
+                  {t(`dashboard.navigation.${item.labelKey}`)}
+                </span>
               </button>
             ))}
           </nav>
@@ -111,10 +136,10 @@ function DashboardPage() {
         <main className={styles.mainContent}>
           {/* Header */}
           <header className={styles.contentHeader}>
-            <h1 className={styles.greeting}>Welcome back, {userName}!</h1>
-            <p className={styles.subGreeting}>
-              Here's what's happening with your job search today.
-            </p>
+            <h1 className={styles.greeting}>
+              {t("dashboard.welcomeBack")}, {userName}!
+            </h1>
+            <p className={styles.subGreeting}>{t("dashboard.todayActivity")}</p>
           </header>
 
           {/* Summary Stats */}
@@ -126,7 +151,9 @@ function DashboardPage() {
                   <div className={styles.statNumber}>
                     {MOCK_STATS.appliedJobs}
                   </div>
-                  <div className={styles.statLabel}>Applied Jobs</div>
+                  <div className={styles.statLabel}>
+                    {t("dashboard.stats.appliedJobs")}
+                  </div>
                 </div>
               </div>
               <div className={styles.statCard}>
@@ -135,7 +162,9 @@ function DashboardPage() {
                   <div className={styles.statNumber}>
                     {MOCK_STATS.favoriteJobs}
                   </div>
-                  <div className={styles.statLabel}>Favorite Jobs</div>
+                  <div className={styles.statLabel}>
+                    {t("dashboard.stats.favoriteJobs")}
+                  </div>
                 </div>
               </div>
               <div className={styles.statCard}>
@@ -144,7 +173,9 @@ function DashboardPage() {
                   <div className={styles.statNumber}>
                     {MOCK_STATS.jobAlerts}
                   </div>
-                  <div className={styles.statLabel}>Job Alerts</div>
+                  <div className={styles.statLabel}>
+                    {t("dashboard.stats.jobAlerts")}
+                  </div>
                 </div>
               </div>
             </div>
@@ -153,8 +184,15 @@ function DashboardPage() {
           {/* Recent Jobs */}
           <section className={styles.recentJobsSection}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Recently Applied</h2>
-              <button className={styles.viewAllBtn}>View all</button>
+              <h2 className={styles.sectionTitle}>
+                {t("dashboard.recentJobs.title")}
+              </h2>
+              <button
+                className={styles.viewAllBtn}
+                onClick={() => navigate(ROUTES.MY_APPLICATIONS)}
+              >
+                {t("dashboard.recentJobs.viewAll")}
+              </button>
             </div>
 
             <div className={styles.jobsList}>
@@ -183,7 +221,9 @@ function DashboardPage() {
 
                   {/* Date Applied Column */}
                   <div className={styles.dateColumn}>
-                    <span className={styles.dateLabel}>Date Applied</span>
+                    <span className={styles.dateLabel}>
+                      {t("dashboard.recentJobs.dateApplied")}
+                    </span>
                     <span className={styles.dateValue}>
                       {formatDate(job.dateApplied)}
                     </span>
@@ -191,21 +231,25 @@ function DashboardPage() {
 
                   {/* Status Column */}
                   <div className={styles.statusColumn}>
-                    <span className={styles.statusLabel}>Status</span>
+                    <span className={styles.statusLabel}>
+                      {t("dashboard.recentJobs.status")}
+                    </span>
                     <div
                       className={`${styles.statusBadge} ${getStatusClass(
                         job.status
                       )}`}
                     >
                       <span className={styles.statusIcon}>●</span>
-                      <span className={styles.statusText}>{job.status}</span>
+                      <span className={styles.statusText}>
+                        {getStatusText(job.status)}
+                      </span>
                     </div>
                   </div>
 
                   {/* Action Column */}
                   <div className={styles.actionColumn}>
                     <button className={styles.viewDetailsBtn}>
-                      View Details
+                      {t("dashboard.recentJobs.viewDetails")}
                     </button>
                   </div>
                 </div>
