@@ -225,7 +225,8 @@ const vi = {
     viewDetails: "Xem chi tiết",
     withdraw: "Rút đơn",
     noApplications: "Không tìm thấy đơn ứng tuyển",
-    noApplicationsDesc: "Bạn chưa ứng tuyển công việc nào. Hãy bắt đầu khám phá cơ hội!",
+    noApplicationsDesc:
+      "Bạn chưa ứng tuyển công việc nào. Hãy bắt đầu khám phá cơ hội!",
     findJobs: "Tìm việc làm",
     status: {
       all: "Tất cả",
@@ -355,6 +356,68 @@ const vi = {
       missingIntro: "Vui lòng nhập phần giới thiệu bản thân",
       successMessage: "Đơn ứng tuyển đã được gửi thành công!",
     },
+  },
+  profile: {
+    personalInfo: {
+      title: "Thông tin cá nhân",
+      fullName: "Họ tên",
+      phone: "Số điện thoại",
+      dateOfBirth: "Ngày sinh",
+      gender: "Giới tính",
+      male: "Nam",
+      female: "Nữ",
+      other: "Khác",
+    },
+    address: {
+      title: "Địa chỉ",
+      country: "Quốc gia",
+      city: "Thành phố",
+      street: "Địa chỉ chi tiết",
+    },
+    kyc: {
+      title: "Trạng thái xác minh",
+      verified: "Đã xác minh",
+      pending: "Đang chờ",
+      rejected: "Bị từ chối",
+      notSubmitted: "Chưa gửi",
+      verifiedOn: "Xác minh ngày",
+    },
+    about: {
+      title: "Giới thiệu",
+    },
+    languages: {
+      title: "Ngôn ngữ & Chứng chỉ",
+      languages: "Ngôn ngữ",
+      certifications: "Chứng chỉ",
+    },
+    experience: {
+      title: "Kinh nghiệm làm việc",
+    },
+    stats: {
+      title: "Thống kê hiệu suất",
+      totalJobs: "Tổng công việc",
+      rating: "Đánh giá",
+      responseTime: "Thời gian phản hồi",
+      completionRate: "Tỷ lệ hoàn thành",
+    },
+    reviews: {
+      title: "Đánh giá khách hàng",
+    },
+    cv: {
+      title: "Quản lý CV",
+      subtitle: "Quản lý hồ sơ và tài liệu portfolio của bạn",
+      addNew: "Thêm CV mới",
+      edit: "Chỉnh sửa",
+      delete: "Xóa",
+      type: {
+        primary: "Chính",
+        secondary: "Phụ",
+        portfolio: "Portfolio",
+      },
+    },
+    edit: "Chỉnh sửa",
+    save: "Lưu",
+    updateProfile: "Cập nhật hồ sơ",
   },
 };
 

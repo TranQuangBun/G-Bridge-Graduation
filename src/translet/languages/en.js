@@ -221,14 +221,15 @@ const en = {
     viewDetails: "View Details",
     withdraw: "Withdraw",
     noApplications: "No applications found",
-    noApplicationsDesc: "You haven't applied to any jobs yet. Start exploring opportunities!",
+    noApplicationsDesc:
+      "You haven't applied to any jobs yet. Start exploring opportunities!",
     findJobs: "Find Jobs",
     status: {
       all: "All",
       active: "Active",
       underReview: "Under Review",
       shortlisted: "Shortlisted",
-      interviewScheduled: "Interview Scheduled", 
+      interviewScheduled: "Interview Scheduled",
       rejected: "Rejected",
     },
     sort: {
@@ -350,6 +351,68 @@ const en = {
       missingIntro: "Please enter an introduction",
       successMessage: "Application submitted successfully!",
     },
+  },
+  profile: {
+    personalInfo: {
+      title: "Personal Information",
+      fullName: "Full Name",
+      phone: "Phone Number",
+      dateOfBirth: "Date of Birth",
+      gender: "Gender",
+      male: "Male",
+      female: "Female",
+      other: "Other",
+    },
+    address: {
+      title: "Address",
+      country: "Country",
+      city: "City",
+      street: "Street Address",
+    },
+    kyc: {
+      title: "Verification Status",
+      verified: "Verified",
+      pending: "Pending",
+      rejected: "Rejected",
+      notSubmitted: "Not Submitted",
+      verifiedOn: "Verified on",
+    },
+    about: {
+      title: "About Me",
+    },
+    languages: {
+      title: "Languages & Certifications",
+      languages: "Languages",
+      certifications: "Certifications",
+    },
+    experience: {
+      title: "Work Experience",
+    },
+    stats: {
+      title: "Performance Stats",
+      totalJobs: "Total Jobs",
+      rating: "Rating",
+      responseTime: "Response Time",
+      completionRate: "Completion Rate",
+    },
+    reviews: {
+      title: "Customer Reviews",
+    },
+    cv: {
+      title: "CV Management",
+      subtitle: "Manage your resumes and portfolio documents",
+      addNew: "Add New CV",
+      edit: "Edit",
+      delete: "Delete",
+      type: {
+        primary: "Primary",
+        secondary: "Secondary",
+        portfolio: "Portfolio",
+      },
+    },
+    edit: "Edit",
+    save: "Save",
+    updateProfile: "Update Profile",
   },
 };
 

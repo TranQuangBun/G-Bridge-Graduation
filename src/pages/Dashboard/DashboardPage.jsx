@@ -120,7 +120,10 @@ function DashboardPage() {
                   setActiveMenu(item.id);
                   if (item.id === "applications") {
                     navigate(ROUTES.MY_APPLICATIONS);
+                  } else if (item.id === "profile") {
+                    navigate(ROUTES.PROFILE);
                   }
+                  // Add other navigation logic for other menu items when implemented
                 }}
               >
                 <span className={styles.menuIcon}>{item.icon}</span>

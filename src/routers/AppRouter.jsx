@@ -10,6 +10,7 @@ import {
   FindJobPage,
   DashboardPage,
   MyApplicationsPage,
+  ProfilePage,
 } from "../pages";
 import { ROUTES } from "../constants";
 
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.MY_APPLICATIONS,
     element: <MyApplicationsPage />,
+  },
+  {
+    path: ROUTES.PROFILE,
+    element: <ProfilePage />,
   },
   {
     path: ROUTES.ABOUT,

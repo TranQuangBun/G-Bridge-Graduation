@@ -72,7 +72,7 @@
   border-right: 1px solid var(--sidebar-border);
   padding: 32px 0;
   position: absolute;
-  top: 0;
+  top: 85px;
   left: 0;
   bottom: 0;
   overflow-y: auto;

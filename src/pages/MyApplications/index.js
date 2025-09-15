@@ -1,1 +1,1 @@
-export { default } from './MyApplicationsPage';
+export { default } from "./MyApplicationsPage";
