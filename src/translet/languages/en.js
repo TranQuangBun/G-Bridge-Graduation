@@ -379,6 +379,7 @@ const en = {
     },
     about: {
       title: "About Me",
+      placeholder: "Tell us about yourself, your experience and career goals...",
     },
     languages: {
       title: "Languages & Certifications",
@@ -409,6 +410,32 @@ const en = {
         secondary: "Secondary",
         portfolio: "Portfolio",
       },
+    },
+    status: {
+      approved: "Approved",
+      pending: "Pending", 
+      rejected: "Not Approved",
+    },
+    fileUpload: {
+      invalidType: "Please select image files (JPG, PNG, GIF) or PDF",
+      sizeLimit: "Maximum file size is 10MB",
+      uploadLabel: "Upload Certificate",
+    },
+    modal: {
+      add: "Add",
+      cancel: "Cancel",
+      saveChanges: "Save Changes",
+      selectLevel: "Select Level",
+      language: "Language",
+      score: "Score (optional)",
+      year: "Year",
+      certName: "Certificate Name",
+    },
+    avatar: {
+      changeAvatar: "Change Avatar",
+      invalidFileType: "Please select a JPG or PNG file",
+      fileSizeError: "Maximum file size is 5MB",
+      uploadSuccess: "Avatar updated successfully",
     },
     edit: "Edit",
     save: "Save",

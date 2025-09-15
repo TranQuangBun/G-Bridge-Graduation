@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import styles from "./ProfilePage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
@@ -24,14 +24,38 @@ const MOCK_PROFILE = {
   about:
     "Experienced English-Vietnamese interpreter with 5+ years in medical and business interpretation. Passionate about bridging communication gaps and helping people connect across languages.",
   languages: [
-    { name: "English", level: "Native", certified: true },
-    { name: "Vietnamese", level: "Native", certified: true },
-    { name: "Japanese", level: "Intermediate", certified: false },
+    { name: "English", level: "Native", certified: true, approved: true },
+    { name: "Vietnamese", level: "Native", certified: true, approved: true },
+    { name: "Japanese", level: "Intermediate", certified: false, approved: false },
   ],
   certifications: [
-    { name: "TOEIC", score: "990", year: "2023" },
-    { name: "IELTS", score: "8.5", year: "2022" },
-    { name: "Medical Interpreter Certification", year: "2021" },
+    { 
+      name: "TOEIC", 
+      score: "990", 
+      year: "2023", 
+      approved: true,
+      attachment: "toeic_certificate.pdf"
+    },
+    { 
+      name: "IELTS", 
+      score: "8.5", 
+      year: "2022", 
+      approved: true,
+      attachment: "ielts_certificate.jpg"
+    },
+    { 
+      name: "Medical Interpreter Certification", 
+      year: "2021", 
+      approved: false,
+      attachment: null
+    },
+    { 
+      name: "JLPT N2", 
+      score: "180", 
+      year: "2024", 
+      approved: "pending",
+      attachment: "jlpt_n2_certificate.pdf"
+    },
   ],
   experience: [
     {
@@ -127,13 +151,262 @@ const SIDEBAR_MENU = [
   { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
 ];
 
+// About Edit Form Component
+const AboutEditForm = ({ initialValue, onChange, t }) => {
+  return (
+    <textarea
+      value={initialValue}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={t("profile.about.placeholder")}
+      className={styles.aboutTextarea}
+      rows={4}
+    />
+  );
+};
+
+// Language Modal Component
+const LanguageModal = ({ isOpen, onClose, languages, certifications, onSave, t }) => {
+  const [tempLanguages, setTempLanguages] = useState(languages);
+  const [tempCertifications, setTempCertifications] = useState(certifications);
+  const [newLanguage, setNewLanguage] = useState({ name: '', level: '', certified: false });
+  const [newCertification, setNewCertification] = useState({ 
+    name: '', 
+    score: '', 
+    year: '', 
+    attachment: null 
+  });
+
+  const handleAddLanguage = () => {
+    if (newLanguage.name && newLanguage.level) {
+      setTempLanguages([...tempLanguages, { 
+        ...newLanguage, 
+        approved: false // New languages need approval
+      }]);
+      setNewLanguage({ name: '', level: '', certified: false });
+    }
+  };
+
+  const handleAddCertification = () => {
+    if (newCertification.name && newCertification.year) {
+      setTempCertifications([...tempCertifications, { 
+        ...newCertification, 
+        approved: 'pending' // New certifications are pending approval
+      }]);
+      setNewCertification({ name: '', score: '', year: '', attachment: null });
+    }
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+        'application/pdf'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert(t("profile.fileUpload.invalidType"));
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(t("profile.fileUpload.sizeLimit"));
+        return;
+      }
+
+      // For demo purposes, we'll store the file name
+      // In real app, you would upload to server and get URL
+      setNewCertification(prev => ({
+        ...prev,
+        attachment: file.name
+      }));
+    }
+  };
+
+  const handleRemoveLanguage = (index) => {
+    setTempLanguages(tempLanguages.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveCertification = (index) => {
+    setTempCertifications(tempCertifications.filter((_, i) => i !== index));
+  };
+
+  const handleSave = () => {
+    onSave(tempLanguages, tempCertifications);
+  };
+
+  const getStatusColor = (approved) => {
+    if (approved === true) return styles.statusApproved;
+    if (approved === 'pending') return styles.statusPending;
+    return styles.statusRejected;
+  };
+
+  const getStatusText = (approved) => {
+    if (approved === true) return `✓ ${t("profile.status.approved")}`;
+    if (approved === 'pending') return `⏳ ${t("profile.status.pending")}`;
+    return `✗ ${t("profile.status.rejected")}`;
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h3>{t("profile.languages.title")}</h3>
+          <button onClick={onClose} className={styles.closeBtn}>×</button>
+        </div>
+        
+        <div className={styles.modalContent}>
+          {/* Languages Section */}
+          <div className={styles.modalSection}>
+            <h4>{t("profile.languages.languages")}</h4>
+            <div className={styles.itemsList}>
+              {tempLanguages.map((lang, index) => (
+                <div key={index} className={styles.listItem}>
+                  <div className={styles.itemInfo}>
+                    <span className={styles.itemName}>{lang.name}</span>
+                    <span className={styles.itemLevel}>({lang.level})</span>
+                    <span className={getStatusColor(lang.approved)}>
+                      {getStatusText(lang.approved)}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveLanguage(index)}
+                    className={styles.removeBtn}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {/* Add New Language */}
+            <div className={styles.addForm}>
+              <input
+                type="text"
+                placeholder={t("profile.modal.language")}
+                value={newLanguage.name}
+                onChange={(e) => setNewLanguage({...newLanguage, name: e.target.value})}
+                className={styles.input}
+              />
+              <select
+                value={newLanguage.level}
+                onChange={(e) => setNewLanguage({...newLanguage, level: e.target.value})}
+                className={styles.select}
+              >
+                <option value="">{t("profile.modal.selectLevel")}</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Native">Native</option>
+              </select>
+              <button onClick={handleAddLanguage} className={styles.addBtn}>
+                {t("profile.modal.add")}
+              </button>
+            </div>
+          </div>
+
+          {/* Certifications Section */}
+          <div className={styles.modalSection}>
+            <h4>{t("profile.languages.certifications")}</h4>
+            <div className={styles.itemsList}>
+              {tempCertifications.map((cert, index) => (
+                <div key={index} className={styles.listItem}>
+                  <div className={styles.itemInfo}>
+                    <span className={styles.itemName}>{cert.name}</span>
+                    {cert.score && <span className={styles.itemScore}>{cert.score}</span>}
+                    <span className={styles.itemYear}>({cert.year})</span>
+                    {cert.attachment && (
+                      <span className={styles.attachmentInfo}>
+                        📎 {cert.attachment}
+                      </span>
+                    )}
+                    <span className={getStatusColor(cert.approved)}>
+                      {getStatusText(cert.approved)}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveCertification(index)}
+                    className={styles.removeBtn}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {/* Add New Certification */}
+            <div className={styles.addForm}>
+              <input
+                type="text"
+                placeholder={t("profile.modal.certName")}
+                value={newCertification.name}
+                onChange={(e) => setNewCertification({...newCertification, name: e.target.value})}
+                className={styles.input}
+              />
+              <input
+                type="text"
+                placeholder={t("profile.modal.score")}
+                value={newCertification.score}
+                onChange={(e) => setNewCertification({...newCertification, score: e.target.value})}
+                className={styles.input}
+              />
+              <input
+                type="number"
+                placeholder={t("profile.modal.year")}
+                value={newCertification.year}
+                onChange={(e) => setNewCertification({...newCertification, year: e.target.value})}
+                className={styles.input}
+              />
+              
+              {/* File Upload for Certification */}
+              <div className={styles.fileUploadContainer}>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className={styles.fileInput}
+                  id="cert-file-upload"
+                />
+                <label htmlFor="cert-file-upload" className={styles.fileLabel}>
+                  📎 {newCertification.attachment ? newCertification.attachment : t("profile.fileUpload.uploadLabel")}
+                </label>
+              </div>
+              
+              <button onClick={handleAddCertification} className={styles.addBtn}>
+                {t("profile.modal.add")}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button onClick={onClose} className={styles.cancelBtn}>
+            {t("profile.modal.cancel")}
+          </button>
+          <button onClick={handleSave} className={styles.saveBtn}>
+            {t("profile.modal.saveChanges")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function ProfilePage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [profile, setProfile] = useState(MOCK_PROFILE);
   const [cvs, setCvs] = useState(MOCK_CVS);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [aboutText, setAboutText] = useState(MOCK_PROFILE.about);
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [activeMenu, setActiveMenu] = useState("profile");
@@ -144,6 +417,84 @@ function ProfilePage() {
 
   const handleEditAddress = () => {
     setIsEditingAddress(!isEditingAddress);
+  };
+
+  const handleEditAbout = () => {
+    if (isEditingAbout) {
+      // Save the changes
+      setProfile(prev => ({ ...prev, about: aboutText }));
+      setIsEditingAbout(false);
+    } else {
+      // Start editing - initialize with current profile about
+      setAboutText(profile.about);
+      setIsEditingAbout(true);
+    }
+  };
+
+  const handleAboutTextChange = (newText) => {
+    setAboutText(newText);
+  };
+
+  const handleEditLanguages = () => {
+    setIsLanguageModalOpen(true);
+  };
+
+  const handleCloseLanguageModal = () => {
+    setIsLanguageModalOpen(false);
+  };
+
+  const handleUpdateLanguagesCerts = (newLanguages, newCertifications) => {
+    setProfile(prev => ({
+      ...prev,
+      languages: newLanguages,
+      certifications: newCertifications
+    }));
+    setIsLanguageModalOpen(false);
+  };
+
+  const handleAvatarUpload = () => {
+    console.log("Avatar upload button clicked!");
+    // Trigger file input click using ref
+    if (fileInputRef.current) {
+      console.log("File input ref found, triggering click");
+      fileInputRef.current.click();
+    } else {
+      console.error("File input ref not found!");
+    }
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        alert(t("profile.avatar.invalidFileType"));
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        alert(t("profile.avatar.fileSizeError"));
+        return;
+      }
+
+      // Create file URL for preview
+      const fileURL = URL.createObjectURL(file);
+      
+      // Update profile avatar
+      setProfile(prev => ({
+        ...prev,
+        avatar: fileURL
+      }));
+
+      // Here you would typically upload the file to your server
+      console.log('Uploading avatar:', file);
+      
+      // Show success message
+      alert(t("profile.avatar.uploadSuccess"));
+    }
   };
 
   const handleDropdownToggle = (cvId) => {
@@ -267,9 +618,26 @@ function ProfilePage() {
                         alt="Profile"
                         className={styles.avatar}
                       />
-                      <button className={styles.avatarEditBtn}>
+                      <button 
+                        className={styles.avatarEditBtn}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleAvatarUpload();
+                        }}
+                        title={t("profile.avatar.changeAvatar")}
+                        type="button"
+                      >
                         <span className={styles.cameraIcon}>📷</span>
                       </button>
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png"
+                        onChange={handleAvatarChange}
+                        style={{ display: 'none' }}
+                      />
                     </div>
                     <div className={styles.avatarInfo}>
                       <h2 className={styles.userName}>{profile.name}</h2>
@@ -512,12 +880,23 @@ function ProfilePage() {
                     <h3 className={styles.cardTitle}>
                       {t("profile.about.title")}
                     </h3>
-                    <button className={styles.editBtn}>
-                      {t("profile.edit")}
+                    <button 
+                      className={styles.editBtn}
+                      onClick={handleEditAbout}
+                    >
+                      {isEditingAbout ? t("profile.save") : t("profile.edit")}
                     </button>
                   </div>
                   <div className={styles.cardContent}>
-                    <p className={styles.aboutText}>{profile.about}</p>
+                    {isEditingAbout ? (
+                      <AboutEditForm
+                        initialValue={aboutText}
+                        onChange={handleAboutTextChange}
+                        t={t}
+                      />
+                    ) : (
+                      <p className={styles.aboutText}>{profile.about}</p>
+                    )}
                   </div>
                 </div>
 
@@ -527,7 +906,10 @@ function ProfilePage() {
                     <h3 className={styles.cardTitle}>
                       {t("profile.languages.title")}
                     </h3>
-                    <button className={styles.editBtn}>
+                    <button 
+                      className={styles.editBtn}
+                      onClick={handleEditLanguages}
+                    >
                       {t("profile.edit")}
                     </button>
                   </div>
@@ -541,15 +923,20 @@ function ProfilePage() {
                           <div
                             key={index}
                             className={`${styles.tag} ${
-                              lang.certified ? styles.tagCertified : ""
+                              lang.approved === true ? styles.tagApproved : 
+                              lang.approved === 'pending' ? styles.tagPending : 
+                              styles.tagRejected
                             }`}
                           >
                             <span className={styles.tagText}>{lang.name}</span>
                             <span className={styles.tagLevel}>
                               ({lang.level})
                             </span>
-                            {lang.certified && (
+                            {lang.approved === true && (
                               <span className={styles.tagIcon}>✓</span>
+                            )}
+                            {lang.approved === 'pending' && (
+                              <span className={styles.tagIcon}>⏳</span>
                             )}
                           </div>
                         ))}
@@ -564,7 +951,11 @@ function ProfilePage() {
                         {profile.certifications.map((cert, index) => (
                           <div
                             key={index}
-                            className={`${styles.tag} ${styles.tagCertification}`}
+                            className={`${styles.tag} ${
+                              cert.approved === true ? styles.tagApproved : 
+                              cert.approved === 'pending' ? styles.tagPending : 
+                              styles.tagRejected
+                            }`}
                           >
                             <span className={styles.tagText}>{cert.name}</span>
                             {cert.score && (
@@ -575,6 +966,15 @@ function ProfilePage() {
                             <span className={styles.tagYear}>
                               ({cert.year})
                             </span>
+                            {cert.attachment && (
+                              <span className={styles.tagAttachment}>📎</span>
+                            )}
+                            {cert.approved === true && (
+                              <span className={styles.tagIcon}>✓</span>
+                            )}
+                            {cert.approved === 'pending' && (
+                              <span className={styles.tagIcon}>⏳</span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -807,6 +1207,16 @@ function ProfilePage() {
           </div>
         </main>
       </div>
+
+      {/* Language Modal */}
+      <LanguageModal
+        isOpen={isLanguageModalOpen}
+        onClose={handleCloseLanguageModal}
+        languages={profile.languages}
+        certifications={profile.certifications}
+        onSave={handleUpdateLanguagesCerts}
+        t={t}
+      />
     </MainLayout>
   );
 }

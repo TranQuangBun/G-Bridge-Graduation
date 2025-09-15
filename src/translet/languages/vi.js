@@ -384,6 +384,7 @@ const vi = {
     },
     about: {
       title: "Giới thiệu",
+      placeholder: "Hãy viết về bản thân, kinh nghiệm và mục tiêu nghề nghiệp của bạn...",
     },
     languages: {
       title: "Ngôn ngữ & Chứng chỉ",
@@ -414,6 +415,32 @@ const vi = {
         secondary: "Phụ",
         portfolio: "Portfolio",
       },
+    },
+    status: {
+      approved: "Đã duyệt",
+      pending: "Chờ duyệt", 
+      rejected: "Chưa duyệt",
+    },
+    fileUpload: {
+      invalidType: "Vui lòng chọn file ảnh (JPG, PNG, GIF) hoặc PDF",
+      sizeLimit: "Kích thước file tối đa 10MB",
+      uploadLabel: "Tải lên minh chứng",
+    },
+    modal: {
+      add: "Thêm",
+      cancel: "Hủy",
+      saveChanges: "Lưu thay đổi",
+      selectLevel: "Chọn trình độ",
+      language: "Ngôn ngữ",
+      score: "Điểm số (tùy chọn)",
+      year: "Năm",
+      certName: "Tên chứng chỉ",
+    },
+    avatar: {
+      changeAvatar: "Đổi ảnh đại diện",
+      invalidFileType: "Vui lòng chọn file JPG hoặc PNG",
+      fileSizeError: "Kích thước file tối đa 5MB",
+      uploadSuccess: "Cập nhật ảnh đại diện thành công",
     },
     edit: "Chỉnh sửa",
     save: "Lưu",
