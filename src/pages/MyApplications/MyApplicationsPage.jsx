@@ -205,6 +205,8 @@ function MyApplicationsPage() {
                   setActiveMenu(item.id);
                   if (item.id === "overview") {
                     navigate(ROUTES.DASHBOARD);
+                  } else if (item.id === "favorites") {
+                    navigate(ROUTES.SAVED_JOBS);
                   } else if (item.id === "profile") {
                     navigate(ROUTES.PROFILE);
                   }

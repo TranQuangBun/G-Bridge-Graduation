@@ -12,6 +12,7 @@ import {
   MyApplicationsPage,
   ProfilePage,
 } from "../pages";
+import SavedJobsPage from "../pages/SavedJobs/SavedJobsPage";
 import { ROUTES } from "../constants";
 
 // Cấu hình các routes
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.MY_APPLICATIONS,
     element: <MyApplicationsPage />,
+  },
+  {
+    path: ROUTES.SAVED_JOBS,
+    element: <SavedJobsPage />,
   },
   {
     path: ROUTES.PROFILE,

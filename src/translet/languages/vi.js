@@ -384,7 +384,8 @@ const vi = {
     },
     about: {
       title: "Giới thiệu",
-      placeholder: "Hãy viết về bản thân, kinh nghiệm và mục tiêu nghề nghiệp của bạn...",
+      placeholder:
+        "Hãy viết về bản thân, kinh nghiệm và mục tiêu nghề nghiệp của bạn...",
     },
     languages: {
       title: "Ngôn ngữ & Chứng chỉ",
@@ -414,11 +415,15 @@ const vi = {
         primary: "Chính",
         secondary: "Phụ",
         portfolio: "Portfolio",
+        new: "Mới",
+      },
+      uploadError: {
+        invalidType: "Vui lòng chọn file PDF",
       },
     },
     status: {
       approved: "Đã duyệt",
-      pending: "Chờ duyệt", 
+      pending: "Chờ duyệt",
       rejected: "Chưa duyệt",
     },
     fileUpload: {
@@ -435,6 +440,13 @@ const vi = {
       score: "Điểm số (tùy chọn)",
       year: "Năm",
       certName: "Tên chứng chỉ",
+      currentExperience: "Kinh nghiệm hiện tại",
+      addNewExperience: "Thêm kinh nghiệm mới",
+      jobTitle: "Chức danh",
+      company: "Công ty/Tổ chức",
+      period: "Thời gian (vd: 2020 - 2023)",
+      jobDescription: "Mô tả công việc (tùy chọn)",
+      addExperience: "Thêm kinh nghiệm",
     },
     avatar: {
       changeAvatar: "Đổi ảnh đại diện",
@@ -445,6 +457,35 @@ const vi = {
     edit: "Chỉnh sửa",
     save: "Lưu",
     updateProfile: "Cập nhật hồ sơ",
+  },
+  savedJobs: {
+    pageTitle: "Công việc đã lưu",
+    subtitle: "Quản lý các vị trí công việc yêu thích của bạn",
+    sortBy: "Sắp xếp theo",
+    sort: {
+      newest: "Mới nhất",
+      oldest: "Cũ nhất",
+      company: "Công ty",
+    },
+    resultsCount: "công việc đã lưu",
+    savedOn: "Đã lưu ngày",
+    viewDetails: "Xem chi tiết",
+    apply: "Ứng tuyển",
+    unsave: "Bỏ lưu",
+    noSavedJobs: "Chưa có công việc nào được lưu",
+    noSavedJobsDesc:
+      "Bạn chưa lưu công việc nào. Hãy khám phá và lưu những cơ hội thú vị!",
+    findJobs: "Tìm kiếm công việc",
+    modal: {
+      jobType: "Loại hình công việc",
+      workType: "Hình thức làm việc",
+      salary: "Mức lương",
+      savedOn: "Đã lưu ngày",
+      description: "Mô tả công việc",
+      requirements: "Yêu cầu",
+      apply: "Ứng tuyển ngay",
+      unsave: "Bỏ lưu",
+    },
   },
 };
 

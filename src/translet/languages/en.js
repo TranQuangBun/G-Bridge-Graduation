@@ -379,7 +379,8 @@ const en = {
     },
     about: {
       title: "About Me",
-      placeholder: "Tell us about yourself, your experience and career goals...",
+      placeholder:
+        "Tell us about yourself, your experience and career goals...",
     },
     languages: {
       title: "Languages & Certifications",
@@ -409,11 +410,15 @@ const en = {
         primary: "Primary",
         secondary: "Secondary",
         portfolio: "Portfolio",
+        new: "New",
+      },
+      uploadError: {
+        invalidType: "Please select PDF files only",
       },
     },
     status: {
       approved: "Approved",
-      pending: "Pending", 
+      pending: "Pending",
       rejected: "Not Approved",
     },
     fileUpload: {
@@ -430,6 +435,13 @@ const en = {
       score: "Score (optional)",
       year: "Year",
       certName: "Certificate Name",
+      currentExperience: "Current Experience",
+      addNewExperience: "Add New Experience",
+      jobTitle: "Job Title",
+      company: "Company/Organization",
+      period: "Period (e.g. 2020 - 2023)",
+      jobDescription: "Job Description (optional)",
+      addExperience: "Add Experience",
     },
     avatar: {
       changeAvatar: "Change Avatar",
@@ -440,6 +452,35 @@ const en = {
     edit: "Edit",
     save: "Save",
     updateProfile: "Update Profile",
+  },
+  savedJobs: {
+    pageTitle: "Saved Jobs",
+    subtitle: "Manage your favorite job positions",
+    sortBy: "Sort by",
+    sort: {
+      newest: "Newest",
+      oldest: "Oldest",
+      company: "Company",
+    },
+    resultsCount: "saved jobs",
+    savedOn: "Saved on",
+    viewDetails: "View Details",
+    apply: "Apply",
+    unsave: "Unsave",
+    noSavedJobs: "No saved jobs yet",
+    noSavedJobsDesc:
+      "You haven't saved any jobs yet. Explore and save exciting opportunities!",
+    findJobs: "Find Jobs",
+    modal: {
+      jobType: "Job Type",
+      workType: "Work Type",
+      salary: "Salary",
+      savedOn: "Saved On",
+      description: "Job Description",
+      requirements: "Requirements",
+      apply: "Apply Now",
+      unsave: "Remove from Saved",
+    },
   },
 };
 

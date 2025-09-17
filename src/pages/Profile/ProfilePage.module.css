@@ -1668,3 +1668,100 @@
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
+
+/* Experience Modal Styles */
+.experienceCard {
+  background: var(--background-secondary);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.expCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.expInfo {
+  flex: 1;
+}
+
+.expTitle {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.expCompany {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.expPeriod {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: rgba(14, 165, 233, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.expDescription {
+  margin: 12px 0 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.addExperienceForm {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(14, 165, 233, 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+.addExperienceForm h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.formGrid .textarea {
+  grid-column: 1 / -1;
+}
+
+.textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.3s ease;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+@media (max-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
