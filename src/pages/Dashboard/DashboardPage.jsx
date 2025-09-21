@@ -122,6 +122,8 @@ function DashboardPage() {
                     navigate(ROUTES.MY_APPLICATIONS);
                   } else if (item.id === "favorites") {
                     navigate(ROUTES.SAVED_JOBS);
+                  } else if (item.id === "alerts") {
+                    navigate(ROUTES.JOB_ALERTS);
                   } else if (item.id === "profile") {
                     navigate(ROUTES.PROFILE);
                   }

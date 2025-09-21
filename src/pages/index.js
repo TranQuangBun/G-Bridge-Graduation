@@ -9,3 +9,4 @@ export { default as FindJobPage } from "./FindJob/FindJobPage";
 export { default as DashboardPage } from "./Dashboard/DashboardPage";
 export { default as MyApplicationsPage } from "./MyApplications";
 export { default as ProfilePage } from "./Profile";
+export { default as JobAlertsPage } from "./JobAlerts";

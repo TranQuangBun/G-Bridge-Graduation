@@ -187,6 +187,8 @@ function SavedJobsPage() {
                     navigate(ROUTES.DASHBOARD);
                   } else if (item.id === "applications") {
                     navigate(ROUTES.MY_APPLICATIONS);
+                  } else if (item.id === "alerts") {
+                    navigate(ROUTES.JOB_ALERTS);
                   } else if (item.id === "profile") {
                     navigate(ROUTES.PROFILE);
                   }

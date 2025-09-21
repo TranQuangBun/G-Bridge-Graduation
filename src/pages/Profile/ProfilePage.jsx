@@ -818,6 +818,10 @@ function ProfilePage() {
                     navigate(ROUTES.DASHBOARD);
                   } else if (item.id === "applications") {
                     navigate(ROUTES.MY_APPLICATIONS);
+                  } else if (item.id === "favorites") {
+                    navigate(ROUTES.SAVED_JOBS);
+                  } else if (item.id === "alerts") {
+                    navigate(ROUTES.JOB_ALERTS);
                   }
                   // Add other navigation logic for other menu items when implemented
                 }}

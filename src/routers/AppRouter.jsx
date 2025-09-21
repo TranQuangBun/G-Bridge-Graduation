@@ -13,6 +13,7 @@ import {
   ProfilePage,
 } from "../pages";
 import SavedJobsPage from "../pages/SavedJobs/SavedJobsPage";
+import JobAlertsPage from "../pages/JobAlerts/JobAlertsPage";
 import { ROUTES } from "../constants";
 
 // Cấu hình các routes
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.SAVED_JOBS,
     element: <SavedJobsPage />,
+  },
+  {
+    path: ROUTES.JOB_ALERTS,
+    element: <JobAlertsPage />,
   },
   {
     path: ROUTES.PROFILE,
