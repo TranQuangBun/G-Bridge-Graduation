@@ -1,0 +1,777 @@
+/* Company Dashboard Page Styles */
+
+.dashboardRoot {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebarHeader {
+  padding: 2rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebarTitle {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+.sidebarNav {
+  flex: 1;
+  padding: 1rem 0;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.menuItemActive {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-right: 4px solid white;
+}
+
+.menuIcon {
+  font-size: 1.2rem;
+  min-width: 1.2rem;
+}
+
+.menuLabel {
+  font-weight: 500;
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  margin-left: 280px;
+  padding: 2rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.contentHeader {
+  margin-bottom: 2rem;
+}
+
+.greeting {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.subGreeting {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Summary Stats */
+.summarySection {
+  margin-bottom: 2rem;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.statCard {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.statIcon {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statInfo {
+  flex: 1;
+}
+
+.statNumber {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.2rem;
+}
+
+.statLabel {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Quick Actions */
+.actionsSection {
+  margin-bottom: 2rem;
+}
+
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.actionButton {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.actionButton:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.actionIcon {
+  font-size: 2rem;
+}
+
+.actionText {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Section Headers */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.viewAllBtn {
+  background: none;
+  border: 1px solid #667eea;
+  color: #667eea;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.viewAllBtn:hover {
+  background: #667eea;
+  color: white;
+}
+
+/* Applications Section */
+.applicationsSection {
+  margin-bottom: 2rem;
+}
+
+.applicationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.applicationCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.applicationCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.applicantInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.applicantHeader {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.applicantAvatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e2e8f0;
+}
+
+.applicantDetails {
+  flex: 1;
+}
+
+.applicantName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.3rem 0;
+}
+
+.jobTitle {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.applicantMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.experience,
+.rating,
+.hourlyRate {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.languagesColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.columnLabel {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.languagesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.languageTag {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.dateColumn,
+.statusColumn,
+.actionColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dateValue {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.statusPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusInterview {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusAccepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusRejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusIcon {
+  font-size: 0.6rem;
+}
+
+.viewApplicationBtn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.viewApplicationBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Jobs Section */
+.jobsSection {
+  margin-bottom: 2rem;
+}
+
+.jobsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.jobCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.jobCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.jobHeader {
+  margin-bottom: 1rem;
+}
+
+.jobTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.jobMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.jobType,
+.jobLocation,
+.jobSalary {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.jobStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.jobStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.statValue {
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.jobActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editJobBtn {
+  flex: 1;
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.editJobBtn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.viewApplicantsBtn {
+  flex: 2;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.viewApplicantsBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modalTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modalAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e2e8f0;
+}
+
+.modalTitleSection h2 {
+  font-size: 1.3rem;
+  color: #1e293b;
+  margin: 0;
+}
+
+.modalJobTitle {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  color: #1e293b;
+}
+
+.modalBody {
+  padding: 2rem;
+}
+
+.applicantStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.modalStat {
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.modalStat strong {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.languagesSection,
+.letterSection {
+  margin-bottom: 2rem;
+}
+
+.languagesSection h4,
+.letterSection h4 {
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.modalLanguages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.modalLanguageTag {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.applicationLetter {
+  color: #475569;
+  line-height: 1.6;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 2rem 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.rejectBtn {
+  flex: 1;
+  padding: 0.8rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.rejectBtn:hover {
+  background: #fecaca;
+}
+
+.interviewBtn {
+  flex: 1;
+  padding: 0.8rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.interviewBtn:hover {
+  background: #bfdbfe;
+}
+
+.acceptBtn {
+  flex: 1;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.acceptBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 250px;
+  }
+
+  .mainContent {
+    margin-left: 250px;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .applicationCard {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .applicantMeta {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .mainContent {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .greeting {
+    font-size: 1.5rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .jobsList {
+    grid-template-columns: 1fr;
+  }
+
+  .modalContent {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .applicantStats {
+    grid-template-columns: 1fr;
+  }
+}

@@ -245,33 +245,6 @@
   flex: 1;
 }
 
-/* Notification Badge on Alerts Menu Item */
-.notificationBadge {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 50%;
-  min-width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
 /* Main Content */
 .mainContent {
   flex: 1;

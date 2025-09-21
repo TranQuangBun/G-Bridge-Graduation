@@ -265,11 +265,6 @@ function JobAlertsPage() {
                 <span className={styles.menuLabel}>
                   {t(`dashboard.navigation.${item.labelKey}`)}
                 </span>
-                {item.id === "alerts" && unreadCount > 0 && (
-                  <span className={styles.notificationBadge}>
-                    {unreadCount}
-                  </span>
-                )}
               </button>
             ))}
           </nav>
