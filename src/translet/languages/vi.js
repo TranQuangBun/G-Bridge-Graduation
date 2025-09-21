@@ -2,7 +2,7 @@ const vi = {
   common: {
     home: "Trang chủ",
     findJob: "Tìm việc",
-    dashboard: "Dashboard",
+    dashboard: "Bảng điều khiển",
     pricing: "Bảng giá",
     login: "Đăng nhập",
     register: "Đăng ký",
@@ -254,7 +254,7 @@ const vi = {
     },
   },
   dashboard: {
-    pageTitle: "Dashboard",
+    pageTitle: "Bảng điều khiển",
     welcomeBack: "Chào mừng bạn trở lại",
     todayActivity:
       "Đây là những gì đang diễn ra với việc tìm kiếm công việc của bạn hôm nay.",
@@ -491,13 +491,14 @@ const vi = {
     pageTitle: "Thông báo công việc",
     subtitle: "Quản lý các thông báo và cập nhật về cơ hội việc làm",
     markAllAsRead: "Đánh dấu tất cả đã đọc",
-    clearAll: "Xóa tất cả",
+    deleteAll: "Xóa tất cả",
     filterByType: "Lọc theo loại",
     totalAlerts: "thông báo",
     unreadAlerts: "chưa đọc",
     markAsRead: "Đánh dấu đã đọc",
     noAlerts: "Không có thông báo nào",
-    noAlertsDesc: "Bạn đã xem hết tất cả thông báo. Chúng tôi sẽ thông báo khi có cập nhật mới!",
+    noAlertsDesc:
+      "Bạn đã xem hết tất cả thông báo. Chúng tôi sẽ thông báo khi có cập nhật mới!",
     findJobs: "Tìm kiếm công việc",
     status: "Trạng thái",
     deadline: "Hạn chót",
@@ -509,14 +510,16 @@ const vi = {
     },
     types: {
       all: "Tất cả",
-      jobMatch: "Khớp công việc",
-      applicationUpdate: "Cập nhật đơn ứng tuyển",
-      newJob: "Công việc mới",
-      deadlineReminder: "Nhắc nhở hạn chót",
-      profileView: "Xem hồ sơ",
+    },
+    alertTypes: {
+      job_match: "Khớp công việc",
+      application_update: "Cập nhật đơn ứng tuyển",
+      new_job: "Công việc mới",
+      deadline_reminder: "Nhắc nhở hạn chót",
+      profile_view: "Xem hồ sơ",
       system: "Hệ thống",
-      jobRecommendation: "Gợi ý công việc",
-      skillVerification: "Xác minh kỹ năng",
+      job_recommendation: "Gợi ý công việc",
+      skill_verification: "Xác minh kỹ năng",
     },
     modal: {
       jobDetails: "Chi tiết công việc",

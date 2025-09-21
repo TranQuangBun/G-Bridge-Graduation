@@ -11,7 +11,8 @@ const MOCK_JOB_ALERTS = [
     id: 1,
     type: "job_match",
     title: "New Job Match Found",
-    message: "A new interpreter position at GlobalSpeak matches your profile and preferences.",
+    message:
+      "A new interpreter position at GlobalSpeak matches your profile and preferences.",
     jobTitle: "Senior English-Vietnamese Conference Interpreter",
     company: "GlobalSpeak",
     location: "Ho Chi Minh City",
@@ -20,13 +21,14 @@ const MOCK_JOB_ALERTS = [
     isRead: false,
     priority: "high",
     actionUrl: "/jobs/1",
-    icon: "🎯"
+    icon: "🎯",
   },
   {
     id: 2,
     type: "application_update",
     title: "Application Status Updated",
-    message: "Your application for Medical Interpreter position has been reviewed.",
+    message:
+      "Your application for Medical Interpreter position has been reviewed.",
     jobTitle: "Medical Interpreter - Vietnamese",
     company: "MedLingua",
     status: "Interview Scheduled",
@@ -34,13 +36,14 @@ const MOCK_JOB_ALERTS = [
     isRead: false,
     priority: "high",
     actionUrl: "/dashboard/applications",
-    icon: "📋"
+    icon: "📋",
   },
   {
     id: 3,
     type: "new_job",
     title: "New Job Posted",
-    message: "A new legal interpreter position has been posted in your preferred location.",
+    message:
+      "A new legal interpreter position has been posted in your preferred location.",
     jobTitle: "Legal Document Translator",
     company: "LegalLingo",
     location: "District 3, Ho Chi Minh City",
@@ -48,13 +51,14 @@ const MOCK_JOB_ALERTS = [
     isRead: true,
     priority: "medium",
     actionUrl: "/jobs/3",
-    icon: "💼"
+    icon: "💼",
   },
   {
     id: 4,
     type: "deadline_reminder",
     title: "Application Deadline Reminder",
-    message: "Your application for Technical Translator position expires in 2 days.",
+    message:
+      "Your application for Technical Translator position expires in 2 days.",
     jobTitle: "Technical Document Translator",
     company: "TechTranslate",
     deadline: "2025-09-19",
@@ -62,55 +66,59 @@ const MOCK_JOB_ALERTS = [
     isRead: true,
     priority: "medium",
     actionUrl: "/dashboard/applications",
-    icon: "⏰"
+    icon: "⏰",
   },
   {
     id: 5,
     type: "profile_view",
     title: "Profile Viewed by Employer",
-    message: "EduBridge has viewed your profile and may be interested in your services.",
+    message:
+      "EduBridge has viewed your profile and may be interested in your services.",
     company: "EduBridge",
     timestamp: "2025-09-16T16:30:00Z",
     isRead: true,
     priority: "low",
     actionUrl: "/profile",
-    icon: "👁️"
+    icon: "👁️",
   },
   {
     id: 6,
     type: "system",
     title: "Profile Completion Reminder",
-    message: "Complete your profile to get 50% more job matches. Add your certifications and work experience.",
+    message:
+      "Complete your profile to get 50% more job matches. Add your certifications and work experience.",
     timestamp: "2025-09-16T14:00:00Z",
     isRead: false,
     priority: "low",
     actionUrl: "/profile",
-    icon: "📝"
+    icon: "📝",
   },
   {
     id: 7,
     type: "job_recommendation",
     title: "Weekly Job Recommendations",
-    message: "We found 5 new interpreter positions that match your skills and preferences.",
+    message:
+      "We found 5 new interpreter positions that match your skills and preferences.",
     count: 5,
     timestamp: "2025-09-16T10:00:00Z",
     isRead: true,
     priority: "low",
     actionUrl: "/find-job",
-    icon: "💡"
+    icon: "💡",
   },
   {
     id: 8,
     type: "skill_verification",
     title: "Skill Verification Required",
-    message: "Please verify your Japanese language proficiency to unlock premium job opportunities.",
+    message:
+      "Please verify your Japanese language proficiency to unlock premium job opportunities.",
     skill: "Japanese Language",
     timestamp: "2025-09-15T11:30:00Z",
     isRead: false,
     priority: "medium",
     actionUrl: "/profile",
-    icon: "🏆"
-  }
+    icon: "🏆",
+  },
 ];
 
 const SIDEBAR_MENU = [
@@ -134,16 +142,16 @@ function JobAlertsPage() {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 1) {
       return t("jobAlerts.timeAgo.justNow");
     } else if (diffInHours < 24) {
-      return t("jobAlerts.timeAgo.hoursAgo", { hours: diffInHours });
+      return t("jobAlerts.timeAgo.hoursAgo").replace("{{hours}}", diffInHours);
     } else if (diffInHours < 48) {
       return t("jobAlerts.timeAgo.yesterday");
     } else {
       const days = Math.floor(diffInHours / 24);
-      return t("jobAlerts.timeAgo.daysAgo", { days });
+      return t("jobAlerts.timeAgo.daysAgo").replace("{{days}}", days);
     }
   };
 
@@ -183,24 +191,26 @@ function JobAlertsPage() {
     }
   };
 
-  const filteredAlerts = alerts.filter(alert => 
-    selectedType === "all" || alert.type === selectedType
+  const filteredAlerts = alerts.filter(
+    (alert) => selectedType === "all" || alert.type === selectedType
   );
 
-  const unreadCount = alerts.filter(alert => !alert.isRead).length;
+  const unreadCount = alerts.filter((alert) => !alert.isRead).length;
 
   const handleMarkAsRead = (alertId) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === alertId ? { ...alert, isRead: true } : alert
-    ));
+    setAlerts(
+      alerts.map((alert) =>
+        alert.id === alertId ? { ...alert, isRead: true } : alert
+      )
+    );
   };
 
   const handleMarkAllAsRead = () => {
-    setAlerts(alerts.map(alert => ({ ...alert, isRead: true })));
+    setAlerts(alerts.map((alert) => ({ ...alert, isRead: true })));
   };
 
   const handleDeleteAlert = (alertId) => {
-    setAlerts(alerts.filter(alert => alert.id !== alertId));
+    setAlerts(alerts.filter((alert) => alert.id !== alertId));
   };
 
   const handleClearAll = () => {
@@ -211,7 +221,7 @@ function JobAlertsPage() {
     if (!alert.isRead) {
       handleMarkAsRead(alert.id);
     }
-    
+
     if (alert.actionUrl) {
       navigate(alert.actionUrl);
     } else {
@@ -256,7 +266,9 @@ function JobAlertsPage() {
                   {t(`dashboard.navigation.${item.labelKey}`)}
                 </span>
                 {item.id === "alerts" && unreadCount > 0 && (
-                  <span className={styles.notificationBadge}>{unreadCount}</span>
+                  <span className={styles.notificationBadge}>
+                    {unreadCount}
+                  </span>
                 )}
               </button>
             ))}
@@ -274,18 +286,15 @@ function JobAlertsPage() {
               </div>
               <div className={styles.headerActions}>
                 {unreadCount > 0 && (
-                  <button 
+                  <button
                     className={styles.markAllBtn}
                     onClick={handleMarkAllAsRead}
                   >
                     {t("jobAlerts.markAllAsRead")}
                   </button>
                 )}
-                <button 
-                  className={styles.clearAllBtn}
-                  onClick={handleClearAll}
-                >
-                  {t("jobAlerts.clearAll")}
+                <button className={styles.clearAllBtn} onClick={handleClearAll}>
+                  {t("jobAlerts.deleteAll")}
                 </button>
               </div>
             </div>
@@ -304,14 +313,30 @@ function JobAlertsPage() {
                   className={styles.filterSelect}
                 >
                   <option value="all">{t("jobAlerts.types.all")}</option>
-                  <option value="job_match">{t("jobAlerts.types.jobMatch")}</option>
-                  <option value="application_update">{t("jobAlerts.types.applicationUpdate")}</option>
-                  <option value="new_job">{t("jobAlerts.types.newJob")}</option>
-                  <option value="deadline_reminder">{t("jobAlerts.types.deadlineReminder")}</option>
-                  <option value="profile_view">{t("jobAlerts.types.profileView")}</option>
-                  <option value="system">{t("jobAlerts.types.system")}</option>
-                  <option value="job_recommendation">{t("jobAlerts.types.jobRecommendation")}</option>
-                  <option value="skill_verification">{t("jobAlerts.types.skillVerification")}</option>
+                  <option value="job_match">
+                    {t("jobAlerts.alertTypes.job_match")}
+                  </option>
+                  <option value="application_update">
+                    {t("jobAlerts.alertTypes.application_update")}
+                  </option>
+                  <option value="new_job">
+                    {t("jobAlerts.alertTypes.new_job")}
+                  </option>
+                  <option value="deadline_reminder">
+                    {t("jobAlerts.alertTypes.deadline_reminder")}
+                  </option>
+                  <option value="profile_view">
+                    {t("jobAlerts.alertTypes.profile_view")}
+                  </option>
+                  <option value="system">
+                    {t("jobAlerts.alertTypes.system")}
+                  </option>
+                  <option value="job_recommendation">
+                    {t("jobAlerts.alertTypes.job_recommendation")}
+                  </option>
+                  <option value="skill_verification">
+                    {t("jobAlerts.alertTypes.skill_verification")}
+                  </option>
                 </select>
               </div>
 
@@ -333,11 +358,13 @@ function JobAlertsPage() {
             {filteredAlerts.length > 0 ? (
               <div className={styles.alertsList}>
                 {filteredAlerts.map((alert) => (
-                  <div 
-                    key={alert.id} 
+                  <div
+                    key={alert.id}
                     className={`${styles.alertCard} ${
                       !alert.isRead ? styles.unread : ""
-                    } ${getPriorityClass(alert.priority)} ${getTypeClass(alert.type)}`}
+                    } ${getPriorityClass(alert.priority)} ${getTypeClass(
+                      alert.type
+                    )}`}
                     onClick={() => handleAlertClick(alert)}
                   >
                     <div className={styles.alertContent}>
@@ -371,14 +398,20 @@ function JobAlertsPage() {
 
                       {alert.status && (
                         <div className={styles.statusInfo}>
-                          <span className={styles.statusLabel}>{t("jobAlerts.status")}:</span>
-                          <span className={styles.statusValue}>{alert.status}</span>
+                          <span className={styles.statusLabel}>
+                            {t("jobAlerts.status")}:
+                          </span>
+                          <span className={styles.statusValue}>
+                            {alert.status}
+                          </span>
                         </div>
                       )}
 
                       {alert.deadline && (
                         <div className={styles.deadlineInfo}>
-                          <span className={styles.deadlineLabel}>{t("jobAlerts.deadline")}:</span>
+                          <span className={styles.deadlineLabel}>
+                            {t("jobAlerts.deadline")}:
+                          </span>
                           <span className={styles.deadlineValue}>
                             {new Date(alert.deadline).toLocaleDateString()}
                           </span>
@@ -388,7 +421,7 @@ function JobAlertsPage() {
 
                     <div className={styles.alertActions}>
                       {!alert.isRead && (
-                        <button 
+                        <button
                           className={styles.markReadBtn}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -398,7 +431,7 @@ function JobAlertsPage() {
                           {t("jobAlerts.markAsRead")}
                         </button>
                       )}
-                      <button 
+                      <button
                         className={styles.deleteBtn}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -446,33 +479,48 @@ function JobAlertsPage() {
 
               <div className={styles.modalBody}>
                 <p className={styles.modalMessage}>{selectedAlert.message}</p>
-                
+
                 {selectedAlert.jobTitle && (
                   <div className={styles.modalJobInfo}>
                     <h4>{t("jobAlerts.modal.jobDetails")}</h4>
                     <div className={styles.jobDetails}>
-                      <div><strong>{t("jobAlerts.modal.position")}:</strong> {selectedAlert.jobTitle}</div>
+                      <div>
+                        <strong>{t("jobAlerts.modal.position")}:</strong>{" "}
+                        {selectedAlert.jobTitle}
+                      </div>
                       {selectedAlert.company && (
-                        <div><strong>{t("jobAlerts.modal.company")}:</strong> {selectedAlert.company}</div>
+                        <div>
+                          <strong>{t("jobAlerts.modal.company")}:</strong>{" "}
+                          {selectedAlert.company}
+                        </div>
                       )}
                       {selectedAlert.location && (
-                        <div><strong>{t("jobAlerts.modal.location")}:</strong> {selectedAlert.location}</div>
+                        <div>
+                          <strong>{t("jobAlerts.modal.location")}:</strong>{" "}
+                          {selectedAlert.location}
+                        </div>
                       )}
                       {selectedAlert.salary && (
-                        <div><strong>{t("jobAlerts.modal.salary")}:</strong> {selectedAlert.salary}</div>
+                        <div>
+                          <strong>{t("jobAlerts.modal.salary")}:</strong>{" "}
+                          {selectedAlert.salary}
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
                 <div className={styles.modalTimestamp}>
-                  <small>{t("jobAlerts.modal.receivedAt")}: {new Date(selectedAlert.timestamp).toLocaleString()}</small>
+                  <small>
+                    {t("jobAlerts.modal.receivedAt")}:{" "}
+                    {new Date(selectedAlert.timestamp).toLocaleString()}
+                  </small>
                 </div>
               </div>
 
               <div className={styles.modalActions}>
                 {selectedAlert.actionUrl && (
-                  <button 
+                  <button
                     className={styles.actionBtn}
                     onClick={() => {
                       navigate(selectedAlert.actionUrl);
@@ -482,10 +530,7 @@ function JobAlertsPage() {
                     {t("jobAlerts.modal.viewDetails")}
                   </button>
                 )}
-                <button 
-                  className={styles.dismissBtn}
-                  onClick={closeModal}
-                >
+                <button className={styles.dismissBtn} onClick={closeModal}>
                   {t("jobAlerts.modal.dismiss")}
                 </button>
               </div>
