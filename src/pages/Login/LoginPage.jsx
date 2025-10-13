@@ -1,12 +1,19 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ROUTES, LANGUAGES } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../hooks/useToast";
+import { ToastContainer } from "../../components/Toast";
 import "./LoginPage.css";
 // Reuse header-style logo (no image file needed)
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -42,6 +49,8 @@ const LoginPage = () => {
       switchHint: "Chuyển ngôn ngữ",
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",
+      loginSuccess: "Đăng nhập thành công!",
+      loginError: "Đăng nhập thất bại",
     },
     en: {
       title: "Login",
@@ -63,6 +72,8 @@ const LoginPage = () => {
       switchHint: "Switch language",
       showPassword: "Show password",
       hidePassword: "Hide password",
+      loginSuccess: "Login successful!",
+      loginError: "Login failed",
     },
   }[language];
 
@@ -115,16 +126,24 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Login data:", formData);
-      alert(
-        language === LANGUAGES.VI
-          ? "Đăng nhập thành công!"
-          : "Login successful!"
-      );
+      // Call login API
+      const result = await login(formData.email, formData.password);
+
+      if (result.success) {
+        // Show success message
+        showSuccess(t.loginSuccess);
+
+        // Redirect to HOME after login
+        setTimeout(() => {
+          navigate(ROUTES.HOME);
+        }, 500);
+      } else {
+        // Show error
+        showError(result.error || t.loginError);
+      }
     } catch (error) {
       console.error("Login error:", error);
+      showError(t.loginError);
     } finally {
       setIsLoading(false);
     }
@@ -132,6 +151,8 @@ const LoginPage = () => {
 
   return (
     <div className="auth-page">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       <div className="auth-background">
         <div className="floating-shapes">
           <div className="shape shape-1"></div>

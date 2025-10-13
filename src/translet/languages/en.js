@@ -10,6 +10,8 @@ const en = {
     apply: "Apply",
     applyNow: "Apply Now",
     save: "Save",
+    notifications: "Notifications",
+    postJob: "Post a Job",
   },
   home: {
     heroTitle: "Connect",

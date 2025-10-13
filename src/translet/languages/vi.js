@@ -10,6 +10,8 @@ const vi = {
     apply: "Ứng tuyển",
     applyNow: "Ứng tuyển",
     save: "Lưu",
+    notifications: "Thông báo",
+    postJob: "Đăng tin tuyển dụng",
   },
   home: {
     heroTitle: "Kết Nối",

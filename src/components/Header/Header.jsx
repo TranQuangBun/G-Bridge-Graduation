@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
 import "./Header.css";
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
@@ -8,9 +9,13 @@ import { useLanguage } from "../../translet/LanguageContext";
 
 const Header = () => {
   const { lang, setLang, t } = useLanguage();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -18,8 +23,38 @@ const Header = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const toggleMobileMenu = () => setIsMobileMenuOpen((o) => !o);
   const toggleLanguage = () => setLang(lang === "vi" ? "en" : "vi");
+  const toggleUserMenu = () => setIsUserMenuOpen((prev) => !prev);
+
+  const handleLogout = () => {
+    logout();
+    setIsUserMenuOpen(false);
+    navigate(ROUTES.HOME);
+  };
+
+  const handleProfileClick = () => {
+    setIsUserMenuOpen(false);
+    if (user?.role === "interpreter") {
+      navigate("/profile");
+    } else if (user?.role === "client") {
+      navigate("/company/profile");
+    } else if (user?.role === "admin") {
+      navigate("/admin/profile");
+    }
+  };
 
   // Function to check if a route is active
   const isActiveRoute = (route) => {
@@ -93,13 +128,221 @@ const Header = () => {
               </button>
             </div>
             <div className="auth-section">
-              <Link to={ROUTES.LOGIN} className="login-btn">
-                {t("common.login")}
-              </Link>
-              <Link to={ROUTES.REGISTER} className="register-btn">
-                <span>{t("common.register")}</span>
-                <div className="btn-glow"></div>
-              </Link>
+              {isAuthenticated ? (
+                <div className="user-actions" ref={userMenuRef}>
+                  {/* Post Job Button - Only for Company/Client */}
+                  {user?.role === "client" && (
+                    <Link to="/post-job" className="post-job-btn">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                      </svg>
+                      <span>{t("common.postJob")}</span>
+                    </Link>
+                  )}
+
+                  {/* Notification Bell */}
+                  <button
+                    className="notification-btn"
+                    title={t("common.notifications")}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span className="notification-badge">3</span>
+                  </button>
+
+                  {/* User Avatar Dropdown */}
+                  <div className="user-menu-container">
+                    <button
+                      className="user-avatar-btn"
+                      onClick={toggleUserMenu}
+                    >
+                      {user?.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.fullName}
+                          className="avatar-image"
+                        />
+                      ) : (
+                        <div className="avatar-placeholder">
+                          {user?.fullName?.charAt(0).toUpperCase() || "U"}
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isUserMenuOpen && (
+                      <div className="user-dropdown">
+                        <div className="user-dropdown-header">
+                          <div className="user-info">
+                            {user?.avatar ? (
+                              <img
+                                src={user.avatar}
+                                alt={user.fullName}
+                                className="dropdown-avatar"
+                              />
+                            ) : (
+                              <div className="dropdown-avatar-placeholder">
+                                {user?.fullName?.charAt(0).toUpperCase() || "U"}
+                              </div>
+                            )}
+                            <div className="user-details">
+                              <p className="user-name">
+                                {user?.fullName || "User"}
+                              </p>
+                              <p className="user-email">{user?.email}</p>
+                              <span className="user-role-badge">
+                                {user?.role}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="user-dropdown-divider"></div>
+                        <div className="user-dropdown-menu">
+                          <button
+                            className="dropdown-item"
+                            onClick={handleProfileClick}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>
+                              {lang === "vi" ? "Hồ sơ của tôi" : "My Profile"}
+                            </span>
+                          </button>
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              navigate(ROUTES.DASHBOARD);
+                            }}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <rect x="3" y="3" width="7" height="7"></rect>
+                              <rect x="14" y="3" width="7" height="7"></rect>
+                              <rect x="14" y="14" width="7" height="7"></rect>
+                              <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span>{t("common.dashboard")}</span>
+                          </button>
+                          {user?.role === "interpreter" && (
+                            <button
+                              className="dropdown-item"
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                navigate("/saved-jobs");
+                              }}
+                            >
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                              </svg>
+                              <span>
+                                {lang === "vi"
+                                  ? "Công việc đã lưu"
+                                  : "Saved Jobs"}
+                              </span>
+                            </button>
+                          )}
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              navigate("/settings");
+                            }}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <circle cx="12" cy="12" r="3"></circle>
+                              <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
+                            </svg>
+                            <span>
+                              {lang === "vi" ? "Cài đặt" : "Settings"}
+                            </span>
+                          </button>
+                        </div>
+                        <div className="user-dropdown-divider"></div>
+                        <div className="user-dropdown-footer">
+                          <button
+                            className="dropdown-item logout-item"
+                            onClick={handleLogout}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                              <polyline points="16 17 21 12 16 7"></polyline>
+                              <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            <span>
+                              {lang === "vi" ? "Đăng xuất" : "Logout"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Link to={ROUTES.LOGIN} className="login-btn">
+                    {t("common.login")}
+                  </Link>
+                  <Link to={ROUTES.REGISTER} className="register-btn">
+                    <span>{t("common.register")}</span>
+                    <div className="btn-glow"></div>
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
           <button
@@ -169,20 +412,127 @@ const Header = () => {
               </Link>
             </div>
             <div className="mobile-auth">
-              <Link
-                to={ROUTES.LOGIN}
-                className="mobile-login-btn"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {t("common.login")}
-              </Link>
-              <Link
-                to={ROUTES.REGISTER}
-                className="mobile-register-btn"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {t("common.register")}
-              </Link>
+              {isAuthenticated ? (
+                <div className="mobile-user-section">
+                  <div className="mobile-user-info">
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.fullName}
+                        className="mobile-avatar"
+                      />
+                    ) : (
+                      <div className="mobile-avatar-placeholder">
+                        {user?.fullName?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                    )}
+                    <div className="mobile-user-details">
+                      <p className="mobile-user-name">{user?.fullName}</p>
+                      <p className="mobile-user-email">{user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="mobile-user-actions">
+                    {/* Post Job Button - Only for Company */}
+                    {user?.role === "client" && (
+                      <Link
+                        to="/post-job"
+                        className="mobile-post-job-btn"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="16"></line>
+                          <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        {t("common.postJob")}
+                      </Link>
+                    )}
+
+                    <button
+                      className="mobile-menu-action"
+                      onClick={() => {
+                        handleProfileClick();
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      {lang === "vi" ? "Hồ sơ" : "Profile"}
+                    </button>
+                    <button
+                      className="mobile-menu-action"
+                      onClick={() => {
+                        navigate("/settings");
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
+                      </svg>
+                      {lang === "vi" ? "Cài đặt" : "Settings"}
+                    </button>
+                    <button
+                      className="mobile-menu-action logout"
+                      onClick={handleLogout}
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      {lang === "vi" ? "Đăng xuất" : "Logout"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Link
+                    to={ROUTES.LOGIN}
+                    className="mobile-login-btn"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {t("common.login")}
+                  </Link>
+                  <Link
+                    to={ROUTES.REGISTER}
+                    className="mobile-register-btn"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {t("common.register")}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
