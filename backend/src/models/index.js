@@ -2,6 +2,8 @@
 import User from "./User.js";
 import InterpreterProfile from "./InterpreterProfile.js";
 import ClientProfile from "./ClientProfile.js";
+import Language from "./Language.js";
+import Certification from "./Certification.js";
 
 // Define all associations here
 User.hasOne(InterpreterProfile, {
@@ -20,8 +22,28 @@ ClientProfile.belongsTo(User, {
   foreignKey: "userId",
 });
 
+// User has many Languages
+User.hasMany(Language, {
+  foreignKey: "userId",
+  onDelete: "CASCADE",
+  as: "languages",
+});
+Language.belongsTo(User, {
+  foreignKey: "userId",
+});
+
+// User has many Certifications
+User.hasMany(Certification, {
+  foreignKey: "userId",
+  onDelete: "CASCADE",
+  as: "certifications",
+});
+Certification.belongsTo(User, {
+  foreignKey: "userId",
+});
+
 // Export all models
-export { User, InterpreterProfile, ClientProfile };
+export { User, InterpreterProfile, ClientProfile, Language, Certification };
 
 // Function to sync all models
 export async function syncDatabase(force = false) {
@@ -29,9 +51,12 @@ export async function syncDatabase(force = false) {
     console.log("Syncing database models...");
 
     // Sync models in order (dependencies first)
-    await User.sync({ force });
-    await InterpreterProfile.sync({ force });
-    await ClientProfile.sync({ force });
+    // Use alter: true to add new columns without dropping tables
+    await User.sync({ force, alter: !force });
+    await InterpreterProfile.sync({ force, alter: !force });
+    await ClientProfile.sync({ force, alter: !force });
+    await Language.sync({ force, alter: !force });
+    await Certification.sync({ force, alter: !force });
 
     console.log("✓ Database models synced successfully!");
   } catch (error) {

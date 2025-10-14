@@ -1,11 +1,18 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { initDatabase } from "./config/database.js";
 import { syncDatabase } from "./models/index.js";
 import authRoutes from "./routes/authRoutes.js";
+import languageRoutes from "./routes/languageRoutes.js";
+import certificationRoutes from "./routes/certificationRoutes.js";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -19,6 +26,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files (uploads)
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 // Health check endpoint
 app.get("/", (_, res) =>
   res.json({
@@ -31,6 +41,8 @@ app.get("/", (_, res) =>
 
 // API routes
 app.use("/api/auth", authRoutes);
+app.use("/api/languages", languageRoutes);
+app.use("/api/certifications", certificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -176,7 +176,11 @@ const Header = () => {
                     >
                       {user?.avatar ? (
                         <img
-                          src={user.avatar}
+                          src={
+                            user.avatar.startsWith("http")
+                              ? user.avatar
+                              : `http://localhost:4000${user.avatar}`
+                          }
                           alt={user.fullName}
                           className="avatar-image"
                         />
@@ -194,7 +198,11 @@ const Header = () => {
                           <div className="user-info">
                             {user?.avatar ? (
                               <img
-                                src={user.avatar}
+                                src={
+                                  user.avatar.startsWith("http")
+                                    ? user.avatar
+                                    : `http://localhost:4000${user.avatar}`
+                                }
                                 alt={user.fullName}
                                 className="dropdown-avatar"
                               />
@@ -417,7 +425,11 @@ const Header = () => {
                   <div className="mobile-user-info">
                     {user?.avatar ? (
                       <img
-                        src={user.avatar}
+                        src={
+                          user.avatar.startsWith("http")
+                            ? user.avatar
+                            : `http://localhost:4000${user.avatar}`
+                        }
                         alt={user.fullName}
                         className="mobile-avatar"
                       />

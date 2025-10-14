@@ -55,6 +55,14 @@ const authService = {
         localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
         localStorage.setItem("profile", JSON.stringify(response.data.profile));
+        localStorage.setItem(
+          "languages",
+          JSON.stringify(response.data.languages || [])
+        );
+        localStorage.setItem(
+          "certifications",
+          JSON.stringify(response.data.certifications || [])
+        );
       }
 
       return response.data;
@@ -78,6 +86,14 @@ const authService = {
         localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
         localStorage.setItem("profile", JSON.stringify(response.data.profile));
+        localStorage.setItem(
+          "languages",
+          JSON.stringify(response.data.languages || [])
+        );
+        localStorage.setItem(
+          "certifications",
+          JSON.stringify(response.data.certifications || [])
+        );
       }
 
       return response.data;
@@ -93,6 +109,8 @@ const authService = {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
     localStorage.removeItem("profile");
+    localStorage.removeItem("languages");
+    localStorage.removeItem("certifications");
     window.location.href = "/login";
   },
 
@@ -108,6 +126,14 @@ const authService = {
       if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
         localStorage.setItem("profile", JSON.stringify(response.data.profile));
+        localStorage.setItem(
+          "languages",
+          JSON.stringify(response.data.languages || [])
+        );
+        localStorage.setItem(
+          "certifications",
+          JSON.stringify(response.data.certifications || [])
+        );
       }
 
       return response.data;
@@ -143,11 +169,99 @@ const authService = {
   },
 
   /**
+   * Lấy languages từ localStorage
+   * @returns {Array}
+   */
+  getStoredLanguages: () => {
+    const languagesStr = localStorage.getItem("languages");
+    return languagesStr ? JSON.parse(languagesStr) : [];
+  },
+
+  /**
+   * Lấy certifications từ localStorage
+   * @returns {Array}
+   */
+  getStoredCertifications: () => {
+    const certificationsStr = localStorage.getItem("certifications");
+    return certificationsStr ? JSON.parse(certificationsStr) : [];
+  },
+
+  /**
    * Lấy token từ localStorage
    * @returns {string|null}
    */
   getToken: () => {
     return localStorage.getItem("authToken");
+  },
+
+  /**
+   * Cập nhật thông tin user cơ bản (fullName, phone, address, avatar)
+   * @param {Object} userData - Dữ liệu cần cập nhật
+   * @returns {Promise} Response from API
+   */
+  updateUserProfile: async (userData) => {
+    try {
+      const response = await apiClient.put("/auth/profile", userData);
+
+      // Cập nhật localStorage
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Cập nhật thất bại" };
+    }
+  },
+
+  /**
+   * Cập nhật thông tin interpreter profile
+   * @param {Object} profileData - Dữ liệu profile (languages, certifications, etc.)
+   * @returns {Promise} Response from API
+   */
+  updateInterpreterProfile: async (profileData) => {
+    try {
+      const response = await apiClient.put(
+        "/auth/interpreter-profile",
+        profileData
+      );
+
+      // Cập nhật localStorage
+      if (response.data.profile) {
+        localStorage.setItem("profile", JSON.stringify(response.data.profile));
+      }
+
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Cập nhật thất bại" };
+    }
+  },
+
+  /**
+   * Upload avatar
+   * @param {File} file - File ảnh avatar
+   * @returns {Promise} Response from API
+   */
+  uploadAvatar: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await apiClient.post("/auth/upload-avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Cập nhật localStorage
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Upload thất bại" };
+    }
   },
 };
 

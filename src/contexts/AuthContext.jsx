@@ -6,6 +6,8 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [languages, setLanguages] = useState([]);
+  const [certifications, setCertifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -15,11 +17,15 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedUser = authService.getStoredUser();
         const storedProfile = authService.getStoredProfile();
+        const storedLanguages = authService.getStoredLanguages();
+        const storedCertifications = authService.getStoredCertifications();
         const token = authService.getToken();
 
         if (token && storedUser) {
           setUser(storedUser);
           setProfile(storedProfile);
+          setLanguages(storedLanguages || []);
+          setCertifications(storedCertifications || []);
           setIsAuthenticated(true);
         }
       } catch (error) {
@@ -40,6 +46,8 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data.user);
       setProfile(data.profile);
+      setLanguages(data.languages || []);
+      setCertifications(data.certifications || []);
       setIsAuthenticated(true);
 
       return { success: true, data };
@@ -61,6 +69,8 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data.user);
       setProfile(data.profile);
+      setLanguages(data.languages || []);
+      setCertifications(data.certifications || []);
       setIsAuthenticated(true);
 
       return { success: true, data };
@@ -79,6 +89,8 @@ export const AuthProvider = ({ children }) => {
     authService.logout();
     setUser(null);
     setProfile(null);
+    setLanguages([]);
+    setCertifications([]);
     setIsAuthenticated(false);
   };
 
@@ -88,6 +100,8 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.getCurrentUser();
       setUser(data.user);
       setProfile(data.profile);
+      setLanguages(data.languages || []);
+      setCertifications(data.certifications || []);
       return { success: true, data };
     } catch (error) {
       return {
@@ -100,6 +114,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     profile,
+    languages,
+    certifications,
     loading,
     isAuthenticated,
     register,

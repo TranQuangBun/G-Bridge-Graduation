@@ -293,6 +293,185 @@
   margin-bottom: 48px;
 }
 
+/* Profile Section - Interpreter Only */
+.profileSection {
+  margin-bottom: 48px;
+}
+
+.profileCard {
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  border-radius: var(--radius-2xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.profileCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0ea5e9, #3b82f6, #6366f1);
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.profileAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 4px solid #e0f2fe;
+}
+
+.profileAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.profileName {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.profileEmail {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0 0 8px 0;
+}
+
+.profileRole {
+  display: inline-block;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #0369a1;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.profileStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profileStatItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: var(--radius-lg);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.profileStatItem:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
+.statItemIcon {
+  font-size: 1.5rem;
+}
+
+.statItemLabel {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.statItemValue {
+  font-size: 1rem;
+  color: #1e293b;
+  font-weight: 600;
+  flex: 1;
+}
+
+.progressBar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #3b82f6, #6366f1);
+  border-radius: 6px;
+  transition: width 0.6s ease;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+}
+
+.progressText {
+  font-size: 0.875rem;
+  color: #0369a1;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.completeProfileBtn {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.completeProfileBtn:hover {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.completeProfileBtn:active {
+  transform: translateY(0);
+}
+
 /* Modern Stats Grid */
 .statsGrid {
   display: grid;

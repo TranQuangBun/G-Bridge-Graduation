@@ -1,151 +1,14 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./ProfilePage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
-
-// Mock data for profile
-const MOCK_PROFILE = {
-  avatar:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-  name: "Nguyễn Minh Anh",
-  email: "minh.anh@email.com",
-  phone: "+84 912 345 678",
-  dateOfBirth: "1995-03-15",
-  gender: "female",
-  address: {
-    country: "Vietnam",
-    city: "Ho Chi Minh City",
-    district: "District 1",
-    street: "123 Nguyen Hue Street, Ward Ben Nghe",
-  },
-  kycStatus: "verified",
-  about:
-    "Experienced English-Vietnamese interpreter with 5+ years in medical and business interpretation. Passionate about bridging communication gaps and helping people connect across languages.",
-  languages: [
-    { name: "English", level: "Native", certified: true, approved: true },
-    { name: "Vietnamese", level: "Native", certified: true, approved: true },
-    {
-      name: "Japanese",
-      level: "Intermediate",
-      certified: false,
-      approved: false,
-    },
-  ],
-  certifications: [
-    {
-      name: "TOEIC",
-      score: "990",
-      year: "2023",
-      approved: true,
-      attachment: "toeic_certificate.pdf",
-    },
-    {
-      name: "IELTS",
-      score: "8.5",
-      year: "2022",
-      approved: true,
-      attachment: "ielts_certificate.jpg",
-    },
-    {
-      name: "Medical Interpreter Certification",
-      year: "2021",
-      approved: false,
-      attachment: null,
-    },
-    {
-      name: "JLPT N2",
-      score: "180",
-      year: "2024",
-      approved: "pending",
-      attachment: "jlpt_n2_certificate.pdf",
-    },
-  ],
-  experience: [
-    {
-      title: "Senior Medical Interpreter",
-      company: "MedLingua",
-      period: "2021 - Present",
-      description:
-        "Providing interpretation services for medical consultations and procedures",
-    },
-    {
-      title: "Conference Interpreter",
-      company: "GlobalSpeak",
-      period: "2019 - 2021",
-      description:
-        "Simultaneous interpretation for international business conferences",
-    },
-  ],
-  reviews: [
-    {
-      id: 1,
-      client: "Dr. Sarah Johnson",
-      company: "International Medical Center",
-      rating: 5,
-      comment:
-        "Excellent interpretation skills and very professional attitude.",
-      date: "2025-01-10",
-    },
-    {
-      id: 2,
-      client: "James Wilson",
-      company: "Global Tech Corp",
-      rating: 5,
-      comment: "Outstanding performance during our business negotiations.",
-      date: "2025-01-05",
-    },
-    {
-      id: 3,
-      client: "Maria Garcia",
-      company: "Healthcare Plus",
-      rating: 4,
-      comment:
-        "Very helpful and accurate translations during patient consultations.",
-      date: "2024-12-28",
-    },
-  ],
-  stats: {
-    totalJobs: 156,
-    rating: 4.9,
-    responseTime: "< 2 hours",
-    completionRate: "99%",
-  },
-};
-
-const MOCK_CVS = [
-  {
-    id: 1,
-    name: "Medical_Interpreter_CV_2025.pdf",
-    size: "2.4 MB",
-    uploadDate: "2025-01-10",
-    type: "primary",
-  },
-  {
-    id: 2,
-    name: "Business_Interpreter_Resume.pdf",
-    size: "1.8 MB",
-    uploadDate: "2025-01-08",
-    type: "secondary",
-  },
-  {
-    id: 3,
-    name: "Portfolio_Translation_Works.pdf",
-    size: "3.2 MB",
-    uploadDate: "2025-01-05",
-    type: "portfolio",
-  },
-];
-
-const COUNTRIES = ["Vietnam", "United States", "Japan", "Korea", "Singapore"];
-const CITIES = {
-  Vietnam: ["Ho Chi Minh City", "Hanoi", "Da Nang", "Can Tho"],
-  "United States": ["New York", "Los Angeles", "Chicago", "Houston"],
-  Japan: ["Tokyo", "Osaka", "Kyoto", "Yokohama"],
-  Korea: ["Seoul", "Busan", "Incheon", "Daegu"],
-  Singapore: ["Singapore"],
-};
+import { useAuth } from "../../contexts/AuthContext";
+import authService from "../../services/authService";
+import languageService from "../../services/languageService";
+import certificationService from "../../services/certificationService";
+import { toast } from "react-toastify";
 
 const SIDEBAR_MENU = [
   { id: "overview", icon: "📊", labelKey: "overview", active: false },
@@ -156,650 +19,490 @@ const SIDEBAR_MENU = [
   { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
 ];
 
-// About Edit Form Component
-const AboutEditForm = ({ initialValue, onChange, t }) => {
-  return (
-    <textarea
-      value={initialValue}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={t("profile.about.placeholder")}
-      className={styles.aboutTextarea}
-      rows={4}
-    />
-  );
+// Language to Certification mapping
+const LANGUAGE_CERTIFICATIONS = {
+  English: [
+    { name: "TOEIC", organization: "ETS" },
+    { name: "IELTS", organization: "British Council / IDP" },
+    { name: "TOEFL", organization: "ETS" },
+    { name: "Cambridge English", organization: "Cambridge Assessment" },
+    { name: "PTE Academic", organization: "Pearson" },
+  ],
+  Japanese: [
+    { name: "JLPT N5", organization: "JEES" },
+    { name: "JLPT N4", organization: "JEES" },
+    { name: "JLPT N3", organization: "JEES" },
+    { name: "JLPT N2", organization: "JEES" },
+    { name: "JLPT N1", organization: "JEES" },
+    { name: "J.TEST", organization: "J.TEST Foundation" },
+    { name: "NAT-TEST", organization: "Senmon Kyouiku" },
+  ],
+  Korean: [
+    { name: "TOPIK I", organization: "NIIED" },
+    { name: "TOPIK II", organization: "NIIED" },
+    { name: "KLPT", organization: "Korea Language Society" },
+  ],
+  Chinese: [
+    { name: "HSK 1", organization: "Hanban" },
+    { name: "HSK 2", organization: "Hanban" },
+    { name: "HSK 3", organization: "Hanban" },
+    { name: "HSK 4", organization: "Hanban" },
+    { name: "HSK 5", organization: "Hanban" },
+    { name: "HSK 6", organization: "Hanban" },
+    { name: "HSKK", organization: "Hanban" },
+  ],
+  French: [
+    { name: "DELF A1", organization: "CIEP" },
+    { name: "DELF A2", organization: "CIEP" },
+    { name: "DELF B1", organization: "CIEP" },
+    { name: "DELF B2", organization: "CIEP" },
+    { name: "DALF C1", organization: "CIEP" },
+    { name: "DALF C2", organization: "CIEP" },
+    { name: "TCF", organization: "CIEP" },
+  ],
+  German: [
+    { name: "Goethe-Zertifikat A1", organization: "Goethe-Institut" },
+    { name: "Goethe-Zertifikat A2", organization: "Goethe-Institut" },
+    { name: "Goethe-Zertifikat B1", organization: "Goethe-Institut" },
+    { name: "Goethe-Zertifikat B2", organization: "Goethe-Institut" },
+    { name: "Goethe-Zertifikat C1", organization: "Goethe-Institut" },
+    { name: "Goethe-Zertifikat C2", organization: "Goethe-Institut" },
+    { name: "TestDaF", organization: "TestDaF Institute" },
+  ],
+  Spanish: [
+    { name: "DELE A1", organization: "Instituto Cervantes" },
+    { name: "DELE A2", organization: "Instituto Cervantes" },
+    { name: "DELE B1", organization: "Instituto Cervantes" },
+    { name: "DELE B2", organization: "Instituto Cervantes" },
+    { name: "DELE C1", organization: "Instituto Cervantes" },
+    { name: "DELE C2", organization: "Instituto Cervantes" },
+    { name: "SIELE", organization: "Instituto Cervantes" },
+  ],
+  Vietnamese: [
+    {
+      name: "Vietnamese Proficiency Test",
+      organization: "Vietnam National University",
+    },
+  ],
+  Thai: [
+    { name: "Thai Competency Test", organization: "Chulalongkorn University" },
+  ],
+  Indonesian: [{ name: "UKBI", organization: "Badan Pengembangan Bahasa" }],
+  Russian: [{ name: "TORFL", organization: "Pushkin Institute" }],
+  Arabic: [{ name: "ALPT", organization: "Arab Academy" }],
+  Italian: [
+    { name: "CELI", organization: "University of Perugia" },
+    { name: "CILS", organization: "University of Siena" },
+  ],
+  Portuguese: [
+    { name: "CELPE-Bras", organization: "Brazilian Ministry of Education" },
+  ],
+  Dutch: [
+    { name: "NT2 Program I", organization: "DUO" },
+    { name: "NT2 Program II", organization: "DUO" },
+  ],
+  Swedish: [{ name: "TISUS", organization: "Stockholm University" }],
+  Norwegian: [{ name: "Norwegian Test", organization: "Folkeuniversitetet" }],
+  Danish: [{ name: "Danish Test", organization: "Danish Ministry" }],
+  Hindi: [
+    { name: "Hindi Proficiency Test", organization: "Kendriya Hindi Sansthan" },
+  ],
+  Urdu: [{ name: "Urdu Proficiency Test", organization: "National Council" }],
+  Bengali: [{ name: "Bengali Language Test", organization: "Bangla Academy" }],
+  Turkish: [{ name: "TYS", organization: "Ankara University" }],
+  Polish: [
+    { name: "Polish Language Certificate", organization: "Polish Ministry" },
+  ],
+  Greek: [
+    { name: "Greek Language Certificate", organization: "Greek Ministry" },
+  ],
 };
 
-// Language Modal Component
-const LanguageModal = ({
-  isOpen,
-  onClose,
-  languages,
-  certifications,
-  onSave,
-  t,
-}) => {
-  const [tempLanguages, setTempLanguages] = useState(languages);
-  const [tempCertifications, setTempCertifications] = useState(certifications);
-  const [newLanguage, setNewLanguage] = useState({
-    name: "",
-    level: "",
-    certified: false,
+const ProfilePage = () => {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const {
+    user,
+    profile: userProfile,
+    languages,
+    certifications,
+    isAuthenticated,
+    loading: authLoading,
+    refreshUser,
+  } = useAuth();
+
+  // States for editing
+  const [activeMenu, setActiveMenu] = useState("profile");
+  const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
+  const [isEditingProfessional, setIsEditingProfessional] = useState(false);
+  const [isAddingLanguage, setIsAddingLanguage] = useState(false);
+  const [isAddingCertification, setIsAddingCertification] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Form states
+  const [basicInfoForm, setBasicInfoForm] = useState({
+    fullName: "",
+    phone: "",
+    address: "",
+    avatar: "",
   });
-  const [newCertification, setNewCertification] = useState({
+
+  const [professionalForm, setProfessionalForm] = useState({
+    hourlyRate: "",
+    experience: "",
+    specializations: [],
+    portfolio: "",
+  });
+
+  const [languageForm, setLanguageForm] = useState({
+    name: "",
+    level: "Beginner",
+  });
+
+  const [certificationForm, setCertificationForm] = useState({
     name: "",
     score: "",
     year: "",
-    attachment: null,
+    organization: "",
+    certificationImage: null,
   });
 
-  const handleAddLanguage = () => {
-    if (newLanguage.name && newLanguage.level) {
-      setTempLanguages([
-        ...tempLanguages,
-        {
-          ...newLanguage,
-          approved: false, // New languages need approval
-        },
-      ]);
-      setNewLanguage({ name: "", level: "", certified: false });
+  const [suggestedCertifications, setSuggestedCertifications] = useState([]);
+  const [showSuggestedCerts, setShowSuggestedCerts] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    // Đợi cho loading xong trước khi redirect
+    if (!authLoading && !isAuthenticated) {
+      navigate(ROUTES.LOGIN);
     }
-  };
+  }, [isAuthenticated, authLoading, navigate]);
 
-  const handleAddCertification = () => {
-    if (newCertification.name && newCertification.year) {
-      setTempCertifications([
-        ...tempCertifications,
-        {
-          ...newCertification,
-          approved: "pending", // New certifications are pending approval
-        },
-      ]);
-      setNewCertification({ name: "", score: "", year: "", attachment: null });
-    }
-  };
-
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "application/pdf",
-      ];
-
-      if (!allowedTypes.includes(file.type)) {
-        alert(t("profile.fileUpload.invalidType"));
-        return;
-      }
-
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert(t("profile.fileUpload.sizeLimit"));
-        return;
-      }
-
-      // For demo purposes, we'll store the file name
-      // In real app, you would upload to server and get URL
-      setNewCertification((prev) => ({
-        ...prev,
-        attachment: file.name,
-      }));
-    }
-  };
-
-  const handleRemoveLanguage = (index) => {
-    setTempLanguages(tempLanguages.filter((_, i) => i !== index));
-  };
-
-  const handleRemoveCertification = (index) => {
-    setTempCertifications(tempCertifications.filter((_, i) => i !== index));
-  };
-
-  const handleSave = () => {
-    onSave(tempLanguages, tempCertifications);
-  };
-
-  const getStatusColor = (approved) => {
-    if (approved === true) return styles.statusApproved;
-    if (approved === "pending") return styles.statusPending;
-    return styles.statusRejected;
-  };
-
-  const getStatusText = (approved) => {
-    if (approved === true) return `✓ ${t("profile.status.approved")}`;
-    if (approved === "pending") return `⏳ ${t("profile.status.pending")}`;
-    return `✗ ${t("profile.status.rejected")}`;
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <div className={styles.modalHeader}>
-          <h3>{t("profile.languages.title")}</h3>
-          <button onClick={onClose} className={styles.closeBtn}>
-            ×
-          </button>
-        </div>
-
-        <div className={styles.modalContent}>
-          {/* Languages Section */}
-          <div className={styles.modalSection}>
-            <h4>{t("profile.languages.languages")}</h4>
-            <div className={styles.itemsList}>
-              {tempLanguages.map((lang, index) => (
-                <div key={index} className={styles.listItem}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>{lang.name}</span>
-                    <span className={styles.itemLevel}>({lang.level})</span>
-                    <span className={getStatusColor(lang.approved)}>
-                      {getStatusText(lang.approved)}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveLanguage(index)}
-                    className={styles.removeBtn}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Add New Language */}
-            <div className={styles.addForm}>
-              <input
-                type="text"
-                placeholder={t("profile.modal.language")}
-                value={newLanguage.name}
-                onChange={(e) =>
-                  setNewLanguage({ ...newLanguage, name: e.target.value })
-                }
-                className={styles.input}
-              />
-              <select
-                value={newLanguage.level}
-                onChange={(e) =>
-                  setNewLanguage({ ...newLanguage, level: e.target.value })
-                }
-                className={styles.select}
-              >
-                <option value="">{t("profile.modal.selectLevel")}</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-                <option value="Native">Native</option>
-              </select>
-              <button onClick={handleAddLanguage} className={styles.addBtn}>
-                {t("profile.modal.add")}
-              </button>
-            </div>
-          </div>
-
-          {/* Certifications Section */}
-          <div className={styles.modalSection}>
-            <h4>{t("profile.languages.certifications")}</h4>
-            <div className={styles.itemsList}>
-              {tempCertifications.map((cert, index) => (
-                <div key={index} className={styles.listItem}>
-                  <div className={styles.itemInfo}>
-                    <span className={styles.itemName}>{cert.name}</span>
-                    {cert.score && (
-                      <span className={styles.itemScore}>{cert.score}</span>
-                    )}
-                    <span className={styles.itemYear}>({cert.year})</span>
-                    {cert.attachment && (
-                      <span className={styles.attachmentInfo}>
-                        📎 {cert.attachment}
-                      </span>
-                    )}
-                    <span className={getStatusColor(cert.approved)}>
-                      {getStatusText(cert.approved)}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveCertification(index)}
-                    className={styles.removeBtn}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Add New Certification */}
-            <div className={styles.addForm}>
-              <input
-                type="text"
-                placeholder={t("profile.modal.certName")}
-                value={newCertification.name}
-                onChange={(e) =>
-                  setNewCertification({
-                    ...newCertification,
-                    name: e.target.value,
-                  })
-                }
-                className={styles.input}
-              />
-              <input
-                type="text"
-                placeholder={t("profile.modal.score")}
-                value={newCertification.score}
-                onChange={(e) =>
-                  setNewCertification({
-                    ...newCertification,
-                    score: e.target.value,
-                  })
-                }
-                className={styles.input}
-              />
-              <input
-                type="number"
-                placeholder={t("profile.modal.year")}
-                value={newCertification.year}
-                onChange={(e) =>
-                  setNewCertification({
-                    ...newCertification,
-                    year: e.target.value,
-                  })
-                }
-                className={styles.input}
-              />
-
-              {/* File Upload for Certification */}
-              <div className={styles.fileUploadContainer}>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleFileUpload}
-                  className={styles.fileInput}
-                  id="cert-file-upload"
-                />
-                <label htmlFor="cert-file-upload" className={styles.fileLabel}>
-                  📎{" "}
-                  {newCertification.attachment
-                    ? newCertification.attachment
-                    : t("profile.fileUpload.uploadLabel")}
-                </label>
-              </div>
-
-              <button
-                onClick={handleAddCertification}
-                className={styles.addBtn}
-              >
-                {t("profile.modal.add")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.modalFooter}>
-          <button onClick={onClose} className={styles.cancelBtn}>
-            {t("profile.modal.cancel")}
-          </button>
-          <button onClick={handleSave} className={styles.saveBtn}>
-            {t("profile.modal.saveChanges")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Experience Modal Component
-const ExperienceModal = ({ isOpen, onClose, experience, onSave, t }) => {
-  const [tempExperience, setTempExperience] = useState(experience);
-  const [newExperience, setNewExperience] = useState({
-    title: "",
-    company: "",
-    period: "",
-    description: "",
-  });
-
-  const handleAddExperience = () => {
-    if (newExperience.title && newExperience.company && newExperience.period) {
-      setTempExperience([...tempExperience, { ...newExperience }]);
-      setNewExperience({
-        title: "",
-        company: "",
-        period: "",
-        description: "",
+  // Initialize forms when user data loads
+  useEffect(() => {
+    if (user) {
+      setBasicInfoForm({
+        fullName: user.fullName || "",
+        phone: user.phone || "",
+        address: user.address || "",
+        avatar: user.avatar || "",
       });
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (userProfile) {
+      setProfessionalForm({
+        hourlyRate: userProfile.hourlyRate || "",
+        experience: userProfile.experience || "",
+        specializations: userProfile.specializations || [],
+        portfolio: userProfile.portfolio || "",
+      });
+    }
+  }, [userProfile]);
+
+  // Calculate profile completeness
+  const calculateProfileCompleteness = () => {
+    if (!userProfile) return 0;
+    return userProfile.profileCompleteness || 0;
   };
 
-  const handleRemoveExperience = (index) => {
-    setTempExperience(tempExperience.filter((_, i) => i !== index));
+  const profileCompleteness = calculateProfileCompleteness();
+
+  // Get missing fields for completeness alert
+  const getMissingFields = () => {
+    const missing = [];
+    if (!user?.phone) missing.push("Phone Number");
+    if (!user?.address) missing.push("Address");
+    if (!userProfile?.languages?.length) missing.push("Languages");
+    if (!userProfile?.certifications?.length) missing.push("Certifications");
+    if (!userProfile?.specializations?.length) missing.push("Specializations");
+    if (!userProfile?.experience) missing.push("Years of Experience");
+    if (!userProfile?.hourlyRate) missing.push("Hourly Rate");
+    if (!userProfile?.portfolio) missing.push("Portfolio/Bio");
+    return missing;
   };
 
-  const handleSave = () => {
-    onSave(tempExperience);
-  };
+  const missingFields = getMissingFields();
 
-  if (!isOpen) return null;
+  // Handle avatar upload
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <div className={styles.modalHeader}>
-          <h3>{t("profile.experience.title")}</h3>
-          <button onClick={onClose} className={styles.closeBtn}>
-            ×
-          </button>
-        </div>
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
 
-        <div className={styles.modalContent}>
-          {/* Experience List */}
-          <div className={styles.modalSection}>
-            <h4>{t("profile.modal.currentExperience")}</h4>
-            <div className={styles.itemsList}>
-              {tempExperience.map((exp, index) => (
-                <div key={index} className={styles.experienceCard}>
-                  <div className={styles.expCardHeader}>
-                    <div className={styles.expInfo}>
-                      <h5 className={styles.expTitle}>{exp.title}</h5>
-                      <p className={styles.expCompany}>{exp.company}</p>
-                      <span className={styles.expPeriod}>{exp.period}</span>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveExperience(index)}
-                      className={styles.removeBtn}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  {exp.description && (
-                    <p className={styles.expDescription}>{exp.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
 
-            {/* Add New Experience */}
-            <div className={styles.addExperienceForm}>
-              <h4>{t("profile.modal.addNewExperience")}</h4>
-              <div className={styles.formGrid}>
-                <input
-                  type="text"
-                  placeholder={t("profile.modal.jobTitle")}
-                  value={newExperience.title}
-                  onChange={(e) =>
-                    setNewExperience({
-                      ...newExperience,
-                      title: e.target.value,
-                    })
-                  }
-                  className={styles.input}
-                />
-                <input
-                  type="text"
-                  placeholder={t("profile.modal.company")}
-                  value={newExperience.company}
-                  onChange={(e) =>
-                    setNewExperience({
-                      ...newExperience,
-                      company: e.target.value,
-                    })
-                  }
-                  className={styles.input}
-                />
-                <input
-                  type="text"
-                  placeholder={t("profile.modal.period")}
-                  value={newExperience.period}
-                  onChange={(e) =>
-                    setNewExperience({
-                      ...newExperience,
-                      period: e.target.value,
-                    })
-                  }
-                  className={styles.input}
-                />
-                <textarea
-                  placeholder={t("profile.modal.jobDescription")}
-                  value={newExperience.description}
-                  onChange={(e) =>
-                    setNewExperience({
-                      ...newExperience,
-                      description: e.target.value,
-                    })
-                  }
-                  className={styles.textarea}
-                  rows={3}
-                />
-              </div>
-              <button onClick={handleAddExperience} className={styles.addBtn}>
-                {t("profile.modal.addExperience")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.modalFooter}>
-          <button onClick={onClose} className={styles.cancelBtn}>
-            {t("profile.modal.cancel")}
-          </button>
-          <button onClick={handleSave} className={styles.saveBtn}>
-            {t("profile.modal.saveChanges")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-function ProfilePage() {
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-  const cvFileInputRef = useRef(null);
-  const [profile, setProfile] = useState(MOCK_PROFILE);
-  const [cvs, setCvs] = useState(MOCK_CVS);
-  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [isEditingAbout, setIsEditingAbout] = useState(false);
-  const [aboutText, setAboutText] = useState(MOCK_PROFILE.about);
-  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
-  const [isExperienceModalOpen, setIsExperienceModalOpen] = useState(false);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
-  const [activeMenu, setActiveMenu] = useState("profile");
-
-  const handleEditPersonal = () => {
-    setIsEditingPersonal(!isEditingPersonal);
-  };
-
-  const handleEditAddress = () => {
-    setIsEditingAddress(!isEditingAddress);
-  };
-
-  const handleEditAbout = () => {
-    if (isEditingAbout) {
-      // Save the changes
-      setProfile((prev) => ({ ...prev, about: aboutText }));
-      setIsEditingAbout(false);
-    } else {
-      // Start editing - initialize with current profile about
-      setAboutText(profile.about);
-      setIsEditingAbout(true);
+    setLoading(true);
+    try {
+      await authService.uploadAvatar(file);
+      await refreshUser();
+      toast.success("Avatar updated successfully!");
+    } catch (error) {
+      toast.error(error.message || "Failed to upload avatar");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAboutTextChange = (newText) => {
-    setAboutText(newText);
+  // Handle click avatar to trigger file input
+  const handleAvatarClick = () => {
+    document.getElementById("avatar-upload-input").click();
   };
 
-  const handleEditLanguages = () => {
-    setIsLanguageModalOpen(true);
-  };
+  // Handle update basic info
+  const handleUpdateBasicInfo = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  const handleCloseLanguageModal = () => {
-    setIsLanguageModalOpen(false);
-  };
-
-  const handleUpdateLanguagesCerts = (newLanguages, newCertifications) => {
-    setProfile((prev) => ({
-      ...prev,
-      languages: newLanguages,
-      certifications: newCertifications,
-    }));
-    setIsLanguageModalOpen(false);
-  };
-
-  const handleEditExperience = () => {
-    setIsExperienceModalOpen(true);
-  };
-
-  const handleCloseExperienceModal = () => {
-    setIsExperienceModalOpen(false);
-  };
-
-  const handleUpdateExperience = (newExperience) => {
-    setProfile((prev) => ({
-      ...prev,
-      experience: newExperience,
-    }));
-    setIsExperienceModalOpen(false);
-  };
-
-  const handleAvatarUpload = () => {
-    console.log("Avatar upload button clicked!");
-    // Trigger file input click using ref
-    if (fileInputRef.current) {
-      console.log("File input ref found, triggering click");
-      fileInputRef.current.click();
-    } else {
-      console.error("File input ref not found!");
+    try {
+      await authService.updateUserProfile(basicInfoForm);
+      await refreshUser();
+      setIsEditingBasicInfo(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAvatarChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
-      if (!allowedTypes.includes(file.type)) {
-        alert(t("profile.avatar.invalidFileType"));
-        return;
-      }
+  // Handle update professional info
+  const handleUpdateProfessional = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-      // Validate file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (file.size > maxSize) {
-        alert(t("profile.avatar.fileSizeError"));
-        return;
-      }
+    try {
+      const dataToUpdate = {
+        hourlyRate: professionalForm.hourlyRate
+          ? parseFloat(professionalForm.hourlyRate)
+          : null,
+        experience: professionalForm.experience
+          ? parseInt(professionalForm.experience)
+          : null,
+        specializations: professionalForm.specializations,
+        portfolio: professionalForm.portfolio,
+      };
 
-      // Create file URL for preview
-      const fileURL = URL.createObjectURL(file);
-
-      // Update profile avatar
-      setProfile((prev) => ({
-        ...prev,
-        avatar: fileURL,
-      }));
-
-      // Here you would typically upload the file to your server
-      console.log("Uploading avatar:", file);
-
-      // Show success message
-      alert(t("profile.avatar.uploadSuccess"));
+      await authService.updateInterpreterProfile(dataToUpdate);
+      await refreshUser();
+      setIsEditingProfessional(false);
+      toast.success("Professional info updated successfully!");
+    } catch (error) {
+      toast.error(error.message || "Failed to update professional info");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteCV = (cvId) => {
-    setCvs(cvs.filter((cv) => cv.id !== cvId));
-  };
+  // Handle add language
+  const handleAddLanguage = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  const handleAddCV = () => {
-    cvFileInputRef.current.click();
-  };
+    try {
+      // Map form data to match backend schema
+      const languageData = {
+        name: languageForm.name,
+        proficiencyLevel: languageForm.level || "Beginner",
+        canSpeak: true, // Default values, can be expanded in the future
+        canWrite: true,
+        canRead: true,
+        yearsOfExperience: 0,
+      };
 
-  const handleCVUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Validate file type (only PDF)
-      if (file.type === "application/pdf") {
-        const newCV = {
-          id: Date.now(),
-          name: file.name.replace(".pdf", ""),
-          type: "new",
-          uploadDate: new Date().toLocaleDateString(),
-          file: file,
-        };
-        setCvs([...cvs, newCV]);
+      await languageService.addLanguage(languageData);
+      await refreshUser();
+      setIsAddingLanguage(false);
+      setLanguageForm({ name: "", level: "Beginner" });
 
-        // Reset input
-        event.target.value = "";
+      // Show suggested certifications based on added language
+      const suggestions = LANGUAGE_CERTIFICATIONS[languageForm.name] || [];
+      if (suggestions.length > 0) {
+        setSuggestedCertifications(suggestions);
+        setShowSuggestedCerts(true);
+        toast.success(
+          t("profile.languages.success.added") +
+            ` ${t("profile.certifications.suggestedFound").replace(
+              "{count}",
+              suggestions.length
+            )}`
+        );
       } else {
-        alert(t("profile.cv.uploadError.invalidType"));
+        toast.success(t("profile.languages.success.added"));
       }
+    } catch (error) {
+      toast.error(error.message || t("profile.languages.errors.addFailed"));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateProfile = () => {
-    // Logic to update profile
-    console.log("Update profile");
+  // Handle quick add suggested certification
+  const handleQuickAddCertification = (suggestion) => {
+    setCertificationForm({
+      name: suggestion.name,
+      organization: suggestion.organization,
+      score: "",
+      year: "",
+      certificationImage: null,
+    });
+    setIsAddingCertification(true);
+    setShowSuggestedCerts(false);
   };
 
-  const nextReview = () => {
-    setCurrentReviewIndex((prev) =>
-      prev === profile.reviews.length - 1 ? 0 : prev + 1
-    );
+  // Handle dismiss suggestions
+  const handleDismissSuggestions = () => {
+    setShowSuggestedCerts(false);
+    setSuggestedCertifications([]);
   };
 
-  const prevReview = () => {
-    setCurrentReviewIndex((prev) =>
-      prev === 0 ? profile.reviews.length - 1 : prev - 1
-    );
-  };
+  // Handle remove language
+  const handleRemoveLanguage = async (index) => {
+    setLoading(true);
 
-  const renderStars = (rating) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span
-        key={i}
-        className={`${styles.star} ${i < rating ? styles.starFilled : ""}`}
-      >
-        ★
-      </span>
-    ));
-  };
-
-  const getKYCStatusInfo = (status) => {
-    switch (status) {
-      case "verified":
-        return {
-          text: t("profile.kyc.verified"),
-          class: styles.kycVerified,
-          icon: "✓",
-        };
-      case "pending":
-        return {
-          text: t("profile.kyc.pending"),
-          class: styles.kycPending,
-          icon: "⏳",
-        };
-      case "rejected":
-        return {
-          text: t("profile.kyc.rejected"),
-          class: styles.kycRejected,
-          icon: "✗",
-        };
-      default:
-        return {
-          text: t("profile.kyc.notSubmitted"),
-          class: styles.kycNotSubmitted,
-          icon: "!",
-        };
+    try {
+      const languageToRemove = languages[index];
+      if (languageToRemove?.id) {
+        await languageService.deleteLanguage(languageToRemove.id);
+        await refreshUser();
+        toast.success(t("profile.languages.success.removed"));
+      } else {
+        toast.error(t("profile.languages.errors.cannotRemove"));
+      }
+    } catch (error) {
+      toast.error(error.message || t("profile.languages.errors.removeFailed"));
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Handle add certification
+  const handleAddCertification = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Validate image upload is required
+      if (!certificationForm.certificationImage) {
+        toast.error(t("profile.certifications.errors.uploadRequired"));
+        setLoading(false);
+        return;
+      }
+
+      // Map form data to match backend schema
+      const certificationData = {
+        name: certificationForm.name,
+        score: certificationForm.score || null,
+        issueDate: certificationForm.year
+          ? `${certificationForm.year}-01-01`
+          : null,
+        issuingOrganization: certificationForm.organization || "",
+      };
+
+      // Step 1: Create certification
+      const result = await certificationService.addCertification(
+        certificationData
+      );
+
+      // Step 2: Upload image (this will change status to "pending")
+      if (result.certification && result.certification.id) {
+        await certificationService.uploadCertificationImage(
+          result.certification.id,
+          certificationForm.certificationImage
+        );
+      }
+
+      await refreshUser();
+      setIsAddingCertification(false);
+      setCertificationForm({
+        name: "",
+        score: "",
+        year: "",
+        organization: "",
+        certificationImage: null,
+      });
+      toast.success(t("profile.certifications.success.added"));
+    } catch (error) {
+      toast.error(
+        error.message || t("profile.certifications.errors.addFailed")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle remove certification
+  const handleRemoveCertification = async (index) => {
+    setLoading(true);
+
+    try {
+      const certificationToRemove = certifications[index];
+      if (certificationToRemove?.id) {
+        await certificationService.deleteCertification(
+          certificationToRemove.id
+        );
+        await refreshUser();
+        toast.success(t("profile.certifications.success.removed"));
+      } else {
+        toast.error(t("profile.certifications.errors.cannotRemove"));
+      }
+    } catch (error) {
+      toast.error(
+        error.message || t("profile.certifications.errors.removeFailed")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle add specialization
+  const handleAddSpecialization = (spec) => {
+    if (spec && !professionalForm.specializations.includes(spec)) {
+      setProfessionalForm((prev) => ({
+        ...prev,
+        specializations: [...prev.specializations, spec],
+      }));
+    }
+  };
+
+  // Handle remove specialization
+  const handleRemoveSpecialization = (index) => {
+    setProfessionalForm((prev) => ({
+      ...prev,
+      specializations: prev.specializations.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className={styles.loading}>Loading...</div>
+      </MainLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className={styles.loading}>Loading...</div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
-      <div className={styles.profileRoot}>
+      <div className={styles.profilePage}>
         {/* Sidebar */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
@@ -822,6 +525,8 @@ function ProfilePage() {
                     navigate(ROUTES.SAVED_JOBS);
                   } else if (item.id === "alerts") {
                     navigate(ROUTES.JOB_ALERTS);
+                  } else if (item.id === "profile") {
+                    navigate(ROUTES.PROFILE);
                   }
                   // Add other navigation logic for other menu items when implemented
                 }}
@@ -836,642 +541,816 @@ function ProfilePage() {
         </aside>
 
         {/* Main Content */}
-        <main className={styles.mainContent}>
-          {/* Profile Section */}
-          <div className={styles.profileSection}>
-            <div className={styles.profileGrid}>
-              {/* Left Column */}
-              <div className={styles.leftColumn}>
-                {/* Avatar Card */}
-                <div className={styles.card}>
-                  <div className={styles.avatarSection}>
-                    <div className={styles.avatarContainer}>
-                      <img
-                        src={profile.avatar}
-                        alt="Profile"
-                        className={styles.avatar}
-                      />
-                      <button
-                        className={styles.avatarEditBtn}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleAvatarUpload();
-                        }}
-                        title={t("profile.avatar.changeAvatar")}
-                        type="button"
-                      >
-                        <span className={styles.cameraIcon}>📷</span>
-                      </button>
-                      {/* Hidden file input */}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png"
-                        onChange={handleAvatarChange}
-                        style={{ display: "none" }}
-                      />
-                    </div>
-                    <div className={styles.avatarInfo}>
-                      <h2 className={styles.userName}>{profile.name}</h2>
-                      <p className={styles.userEmail}>{profile.email}</p>
-                    </div>
-                  </div>
+        <div className={styles.mainContent}>
+          {/* Profile Completeness Alert */}
+          {profileCompleteness < 100 && (
+            <div className={styles.completenessAlert}>
+              <div className={styles.alertHeader}>
+                <div className={styles.alertIcon}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
                 </div>
-
-                {/* Personal Information Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.personalInfo.title")}
-                    </h3>
-                    <button
-                      className={styles.editBtn}
-                      onClick={handleEditPersonal}
-                    >
-                      {isEditingPersonal
-                        ? t("profile.save")
-                        : t("profile.edit")}
-                    </button>
-                  </div>
-                  <div className={styles.cardContent}>
-                    {isEditingPersonal ? (
-                      <div className={styles.editForm}>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.personalInfo.fullName")}</label>
-                          <input
-                            type="text"
-                            value={profile.name}
-                            onChange={(e) =>
-                              setProfile({ ...profile, name: e.target.value })
-                            }
-                            className={styles.input}
-                          />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.personalInfo.phone")}</label>
-                          <input
-                            type="tel"
-                            value={profile.phone}
-                            onChange={(e) =>
-                              setProfile({ ...profile, phone: e.target.value })
-                            }
-                            className={styles.input}
-                          />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.personalInfo.dateOfBirth")}</label>
-                          <input
-                            type="date"
-                            value={profile.dateOfBirth}
-                            onChange={(e) =>
-                              setProfile({
-                                ...profile,
-                                dateOfBirth: e.target.value,
-                              })
-                            }
-                            className={styles.input}
-                          />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.personalInfo.gender")}</label>
-                          <select
-                            value={profile.gender}
-                            onChange={(e) =>
-                              setProfile({ ...profile, gender: e.target.value })
-                            }
-                            className={styles.select}
-                          >
-                            <option value="male">
-                              {t("profile.personalInfo.male")}
-                            </option>
-                            <option value="female">
-                              {t("profile.personalInfo.female")}
-                            </option>
-                            <option value="other">
-                              {t("profile.personalInfo.other")}
-                            </option>
-                          </select>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={styles.infoDisplay}>
-                        <div className={styles.infoItem}>
-                          <span className={styles.infoLabel}>
-                            {t("profile.personalInfo.phone")}:
-                          </span>
-                          <span className={styles.infoValue}>
-                            {profile.phone}
-                          </span>
-                        </div>
-                        <div className={styles.infoItem}>
-                          <span className={styles.infoLabel}>
-                            {t("profile.personalInfo.dateOfBirth")}:
-                          </span>
-                          <span className={styles.infoValue}>
-                            {new Date(profile.dateOfBirth).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className={styles.infoItem}>
-                          <span className={styles.infoLabel}>
-                            {t("profile.personalInfo.gender")}:
-                          </span>
-                          <span className={styles.infoValue}>
-                            {t(`profile.personalInfo.${profile.gender}`)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Address Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.address.title")}
-                    </h3>
-                    <button
-                      className={styles.editBtn}
-                      onClick={handleEditAddress}
-                    >
-                      {isEditingAddress ? t("profile.save") : t("profile.edit")}
-                    </button>
-                  </div>
-                  <div className={styles.cardContent}>
-                    {isEditingAddress ? (
-                      <div className={styles.editForm}>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.address.country")}</label>
-                          <select
-                            value={profile.address.country}
-                            onChange={(e) =>
-                              setProfile({
-                                ...profile,
-                                address: {
-                                  ...profile.address,
-                                  country: e.target.value,
-                                  city: "",
-                                },
-                              })
-                            }
-                            className={styles.select}
-                          >
-                            {COUNTRIES.map((country) => (
-                              <option key={country} value={country}>
-                                {country}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.address.city")}</label>
-                          <select
-                            value={profile.address.city}
-                            onChange={(e) =>
-                              setProfile({
-                                ...profile,
-                                address: {
-                                  ...profile.address,
-                                  city: e.target.value,
-                                },
-                              })
-                            }
-                            className={styles.select}
-                          >
-                            {CITIES[profile.address.country]?.map((city) => (
-                              <option key={city} value={city}>
-                                {city}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.address.street")}</label>
-                          <textarea
-                            value={profile.address.street}
-                            onChange={(e) =>
-                              setProfile({
-                                ...profile,
-                                address: {
-                                  ...profile.address,
-                                  street: e.target.value,
-                                },
-                              })
-                            }
-                            className={styles.textarea}
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={styles.addressDisplay}>
-                        <p>{profile.address.street}</p>
-                        <p>
-                          {profile.address.district}, {profile.address.city}
-                        </p>
-                        <p>{profile.address.country}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* KYC Status Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.kyc.title")}
-                    </h3>
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div
-                      className={`${styles.kycStatus} ${
-                        getKYCStatusInfo(profile.kycStatus).class
-                      }`}
-                    >
-                      <span className={styles.kycIcon}>
-                        {getKYCStatusInfo(profile.kycStatus).icon}
-                      </span>
-                      <span className={styles.kycText}>
-                        {getKYCStatusInfo(profile.kycStatus).text}
-                      </span>
-                    </div>
-                    {profile.kycStatus === "verified" && (
-                      <p className={styles.kycDate}>
-                        {t("profile.kyc.verifiedOn")}: January 15, 2025
-                      </p>
-                    )}
-                  </div>
+                <div className={styles.alertContent}>
+                  <h3>{t("profile.completeness.title")}</h3>
+                  <p>{t("profile.completeness.description")}</p>
                 </div>
               </div>
 
-              {/* Right Column */}
-              <div className={styles.rightColumn}>
-                {/* About Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.about.title")}
-                    </h3>
-                    <button
-                      className={styles.editBtn}
-                      onClick={handleEditAbout}
-                    >
-                      {isEditingAbout ? t("profile.save") : t("profile.edit")}
-                    </button>
+              <div className={styles.progressBarContainer}>
+                <div className={styles.progressBarLabel}>
+                  <span>{t("profile.completeness.label")}</span>
+                  <span>{profileCompleteness}%</span>
+                </div>
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${profileCompleteness}%` }}
+                  />
+                </div>
+              </div>
+
+              {missingFields.length > 0 && (
+                <div className={styles.missingFieldsSection}>
+                  <h4>{t("profile.completeness.missingTitle")}</h4>
+                  <div className={styles.missingFieldsList}>
+                    {missingFields.map((field, index) => (
+                      <span key={index} className={styles.missingFieldTag}>
+                        {field}
+                      </span>
+                    ))}
                   </div>
-                  <div className={styles.cardContent}>
-                    {isEditingAbout ? (
-                      <AboutEditForm
-                        initialValue={aboutText}
-                        onChange={handleAboutTextChange}
-                        t={t}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Basic Information Card */}
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h3 className={styles.cardTitle}>
+                {t("profile.basicInfo.title")}
+              </h3>
+              <button
+                className={styles.editBtn}
+                onClick={() => setIsEditingBasicInfo(!isEditingBasicInfo)}
+              >
+                {isEditingBasicInfo
+                  ? t("profile.basicInfo.cancel")
+                  : t("profile.basicInfo.edit")}
+              </button>
+            </div>
+
+            <div className={styles.cardContent}>
+              {!isEditingBasicInfo ? (
+                <>
+                  {/* Avatar Display */}
+                  <div className={styles.avatarSection}>
+                    <input
+                      type="file"
+                      id="avatar-upload-input"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      style={{ display: "none" }}
+                    />
+                    <div
+                      className={styles.avatarContainer}
+                      onClick={handleAvatarClick}
+                      title="Click to change avatar"
+                    >
+                      {user.avatar ? (
+                        <img
+                          src={`http://localhost:4000${user.avatar}`}
+                          alt="Profile Avatar"
+                          className={styles.avatar}
+                        />
+                      ) : (
+                        <div className={styles.avatarPlaceholder}>
+                          {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                      )}
+                      <div className={styles.avatarOverlay}>
+                        <span>📷</span>
+                        <span>{t("profile.basicInfo.changeAvatar")}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.basicInfo.fullName")}</label>
+                      <p>
+                        {user.fullName || t("profile.basicInfo.notProvided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.basicInfo.email")}</label>
+                      <p>{user.email}</p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.basicInfo.phone")}</label>
+                      <p>{user.phone || t("profile.basicInfo.notProvided")}</p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.basicInfo.address")}</label>
+                      <p>
+                        {user.address || t("profile.basicInfo.notProvided")}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <form
+                  onSubmit={handleUpdateBasicInfo}
+                  className={styles.editForm}
+                >
+                  <div className={styles.formGroup}>
+                    <label>{t("profile.basicInfo.fullNameRequired")}</label>
+                    <input
+                      type="text"
+                      value={basicInfoForm.fullName}
+                      onChange={(e) =>
+                        setBasicInfoForm({
+                          ...basicInfoForm,
+                          fullName: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>{t("profile.basicInfo.email")}</label>
+                    <div className={styles.disabledFieldWrapper}>
+                      <input
+                        type="email"
+                        value={user.email}
+                        disabled
+                        className={styles.disabledField}
+                        title={t("profile.basicInfo.contactAdmin")}
                       />
-                    ) : (
-                      <p className={styles.aboutText}>{profile.about}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Languages & Certifications Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.languages.title")}
-                    </h3>
-                    <button
-                      className={styles.editBtn}
-                      onClick={handleEditLanguages}
-                    >
-                      {t("profile.edit")}
-                    </button>
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div className={styles.languagesSection}>
-                      <h4 className={styles.subsectionTitle}>
-                        {t("profile.languages.languages")}
-                      </h4>
-                      <div className={styles.tagsContainer}>
-                        {profile.languages.map((lang, index) => (
-                          <div
-                            key={index}
-                            className={`${styles.tag} ${
-                              lang.approved === true
-                                ? styles.tagApproved
-                                : lang.approved === "pending"
-                                ? styles.tagPending
-                                : styles.tagRejected
-                            }`}
-                          >
-                            <span className={styles.tagText}>{lang.name}</span>
-                            <span className={styles.tagLevel}>
-                              ({lang.level})
-                            </span>
-                            {lang.approved === true && (
-                              <span className={styles.tagIcon}>✓</span>
-                            )}
-                            {lang.approved === "pending" && (
-                              <span className={styles.tagIcon}>⏳</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className={styles.certificationsSection}>
-                      <h4 className={styles.subsectionTitle}>
-                        {t("profile.languages.certifications")}
-                      </h4>
-                      <div className={styles.tagsContainer}>
-                        {profile.certifications.map((cert, index) => (
-                          <div
-                            key={index}
-                            className={`${styles.tag} ${
-                              cert.approved === true
-                                ? styles.tagApproved
-                                : cert.approved === "pending"
-                                ? styles.tagPending
-                                : styles.tagRejected
-                            }`}
-                          >
-                            <span className={styles.tagText}>{cert.name}</span>
-                            {cert.score && (
-                              <span className={styles.tagScore}>
-                                {cert.score}
-                              </span>
-                            )}
-                            <span className={styles.tagYear}>
-                              ({cert.year})
-                            </span>
-                            {cert.attachment && (
-                              <span className={styles.tagAttachment}>📎</span>
-                            )}
-                            {cert.approved === true && (
-                              <span className={styles.tagIcon}>✓</span>
-                            )}
-                            {cert.approved === "pending" && (
-                              <span className={styles.tagIcon}>⏳</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <span className={styles.disabledTooltip}>
+                        {t("profile.basicInfo.contactAdmin")}
+                      </span>
                     </div>
                   </div>
+
+                  <div className={styles.formGroup}>
+                    <label>{t("profile.basicInfo.phone")}</label>
+                    <input
+                      type="tel"
+                      value={basicInfoForm.phone}
+                      onChange={(e) =>
+                        setBasicInfoForm({
+                          ...basicInfoForm,
+                          phone: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>{t("profile.basicInfo.address")}</label>
+                    <textarea
+                      value={basicInfoForm.address}
+                      onChange={(e) =>
+                        setBasicInfoForm({
+                          ...basicInfoForm,
+                          address: e.target.value,
+                        })
+                      }
+                      rows={3}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={styles.saveBtn}
+                    disabled={loading}
+                  >
+                    {loading ? "Saving..." : "Save Changes"}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+
+          {/* Languages & Certifications - Two Column Layout */}
+          {user.role === "interpreter" && (
+            <div className={styles.twoColumnGrid}>
+              {/* Languages Card - Left Column */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
+                    {t("profile.languages.title")}
+                  </h3>
+                  <button
+                    className={styles.addBtn}
+                    onClick={() => setIsAddingLanguage(true)}
+                  >
+                    + {t("profile.languages.add")}
+                  </button>
                 </div>
 
-                {/* Experience Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.experience.title")}
-                    </h3>
-                    <button
-                      className={styles.editBtn}
-                      onClick={handleEditExperience}
-                    >
-                      {t("profile.edit")}
-                    </button>
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div className={styles.experienceList}>
-                      {profile.experience.map((exp, index) => (
-                        <div key={index} className={styles.experienceItem}>
-                          <div className={styles.expHeader}>
-                            <h4 className={styles.expTitle}>{exp.title}</h4>
-                            <span className={styles.expPeriod}>
-                              {exp.period}
+                <div className={styles.cardContent}>
+                  {Array.isArray(languages) && languages.length > 0 ? (
+                    <div className={styles.languagesList}>
+                      {languages.map((lang, index) => (
+                        <div key={index} className={styles.languageItem}>
+                          <div className={styles.languageInfo}>
+                            <h4>{lang.name}</h4>
+                            <span className={styles.languageLevel}>
+                              {lang.proficiencyLevel || lang.level}
                             </span>
                           </div>
-                          <p className={styles.expCompany}>{exp.company}</p>
-                          <p className={styles.expDescription}>
-                            {exp.description}
-                          </p>
+                          <button
+                            className={styles.removeBtn}
+                            onClick={() => handleRemoveLanguage(index)}
+                            disabled={loading}
+                          >
+                            ×
+                          </button>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  ) : (
+                    <p className={styles.emptyMessage}>
+                      {t("profile.languages.noLanguages")}
+                    </p>
+                  )}
+
+                  {isAddingLanguage && (
+                    <form
+                      onSubmit={handleAddLanguage}
+                      className={styles.addForm}
+                    >
+                      <div className={styles.formRow}>
+                        <div className={styles.formGroup}>
+                          <label>{t("profile.modal.language")} *</label>
+                          <select
+                            value={languageForm.name}
+                            onChange={(e) =>
+                              setLanguageForm({
+                                ...languageForm,
+                                name: e.target.value,
+                              })
+                            }
+                            required
+                          >
+                            <option value="">
+                              {t("profile.languages.selectLanguage")}
+                            </option>
+                            {Object.keys(LANGUAGE_CERTIFICATIONS)
+                              .sort()
+                              .map((lang) => (
+                                <option key={lang} value={lang}>
+                                  {lang}
+                                </option>
+                              ))}
+                            <option value="Other">
+                              Other (No suggestions)
+                            </option>
+                          </select>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>{t("profile.languages.level")} *</label>
+                          <select
+                            value={languageForm.level}
+                            onChange={(e) =>
+                              setLanguageForm({
+                                ...languageForm,
+                                level: e.target.value,
+                              })
+                            }
+                            required
+                          >
+                            <option value="Beginner">
+                              {t("profile.languages.beginner")}
+                            </option>
+                            <option value="Intermediate">
+                              {t("profile.languages.intermediate")}
+                            </option>
+                            <option value="Advanced">
+                              {t("profile.languages.advanced")}
+                            </option>
+                            <option value="Native">
+                              {t("profile.languages.native")}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className={styles.formActions}>
+                        <button
+                          type="button"
+                          className={styles.cancelBtn}
+                          onClick={() => {
+                            setIsAddingLanguage(false);
+                            setLanguageForm({ name: "", level: "Beginner" });
+                          }}
+                        >
+                          {t("profile.modal.cancel")}
+                        </button>
+                        <button
+                          type="submit"
+                          className={styles.saveBtn}
+                          disabled={loading}
+                        >
+                          {loading
+                            ? t("profile.languages.adding")
+                            : t("profile.modal.add")}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+
+              {/* Certifications Card - Right Column */}
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
+                    {t("profile.certifications.title")}
+                  </h3>
+                  <button
+                    className={styles.addBtn}
+                    onClick={() => setIsAddingCertification(true)}
+                  >
+                    + {t("profile.certifications.add")}
+                  </button>
                 </div>
 
-                {/* Stats Card */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.stats.title")}
-                    </h3>
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div className={styles.statsGrid}>
-                      <div className={styles.statItem}>
-                        <span className={styles.statIcon}>📊</span>
-                        <div className={styles.statInfo}>
-                          <span className={styles.statValue}>
-                            {profile.stats.totalJobs}
-                          </span>
-                          <span className={styles.statLabel}>
-                            {t("profile.stats.totalJobs")}
-                          </span>
-                        </div>
+                <div className={styles.cardContent}>
+                  {/* Suggested Certifications */}
+                  {showSuggestedCerts && suggestedCertifications.length > 0 && (
+                    <div className={styles.suggestedCertsContainer}>
+                      <div className={styles.suggestedHeader}>
+                        <h4>💡 {t("profile.certifications.suggestedTitle")}</h4>
+                        <button
+                          className={styles.dismissBtn}
+                          onClick={handleDismissSuggestions}
+                          title={t("profile.modal.cancel")}
+                        >
+                          ×
+                        </button>
                       </div>
-                      <div className={styles.statItem}>
-                        <span className={styles.statIcon}>⭐</span>
-                        <div className={styles.statInfo}>
-                          <span className={styles.statValue}>
-                            {profile.stats.rating}
-                          </span>
-                          <span className={styles.statLabel}>
-                            {t("profile.stats.rating")}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={styles.statItem}>
-                        <span className={styles.statIcon}>⚡</span>
-                        <div className={styles.statInfo}>
-                          <span className={styles.statValue}>
-                            {profile.stats.responseTime}
-                          </span>
-                          <span className={styles.statLabel}>
-                            {t("profile.stats.responseTime")}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={styles.statItem}>
-                        <span className={styles.statIcon}>✅</span>
-                        <div className={styles.statInfo}>
-                          <span className={styles.statValue}>
-                            {profile.stats.completionRate}
-                          </span>
-                          <span className={styles.statLabel}>
-                            {t("profile.stats.completionRate")}
-                          </span>
-                        </div>
+                      <div className={styles.suggestedList}>
+                        {suggestedCertifications.map((cert, index) => (
+                          <button
+                            key={index}
+                            className={styles.suggestedItem}
+                            onClick={() => handleQuickAddCertification(cert)}
+                          >
+                            <span className={styles.certIcon}>📜</span>
+                            <div className={styles.suggestedInfo}>
+                              <strong>{cert.name}</strong>
+                              <small>{cert.organization}</small>
+                            </div>
+                            <span className={styles.addIcon}>+</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  </div>
-                </div>
+                  )}
 
-                {/* Customer Reviews Carousel */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.cardTitle}>
-                      {t("profile.reviews.title")}
-                    </h3>
-                    <div className={styles.carouselControls}>
-                      <button
-                        className={styles.carouselBtn}
-                        onClick={prevReview}
-                      >
-                        ‹
-                      </button>
-                      <span className={styles.carouselIndicator}>
-                        {currentReviewIndex + 1} / {profile.reviews.length}
-                      </span>
-                      <button
-                        className={styles.carouselBtn}
-                        onClick={nextReview}
-                      >
-                        ›
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.cardContent}>
-                    <div className={styles.reviewCarousel}>
-                      <div className={styles.reviewCard}>
-                        <div className={styles.reviewHeader}>
-                          <div className={styles.reviewClient}>
-                            <h4 className={styles.clientName}>
-                              {profile.reviews[currentReviewIndex].client}
-                            </h4>
-                            <p className={styles.clientCompany}>
-                              {profile.reviews[currentReviewIndex].company}
-                            </p>
-                          </div>
-                          <div className={styles.reviewRating}>
-                            {renderStars(
-                              profile.reviews[currentReviewIndex].rating
+                  {Array.isArray(certifications) &&
+                  certifications.length > 0 ? (
+                    <div className={styles.certificationsList}>
+                      {certifications.map((cert, index) => (
+                        <div key={index} className={styles.certificationItem}>
+                          <div className={styles.certificationInfo}>
+                            <div className={styles.certificationHeader}>
+                              <h4>{cert.name}</h4>
+                              {cert.verificationStatus && (
+                                <span
+                                  className={`${styles.statusBadge} ${
+                                    styles[cert.verificationStatus]
+                                  }`}
+                                >
+                                  {cert.verificationStatus === "draft" &&
+                                    `📝 ${t(
+                                      "profile.certifications.statusDraft"
+                                    )}`}
+                                  {cert.verificationStatus === "pending" &&
+                                    `⏳ ${t(
+                                      "profile.certifications.statusPending"
+                                    )}`}
+                                  {cert.verificationStatus === "approved" &&
+                                    `✅ ${t(
+                                      "profile.certifications.statusApproved"
+                                    )}`}
+                                  {cert.verificationStatus === "rejected" &&
+                                    `❌ ${t(
+                                      "profile.certifications.statusRejected"
+                                    )}`}
+                                </span>
+                              )}
+                            </div>
+                            <div className={styles.certificationMeta}>
+                              {cert.score && <span>Score: {cert.score}</span>}
+                              {cert.issueDate && (
+                                <span>
+                                  Year: {new Date(cert.issueDate).getFullYear()}
+                                </span>
+                              )}
+                              {cert.year && <span>Year: {cert.year}</span>}
+                              {cert.issuingOrganization && (
+                                <span>Org: {cert.issuingOrganization}</span>
+                              )}
+                            </div>
+                            {cert.imageUrl && (
+                              <div className={styles.certificationImage}>
+                                <a
+                                  href={`http://localhost:4000${cert.imageUrl}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {t("profile.certifications.viewCertificate")}
+                                </a>
+                              </div>
                             )}
                           </div>
+                          <button
+                            className={styles.removeBtn}
+                            onClick={() => handleRemoveCertification(index)}
+                            disabled={loading}
+                          >
+                            ×
+                          </button>
                         </div>
-                        <p className={styles.reviewComment}>
-                          "{profile.reviews[currentReviewIndex].comment}"
-                        </p>
-                        <span className={styles.reviewDate}>
-                          {new Date(
-                            profile.reviews[currentReviewIndex].date
-                          ).toLocaleDateString()}
-                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={styles.emptyMessage}>
+                      {t("profile.certifications.noCertifications")}
+                    </p>
+                  )}
+
+                  {isAddingCertification && (
+                    <form
+                      onSubmit={handleAddCertification}
+                      className={styles.addForm}
+                    >
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.certifications.name")} *</label>
+                        <input
+                          type="text"
+                          value={certificationForm.name}
+                          onChange={(e) =>
+                            setCertificationForm({
+                              ...certificationForm,
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder={t(
+                            "profile.certifications.namePlaceholder"
+                          )}
+                          required
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>
+                          {t("profile.certifications.organization")}
+                        </label>
+                        <input
+                          type="text"
+                          value={certificationForm.organization}
+                          onChange={(e) =>
+                            setCertificationForm({
+                              ...certificationForm,
+                              organization: e.target.value,
+                            })
+                          }
+                          placeholder={t(
+                            "profile.certifications.organizationPlaceholder"
+                          )}
+                        />
+                      </div>
+
+                      <div className={styles.formRow}>
+                        <div className={styles.formGroup}>
+                          <label>{t("profile.certifications.score")}</label>
+                          <input
+                            type="text"
+                            value={certificationForm.score}
+                            onChange={(e) =>
+                              setCertificationForm({
+                                ...certificationForm,
+                                score: e.target.value,
+                              })
+                            }
+                            placeholder={t(
+                              "profile.certifications.scorePlaceholder"
+                            )}
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>{t("profile.certifications.year")}</label>
+                          <input
+                            type="text"
+                            value={certificationForm.year}
+                            onChange={(e) =>
+                              setCertificationForm({
+                                ...certificationForm,
+                                year: e.target.value,
+                              })
+                            }
+                            placeholder={t(
+                              "profile.certifications.yearPlaceholder"
+                            )}
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.certifications.uploadImage")}</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Check file size (max 10MB)
+                              if (file.size > 10 * 1024 * 1024) {
+                                toast.error(
+                                  t(
+                                    "profile.certifications.errors.fileSizeLimit"
+                                  )
+                                );
+                                e.target.value = "";
+                                return;
+                              }
+                              setCertificationForm({
+                                ...certificationForm,
+                                certificationImage: file,
+                              });
+                            }
+                          }}
+                          required
+                        />
+                        {certificationForm.certificationImage && (
+                          <small className={styles.fileInfo}>
+                            {t("profile.certifications.fileSelected")}{" "}
+                            {certificationForm.certificationImage.name}
+                          </small>
+                        )}
+                      </div>
+
+                      <div className={styles.formActions}>
+                        <button
+                          type="button"
+                          className={styles.cancelBtn}
+                          onClick={() => {
+                            setIsAddingCertification(false);
+                            setCertificationForm({
+                              name: "",
+                              score: "",
+                              year: "",
+                              organization: "",
+                              certificationImage: null,
+                            });
+                          }}
+                        >
+                          {t("profile.modal.cancel")}
+                        </button>
+                        <button
+                          type="submit"
+                          className={styles.saveBtn}
+                          disabled={loading}
+                        >
+                          {loading
+                            ? t("profile.certifications.adding")
+                            : t("profile.certifications.add")}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Professional Information Card */}
+          {user.role === "interpreter" && (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>
+                  {t("profile.professional.title")}
+                </h3>
+                <button
+                  className={styles.editBtn}
+                  onClick={() =>
+                    setIsEditingProfessional(!isEditingProfessional)
+                  }
+                >
+                  {isEditingProfessional
+                    ? t("profile.professional.cancel")
+                    : t("profile.professional.edit")}
+                </button>
+              </div>
+
+              <div className={styles.cardContent}>
+                {!isEditingProfessional ? (
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.professional.hourlyRate")}</label>
+                      <p>
+                        {userProfile?.hourlyRate
+                          ? `$${userProfile.hourlyRate} ${
+                              userProfile.currency || "USD"
+                            }`
+                          : t("profile.professional.notProvided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.professional.experience")}</label>
+                      <p>
+                        {userProfile?.experience ||
+                          t("profile.professional.notProvided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.professional.specializations")}</label>
+                      <p>
+                        {userProfile?.specializations?.length
+                          ? userProfile.specializations.join(", ")
+                          : t("profile.professional.notProvided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{t("profile.professional.portfolio")}</label>
+                      <p>
+                        {userProfile?.portfolio ||
+                          t("profile.professional.notProvided")}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={handleUpdateProfessional}
+                    className={styles.editForm}
+                  >
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>
+                          {t("profile.professional.hourlyRate")} (USD)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={professionalForm.hourlyRate}
+                          onChange={(e) =>
+                            setProfessionalForm({
+                              ...professionalForm,
+                              hourlyRate: e.target.value,
+                            })
+                          }
+                          placeholder={t(
+                            "profile.professional.hourlyRatePlaceholder"
+                          )}
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.professional.experience")}</label>
+                        <input
+                          type="number"
+                          value={professionalForm.experience}
+                          onChange={(e) =>
+                            setProfessionalForm({
+                              ...professionalForm,
+                              experience: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., 5"
+                        />
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Update Profile Button */}
-          <div className={styles.updateButtonSection}>
-            <button className={styles.updateBtn} onClick={handleUpdateProfile}>
-              {t("profile.updateProfile")}
-            </button>
-          </div>
-
-          {/* CV Management Section */}
-          <div className={styles.cvSection}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>{t("profile.cv.title")}</h2>
-              <p className={styles.sectionSubtitle}>
-                {t("profile.cv.subtitle")}
-              </p>
-            </div>
-
-            <div className={styles.cvGrid}>
-              {cvs.map((cv) => (
-                <div key={cv.id} className={styles.cvCard}>
-                  <div className={styles.cvIcon}>📄</div>
-                  <div className={styles.cvInfo}>
-                    <h4 className={styles.cvName}>{cv.name}</h4>
-                    <div className={styles.cvMeta}>
-                      <span className={styles.cvSize}>{cv.size}</span>
-                      <span className={styles.cvDate}>
-                        {new Date(cv.uploadDate).toLocaleDateString()}
-                      </span>
+                    <div className={styles.formGroup}>
+                      <label>{t("profile.professional.specializations")}</label>
+                      <div className={styles.specializationsInput}>
+                        <input
+                          type="text"
+                          placeholder={t(
+                            "profile.professional.specializationsPlaceholder"
+                          )}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddSpecialization(e.target.value);
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <div className={styles.specializationTags}>
+                          {professionalForm.specializations.map(
+                            (spec, index) => (
+                              <span
+                                key={index}
+                                className={styles.specializationTag}
+                              >
+                                {spec}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemoveSpecialization(index)
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.cvType}>
-                      <span
-                        className={`${styles.typeTag} ${
-                          styles[`type-${cv.type}`]
-                        }`}
-                      >
-                        {t(`profile.cv.type.${cv.type}`)}
-                      </span>
+
+                    <div className={styles.formGroup}>
+                      <label>{t("profile.professional.portfolio")}</label>
+                      <textarea
+                        value={professionalForm.portfolio}
+                        onChange={(e) =>
+                          setProfessionalForm({
+                            ...professionalForm,
+                            portfolio: e.target.value,
+                          })
+                        }
+                        rows={5}
+                        placeholder={t(
+                          "profile.professional.portfolioPlaceholder"
+                        )}
+                      />
                     </div>
-                  </div>
-                  <div className={styles.cvActions}>
+
                     <button
-                      className={`${styles.deleteBtn}`}
-                      onClick={() => handleDeleteCV(cv.id)}
-                      title={t("profile.cv.delete")}
+                      type="submit"
+                      className={styles.saveBtn}
+                      disabled={loading}
                     >
-                      🗑️
+                      {loading
+                        ? t("profile.professional.saving")
+                        : t("profile.professional.save")}
                     </button>
-                  </div>
-                </div>
-              ))}
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
 
-              {/* Add New CV Card */}
-              <div
-                className={styles.cvCard + " " + styles.addCvCard}
-                onClick={handleAddCV}
-              >
-                <div className={styles.addCvContent}>
-                  <div className={styles.addIcon}>+</div>
-                  <span className={styles.addText}>
-                    {t("profile.cv.addNew")}
-                  </span>
+          {/* Stats Card */}
+          {user.role === "interpreter" && (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>{t("profile.stats.title")}</h3>
+              </div>
+
+              <div className={styles.cardContent}>
+                <div className={styles.statsGrid}>
+                  <div className={styles.statItem}>
+                    <div className={styles.statIcon}>⭐</div>
+                    <div className={styles.statInfo}>
+                      <h4>{userProfile?.rating || "0.0"}</h4>
+                      <p>{t("profile.stats.rating")}</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.statItem}>
+                    <div className={styles.statIcon}>✅</div>
+                    <div className={styles.statInfo}>
+                      <h4>{userProfile?.completedJobs || 0}</h4>
+                      <p>{t("profile.stats.totalJobs")}</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.statItem}>
+                    <div className={styles.statIcon}>📊</div>
+                    <div className={styles.statInfo}>
+                      <h4>{userProfile?.totalReviews || 0}</h4>
+                      <p>{t("profile.stats.completionRate")}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
+          )}
+        </div>
       </div>
-
-      {/* Hidden File Input for Avatar Upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: "none" }}
-        accept="image/jpeg,image/jpg,image/png"
-        onChange={handleAvatarUpload}
-      />
-
-      {/* Hidden File Input for CV Upload */}
-      <input
-        type="file"
-        ref={cvFileInputRef}
-        style={{ display: "none" }}
-        accept="application/pdf"
-        onChange={handleCVUpload}
-      />
-
-      {/* Language Modal */}
-      <LanguageModal
-        isOpen={isLanguageModalOpen}
-        onClose={handleCloseLanguageModal}
-        languages={profile.languages}
-        certifications={profile.certifications}
-        onSave={handleUpdateLanguagesCerts}
-        t={t}
-      />
-
-      {/* Experience Modal */}
-      <ExperienceModal
-        isOpen={isExperienceModalOpen}
-        onClose={handleCloseExperienceModal}
-        experience={profile.experience}
-        onSave={handleUpdateExperience}
-        t={t}
-      />
     </MainLayout>
   );
-}
+};
 
 export default ProfilePage;
