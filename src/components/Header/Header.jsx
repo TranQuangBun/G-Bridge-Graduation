@@ -87,14 +87,28 @@ const Header = () => {
               >
                 <span>{t("common.home")}</span>
               </Link>
-              <Link
-                to={ROUTES.FIND_JOB}
-                className={`nav-item ${
-                  isActiveRoute(ROUTES.FIND_JOB) ? "active" : ""
-                }`}
-              >
-                <span>{t("common.findJob")}</span>
-              </Link>
+
+              {/* Show Find Interpreter for Company, Find Job for Interpreter */}
+              {user?.role === "client" ? (
+                <Link
+                  to={ROUTES.FIND_INTERPRETER}
+                  className={`nav-item ${
+                    isActiveRoute(ROUTES.FIND_INTERPRETER) ? "active" : ""
+                  }`}
+                >
+                  <span>{t("common.findInterpreter")}</span>
+                </Link>
+              ) : (
+                <Link
+                  to={ROUTES.FIND_JOB}
+                  className={`nav-item ${
+                    isActiveRoute(ROUTES.FIND_JOB) ? "active" : ""
+                  }`}
+                >
+                  <span>{t("common.findJob")}</span>
+                </Link>
+              )}
+
               <Link
                 to={ROUTES.DASHBOARD}
                 className={`nav-item ${

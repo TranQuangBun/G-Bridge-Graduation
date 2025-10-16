@@ -96,6 +96,8 @@ export async function register(req, res) {
         role: user.role,
         isActive: user.isActive,
         isVerified: user.isVerified,
+        isPremium: user.isPremium || false,
+        premiumExpiresAt: user.premiumExpiresAt,
       },
       profile: profile
         ? {
@@ -132,10 +134,12 @@ export async function login(req, res) {
       include: [
         {
           model: InterpreterProfile,
+          as: "interpreterProfile",
           required: false,
         },
         {
           model: ClientProfile,
+          as: "clientProfile",
           required: false,
         },
       ],
@@ -170,24 +174,24 @@ export async function login(req, res) {
 
     // Prepare profile data based on role
     let profileData = null;
-    if (user.role === "interpreter" && user.InterpreterProfile) {
+    if (user.role === "interpreter" && user.interpreterProfile) {
       profileData = {
-        id: user.InterpreterProfile.id,
-        languages: user.InterpreterProfile.languages,
-        specializations: user.InterpreterProfile.specializations,
-        hourlyRate: user.InterpreterProfile.hourlyRate,
-        rating: user.InterpreterProfile.rating,
-        isAvailable: user.InterpreterProfile.isAvailable,
-        profileCompleteness: user.InterpreterProfile.profileCompleteness,
+        id: user.interpreterProfile.id,
+        languages: user.interpreterProfile.languages,
+        specializations: user.interpreterProfile.specializations,
+        hourlyRate: user.interpreterProfile.hourlyRate,
+        rating: user.interpreterProfile.rating,
+        isAvailable: user.interpreterProfile.isAvailable,
+        profileCompleteness: user.interpreterProfile.profileCompleteness,
       };
-    } else if (user.role === "client" && user.ClientProfile) {
+    } else if (user.role === "client" && user.clientProfile) {
       profileData = {
-        id: user.ClientProfile.id,
-        companyName: user.ClientProfile.companyName,
-        companyType: user.ClientProfile.companyType,
-        website: user.ClientProfile.website,
-        accountStatus: user.ClientProfile.accountStatus,
-        subscriptionPlan: user.ClientProfile.subscriptionPlan,
+        id: user.clientProfile.id,
+        companyName: user.clientProfile.companyName,
+        companyType: user.clientProfile.companyType,
+        website: user.clientProfile.website,
+        accountStatus: user.clientProfile.accountStatus,
+        subscriptionPlan: user.clientProfile.subscriptionPlan,
       };
     }
 
@@ -201,6 +205,8 @@ export async function login(req, res) {
         phone: user.phone,
         avatar: user.avatar,
         isVerified: user.isVerified,
+        isPremium: user.isPremium || false,
+        premiumExpiresAt: user.premiumExpiresAt,
         lastLoginAt: user.lastLoginAt,
       },
       profile: profileData,
@@ -223,16 +229,20 @@ export async function me(req, res) {
         "avatar",
         "address",
         "isVerified",
+        "isPremium",
+        "premiumExpiresAt",
         "createdAt",
         "lastLoginAt",
       ],
       include: [
         {
           model: InterpreterProfile,
+          as: "interpreterProfile",
           required: false,
         },
         {
           model: ClientProfile,
+          as: "clientProfile",
           required: false,
         },
         {
@@ -276,10 +286,10 @@ export async function me(req, res) {
 
     // Prepare profile data based on role
     let profileData = null;
-    if (user.role === "interpreter" && user.InterpreterProfile) {
-      profileData = user.InterpreterProfile;
-    } else if (user.role === "client" && user.ClientProfile) {
-      profileData = user.ClientProfile;
+    if (user.role === "interpreter" && user.interpreterProfile) {
+      profileData = user.interpreterProfile;
+    } else if (user.role === "client" && user.clientProfile) {
+      profileData = user.clientProfile;
     }
 
     return res.json({

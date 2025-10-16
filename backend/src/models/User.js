@@ -49,6 +49,17 @@ User.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    isPremium: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment:
+        "Premium subscription status for accessing full interpreter details",
+    },
+    premiumExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Premium subscription expiration date",
+    },
     lastLoginAt: {
       type: DataTypes.DATE,
       allowNull: true,

@@ -13,23 +13,38 @@ export const AuthProvider = ({ children }) => {
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       try {
         const storedUser = authService.getStoredUser();
-        const storedProfile = authService.getStoredProfile();
-        const storedLanguages = authService.getStoredLanguages();
-        const storedCertifications = authService.getStoredCertifications();
         const token = authService.getToken();
 
         if (token && storedUser) {
-          setUser(storedUser);
-          setProfile(storedProfile);
-          setLanguages(storedLanguages || []);
-          setCertifications(storedCertifications || []);
-          setIsAuthenticated(true);
+          // Verify token with backend and get fresh data
+          try {
+            const data = await authService.getCurrentUser();
+            // Token is valid, update with fresh data from server
+            setUser(data.user);
+            setProfile(data.profile);
+            setLanguages(data.languages || []);
+            setCertifications(data.certifications || []);
+            setIsAuthenticated(true);
+          } catch (error) {
+            // Token is invalid or expired, clear everything
+            console.error("Token validation failed:", error);
+            authService.logout();
+            setUser(null);
+            setProfile(null);
+            setLanguages([]);
+            setCertifications([]);
+            setIsAuthenticated(false);
+          }
+        } else {
+          // No token or user, set as not authenticated
+          setIsAuthenticated(false);
         }
       } catch (error) {
         console.error("Error loading user:", error);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }

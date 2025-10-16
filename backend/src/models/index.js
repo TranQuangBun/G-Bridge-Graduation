@@ -8,18 +8,22 @@ import Certification from "./Certification.js";
 // Define all associations here
 User.hasOne(InterpreterProfile, {
   foreignKey: "userId",
+  as: "interpreterProfile",
   onDelete: "CASCADE",
 });
 InterpreterProfile.belongsTo(User, {
   foreignKey: "userId",
+  as: "user",
 });
 
 User.hasOne(ClientProfile, {
   foreignKey: "userId",
+  as: "clientProfile",
   onDelete: "CASCADE",
 });
 ClientProfile.belongsTo(User, {
   foreignKey: "userId",
+  as: "user",
 });
 
 // User has many Languages
