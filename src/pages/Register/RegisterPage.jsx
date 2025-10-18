@@ -1,18 +1,28 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ROUTES, LANGUAGES } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../hooks/useToast";
+import { ToastContainer } from "../../components/Toast";
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
 // Use header style logo instead of image file
 import "./RegisterPage.css";
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+  const { toasts, removeToast, showSuccess, showError } = useToast();
+
   const [formData, setFormData] = useState({
     fullName: "",
     role: "interpreter",
     email: "",
     password: "",
     confirmPassword: "",
+    // For client role
+    companyName: "",
+    companyType: "corporation",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +41,23 @@ const RegisterPage = () => {
       role: "Bạn là",
       interpreter: "Phiên dịch viên",
       employer: "Nhà tuyển dụng",
+      client: "Doanh nghiệp",
       email: "Email",
       password: "Mật khẩu",
       confirmPassword: "Xác nhận mật khẩu",
       emailPlaceholder: "Nhập email của bạn",
       passwordPlaceholder: "Nhập mật khẩu",
       confirmPasswordPlaceholder: "Nhập lại mật khẩu",
+      companyName: "Tên công ty",
+      companyNamePlaceholder: "Nhập tên công ty",
+      companyType: "Loại hình doanh nghiệp",
+      corporation: "Công ty",
+      startup: "Khởi nghiệp",
+      nonprofit: "Phi lợi nhuận",
+      government: "Chính phủ",
+      healthcare: "Y tế",
+      education: "Giáo dục",
+      other: "Khác",
       submit: "Tạo tài khoản",
       already: "Đã có tài khoản?",
       login: "Đăng nhập ngay",
@@ -48,6 +69,8 @@ const RegisterPage = () => {
       loading: "Đang xử lý...",
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",
+      success: "Đăng ký thành công! Đang chuyển hướng...",
+      registerError: "Đăng ký thất bại",
     },
     en: {
       title: "Create Account",
@@ -57,12 +80,23 @@ const RegisterPage = () => {
       role: "You are",
       interpreter: "Interpreter",
       employer: "Employer",
+      client: "Company",
       email: "Email",
       password: "Password",
       confirmPassword: "Confirm Password",
       emailPlaceholder: "Enter your email",
       passwordPlaceholder: "Enter your password",
       confirmPasswordPlaceholder: "Re-enter your password",
+      companyName: "Company Name",
+      companyNamePlaceholder: "Enter company name",
+      companyType: "Company Type",
+      corporation: "Corporation",
+      startup: "Startup",
+      nonprofit: "Non-profit",
+      government: "Government",
+      healthcare: "Healthcare",
+      education: "Education",
+      other: "Other",
       submit: "Create Account",
       already: "Already have an account?",
       login: "Login now",
@@ -74,6 +108,8 @@ const RegisterPage = () => {
       loading: "Processing...",
       showPassword: "Show password",
       hidePassword: "Hide password",
+      success: "Registration successful! Redirecting...",
+      registerError: "Registration failed",
     },
   }[language];
 
@@ -99,6 +135,14 @@ const RegisterPage = () => {
     if (!formData.fullName.trim()) {
       newErrors.fullName = `${t.required} ${t.fullName.toLowerCase()}`;
     }
+
+    // Company-specific validation
+    if (formData.role === "client") {
+      if (!formData.companyName.trim()) {
+        newErrors.companyName = `${t.required} ${t.companyName.toLowerCase()}`;
+      }
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = `${t.required} ${t.email.toLowerCase()}`;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -131,12 +175,39 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Register data:", formData);
-      alert("Đăng ký thành công!");
+      // Prepare data for API
+      const registerData = {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      };
+
+      // Add company info if role is client
+      if (formData.role === "client") {
+        registerData.companyName = formData.companyName;
+        registerData.companyType = formData.companyType;
+      }
+
+      // Call register API
+      const result = await register(registerData);
+
+      if (result.success) {
+        // Show success message
+        showSuccess(t.success);
+
+        // Redirect based on role after a short delay
+        // Redirect to HOME after registration
+        setTimeout(() => {
+          navigate(ROUTES.HOME);
+        }, 500);
+      } else {
+        // Show error
+        showError(result.error || t.registerError);
+      }
     } catch (error) {
       console.error("Registration error:", error);
+      showError(t.registerError);
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +215,8 @@ const RegisterPage = () => {
 
   return (
     <div className="auth-page">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       <div className="auth-background">
         <div className="floating-shapes">
           <div className="shape shape-1"></div>
@@ -221,7 +294,7 @@ const RegisterPage = () => {
                     className="role-select"
                   >
                     <option value="interpreter">{t.interpreter}</option>
-                    <option value="employer">{t.employer}</option>
+                    <option value="client">{t.client}</option>
                   </select>
                   <div className="role-hint">
                     {formData.role === "interpreter" ? (
@@ -229,12 +302,52 @@ const RegisterPage = () => {
                         {t.interpreter}
                       </span>
                     ) : (
-                      <span className="role-badge employer">{t.employer}</span>
+                      <span className="role-badge employer">{t.client}</span>
                     )}
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Company fields - only show for client role */}
+            {formData.role === "client" && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="companyName">{t.companyName}</label>
+                  <input
+                    type="text"
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    placeholder={t.companyNamePlaceholder}
+                    className={errors.companyName ? "error" : ""}
+                  />
+                  {errors.companyName && (
+                    <span className="error-message">{errors.companyName}</span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="companyType">{t.companyType}</label>
+                  <select
+                    id="companyType"
+                    name="companyType"
+                    value={formData.companyType}
+                    onChange={handleChange}
+                    className="form-select"
+                  >
+                    <option value="corporation">{t.corporation}</option>
+                    <option value="startup">{t.startup}</option>
+                    <option value="nonprofit">{t.nonprofit}</option>
+                    <option value="government">{t.government}</option>
+                    <option value="healthcare">{t.healthcare}</option>
+                    <option value="education">{t.education}</option>
+                    <option value="other">{t.other}</option>
+                  </select>
+                </div>
+              </>
+            )}
 
             <div className="form-group">
               <label htmlFor="email">{t.email}</label>

@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./DashboardPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
 
-// Mock data for dashboard
+// Mock data for dashboard stats (will be replaced with real API data later)
 const MOCK_STATS = {
   appliedJobs: 12,
   favoriteJobs: 8,
@@ -63,8 +64,19 @@ const SIDEBAR_MENU = [
 function DashboardPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user, isAuthenticated, loading } = useAuth();
   const [activeMenu, setActiveMenu] = useState("overview");
-  const [userName] = useState("John Doe"); // Mock user name
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    // Đợi cho loading xong trước khi redirect
+    if (!loading && !isAuthenticated) {
+      navigate(ROUTES.LOGIN);
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  // Get user's full name or email
+  const userName = user?.fullName || user?.email?.split("@")[0] || "User";
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -100,6 +112,15 @@ function DashboardPage() {
         return status;
     }
   };
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <MainLayout>
+        <div style={{ padding: "40px", textAlign: "center" }}>Loading...</div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

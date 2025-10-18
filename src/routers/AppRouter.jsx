@@ -14,6 +14,8 @@ import {
 } from "../pages";
 import SavedJobsPage from "../pages/SavedJobs/SavedJobsPage";
 import JobAlertsPage from "../pages/JobAlerts/JobAlertsPage";
+import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
+import ProtectedRoute from "../components/ProtectedRoute";
 import { ROUTES } from "../constants";
 
 // Cấu hình các routes
@@ -27,24 +29,52 @@ const router = createBrowserRouter([
     element: <FindJobPage />,
   },
   {
+    path: ROUTES.FIND_INTERPRETER,
+    element: (
+      <ProtectedRoute allowedRoles={["client", "admin"]}>
+        <FindInterpreterPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: ROUTES.DASHBOARD,
-    element: <DashboardPage />,
+    element: (
+      <ProtectedRoute>
+        <DashboardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: ROUTES.MY_APPLICATIONS,
-    element: <MyApplicationsPage />,
+    element: (
+      <ProtectedRoute>
+        <MyApplicationsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: ROUTES.SAVED_JOBS,
-    element: <SavedJobsPage />,
+    element: (
+      <ProtectedRoute>
+        <SavedJobsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: ROUTES.JOB_ALERTS,
-    element: <JobAlertsPage />,
+    element: (
+      <ProtectedRoute>
+        <JobAlertsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: ROUTES.PROFILE,
-    element: <ProfilePage />,
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: ROUTES.ABOUT,
