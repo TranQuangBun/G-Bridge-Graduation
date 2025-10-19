@@ -336,6 +336,7 @@ const vi = {
       searchPlaceholder: "Tìm theo tên hoặc kỹ năng...",
       languages: "Ngôn ngữ",
       hourlyRate: "Giá theo giờ (USD)",
+      experience: "Kinh nghiệm (Năm)",
       minExperience: "Kinh nghiệm tối thiểu",
       minRating: "Đánh giá tối thiểu",
       location: "Địa điểm",
@@ -708,6 +709,80 @@ const vi = {
       viewDetails: "Xem chi tiết",
       dismiss: "Đóng",
     },
+  },
+  postJob: {
+    pageTitle: "Đăng Tin Tuyển Dụng",
+    pageSubtitle:
+      "Tìm kiếm thông dịch viên hoàn hảo cho nhu cầu của bạn bằng cách đăng tin tuyển dụng",
+
+    // Step labels
+    step1Label: "Thông tin cơ bản",
+    step2Label: "Mô tả",
+    step3Label: "Lương & Liên hệ",
+    step4Label: "Yêu cầu",
+
+    // Step titles
+    step1Title: "Thông tin cơ bản về công việc",
+    step2Title: "Mô tả công việc & Chi tiết",
+    step3Title: "Mức lương & Thông tin liên hệ",
+    step4Title: "Yêu cầu Ngôn ngữ & Chứng chỉ",
+
+    // Form fields
+    jobTitle: "Tiêu đề công việc",
+    jobTitlePlaceholder: "VD: Thông dịch viên Y tế - Tiếng Việt/Anh",
+    workingMode: "Hình thức làm việc",
+    selectWorkingMode: "Chọn hình thức làm việc",
+    province: "Tỉnh/Thành phố",
+    provincePlaceholder: "VD: Thành phố Hồ Chí Minh",
+    commune: "Quận/Huyện",
+    communePlaceholder: "VD: Quận 1",
+    address: "Địa chỉ chi tiết",
+    addressPlaceholder: "Tên đường, số nhà",
+    expirationDate: "Hạn nộp hồ sơ",
+    quantity: "Số lượng vị trí",
+    jobDescription: "Mô tả công việc",
+    jobDescriptionPlaceholder:
+      "Mô tả vai trò, trách nhiệm và yêu cầu công việc...",
+    responsibility: "Trách nhiệm chính",
+    responsibilityPlaceholder: "Liệt kê các nhiệm vụ và công việc chính...",
+    benefits: "Quyền lợi & Phúc lợi",
+    benefitsPlaceholder:
+      "Bảo hiểm y tế, giờ làm việc linh hoạt, phát triển chuyên môn...",
+    domains: "Lĩnh vực chuyên môn",
+    salaryType: "Loại lương",
+    negotiable: "Thỏa thuận",
+    gross: "Gross",
+    net: "Net",
+    minSalary: "Lương tối thiểu",
+    maxSalary: "Lương tối đa",
+    contactEmail: "Email liên hệ",
+    contactPhone: "Số điện thoại liên hệ",
+    requiredLanguages: "Ngôn ngữ yêu cầu",
+    selectLanguage: "Chọn ngôn ngữ",
+    selectLevel: "Chọn trình độ",
+    required: "Bắt buộc",
+    add: "Thêm",
+    requiredCertificates: "Chứng chỉ yêu cầu",
+    certificateNamePlaceholder: "VD: Chứng chỉ Thông dịch Y tế",
+
+    // Validation messages
+    titleRequired: "Tiêu đề công việc là bắt buộc",
+    workingModeRequired: "Vui lòng chọn hình thức làm việc",
+    provinceRequired: "Tỉnh/Thành phố là bắt buộc",
+    expirationDateRequired: "Hạn nộp hồ sơ là bắt buộc",
+    quantityRequired: "Số lượng vị trí phải ít nhất là 1",
+    descriptionsRequired: "Mô tả công việc là bắt buộc",
+    minSalaryRequired:
+      "Lương tối thiểu là bắt buộc cho mức lương không thỏa thuận",
+    maxSalaryMustBeGreater: "Lương tối đa phải lớn hơn lương tối thiểu",
+    contactEmailRequired: "Email liên hệ là bắt buộc",
+    pleaseSelectLanguageAndLevel: "Vui lòng chọn cả ngôn ngữ và trình độ",
+    pleaseEnterCertificateName: "Vui lòng nhập tên chứng chỉ",
+
+    // Success/Error messages
+    jobPostedSuccessfully: "Đăng tin tuyển dụng thành công!",
+    errorPostingJob: "Lỗi khi đăng tin. Vui lòng thử lại.",
+    postJob: "Đăng tin tuyển dụng",
   },
 };
 

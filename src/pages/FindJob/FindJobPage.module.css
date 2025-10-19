@@ -586,6 +586,20 @@
   background: #f1f5f9;
   border-color: var(--fj-muted);
 }
+.saveBtn.saved {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+.saveBtn.saved:hover {
+  background: linear-gradient(135deg, #db2777, #be185d);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
+}
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .pagination {
   display: flex;
   justify-content: center;
@@ -832,6 +846,24 @@
 .modalSaveBtn:hover {
   background: #f1f5f9;
   border-color: var(--fj-muted);
+}
+
+.modalSaveBtn.saved {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.modalSaveBtn.saved:hover {
+  background: linear-gradient(135deg, #db2777, #be185d);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
+  transform: translateY(-2px);
+}
+
+.modalSaveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .modalBody {

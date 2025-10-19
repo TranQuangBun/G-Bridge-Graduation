@@ -69,13 +69,15 @@
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
   padding: 32px 0;
-  position: absolute;
+  position: sticky;
   top: 85px;
   left: 0;
-  bottom: 0;
+  height: fit-content;
+  max-height: calc(100vh - 85px);
   overflow-y: auto;
   z-index: 1;
   box-sizing: border-box;
+  align-self: flex-start;
 
   /* Modern styling */
   backdrop-filter: blur(10px);
@@ -243,9 +245,9 @@
 /* Modern Main Content */
 .mainContent {
   flex: 1;
-  margin-left: 280px;
+  margin-left: 0;
   padding: 40px;
-  max-width: calc(100vw - 280px);
+  max-width: 100%;
   min-height: 500px;
   box-sizing: border-box;
 }
@@ -842,6 +844,9 @@
 /* Modern Action Column */
 .actionColumn {
   min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .viewDetailsBtn {

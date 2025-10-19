@@ -330,6 +330,7 @@ const en = {
       searchPlaceholder: "Search by name or skill...",
       languages: "Languages",
       hourlyRate: "Hourly Rate (USD)",
+      experience: "Experience (Years)",
       minExperience: "Minimum Experience",
       minRating: "Minimum Rating",
       location: "Location",
@@ -701,6 +702,81 @@ const en = {
       viewDetails: "View Details",
       dismiss: "Dismiss",
     },
+  },
+  postJob: {
+    pageTitle: "Post a Job",
+    pageSubtitle:
+      "Find the perfect interpreter for your needs by posting a job opportunity",
+
+    // Step labels
+    step1Label: "Basic Info",
+    step2Label: "Description",
+    step3Label: "Salary & Contact",
+    step4Label: "Requirements",
+
+    // Step titles
+    step1Title: "Job Basic Information",
+    step2Title: "Job Description & Details",
+    step3Title: "Salary & Contact Information",
+    step4Title: "Language & Certificate Requirements",
+
+    // Form fields
+    jobTitle: "Job Title",
+    jobTitlePlaceholder: "e.g., Medical Interpreter - Vietnamese/English",
+    workingMode: "Working Mode",
+    selectWorkingMode: "Select working mode",
+    province: "Province/City",
+    provincePlaceholder: "e.g., Ho Chi Minh City",
+    commune: "District/Commune",
+    communePlaceholder: "e.g., District 1",
+    address: "Detailed Address",
+    addressPlaceholder: "Street address, building number",
+    expirationDate: "Application Deadline",
+    quantity: "Number of Positions",
+    jobDescription: "Job Description",
+    jobDescriptionPlaceholder:
+      "Describe the role, responsibilities, and what you're looking for...",
+    responsibility: "Key Responsibilities",
+    responsibilityPlaceholder: "List the main duties and tasks...",
+    benefits: "Benefits & Perks",
+    benefitsPlaceholder:
+      "Health insurance, flexible hours, professional development...",
+    domains: "Specialization Domains",
+    salaryType: "Salary Type",
+    negotiable: "Negotiable",
+    gross: "Gross",
+    net: "Net",
+    minSalary: "Minimum Salary",
+    maxSalary: "Maximum Salary",
+    contactEmail: "Contact Email",
+    contactPhone: "Contact Phone",
+    requiredLanguages: "Required Languages",
+    selectLanguage: "Select language",
+    selectLevel: "Select level",
+    required: "Required",
+    add: "Add",
+    requiredCertificates: "Required Certificates",
+    certificateNamePlaceholder: "e.g., Medical Interpreter Certification",
+
+    // Validation messages
+    titleRequired: "Job title is required",
+    workingModeRequired: "Please select a working mode",
+    provinceRequired: "Province is required",
+    expirationDateRequired: "Application deadline is required",
+    quantityRequired: "Number of positions must be at least 1",
+    descriptionsRequired: "Job description is required",
+    minSalaryRequired:
+      "Minimum salary is required for non-negotiable positions",
+    maxSalaryMustBeGreater:
+      "Maximum salary must be greater than minimum salary",
+    contactEmailRequired: "Contact email is required",
+    pleaseSelectLanguageAndLevel: "Please select both language and level",
+    pleaseEnterCertificateName: "Please enter certificate name",
+
+    // Success/Error messages
+    jobPostedSuccessfully: "Job posted successfully!",
+    errorPostingJob: "Error posting job. Please try again.",
+    postJob: "Post Job",
   },
 };
 

@@ -11,8 +11,9 @@ import {
   DashboardPage,
   MyApplicationsPage,
   ProfilePage,
+  PostJobPage,
 } from "../pages";
-import SavedJobsPage from "../pages/SavedJobs/SavedJobsPage";
+import SavedJobsPage from "../pages/Dashboard/SavedJobsPage";
 import JobAlertsPage from "../pages/JobAlerts/JobAlertsPage";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -33,6 +34,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["client", "admin"]}>
         <FindInterpreterPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.POST_JOB,
+    element: (
+      <ProtectedRoute allowedRoles={["client", "admin"]}>
+        <PostJobPage />
       </ProtectedRoute>
     ),
   },

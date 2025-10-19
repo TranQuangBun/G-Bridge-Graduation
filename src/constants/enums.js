@@ -5,6 +5,7 @@ export const ROUTES = {
   CONTACT: "/contact",
   FIND_JOB: "/find-job",
   FIND_INTERPRETER: "/find-interpreter",
+  POST_JOB: "/post-job",
   DASHBOARD: "/dashboard",
   MY_APPLICATIONS: "/dashboard/applications",
   SAVED_JOBS: "/dashboard/saved-jobs",

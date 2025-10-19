@@ -17,10 +17,16 @@ export const getInterpreters = async (req, res) => {
       minRate,
       maxRate,
       minExperience,
+      maxExperience, // NEW
       specializations,
       rating,
       location,
-      availability,
+      availability, // NEW
+      verificationStatus, // NEW
+      completedJobs, // NEW
+      responseTime, // NEW
+      hasPortfolio, // NEW
+      workingHours, // NEW
       certifications,
       page = 1,
       limit = 12,
@@ -66,10 +72,40 @@ export const getInterpreters = async (req, res) => {
       profileWhere.experience = { [Op.gte]: parseInt(minExperience) };
     }
 
-    // Filter by rating
+    // Filter by max experience
+    if (maxExperience) {
+      if (profileWhere.experience) {
+        profileWhere.experience[Op.lte] = parseInt(maxExperience);
+      } else {
+        profileWhere.experience = { [Op.lte]: parseInt(maxExperience) };
+      }
+    }
+
     // Filter by rating
     if (rating) {
       profileWhere.rating = { [Op.gte]: parseFloat(rating) };
+    }
+
+    // Filter by availability status
+    if (availability === "available") {
+      profileWhere.isAvailable = true;
+    } else if (availability === "busy") {
+      profileWhere.isAvailable = false;
+    }
+
+    // Filter by verification status
+    if (verificationStatus === "verified") {
+      profileWhere.verificationStatus = "verified";
+    }
+
+    // Filter by minimum completed jobs
+    if (completedJobs) {
+      profileWhere.completedJobs = { [Op.gte]: parseInt(completedJobs) };
+    }
+
+    // Filter by portfolio existence
+    if (hasPortfolio === "true" || hasPortfolio === true) {
+      profileWhere.portfolio = { [Op.not]: null };
     }
 
     // Note: Specializations will be filtered post-query since it's a JSON field
@@ -182,6 +218,53 @@ export const getInterpreters = async (req, res) => {
         return specArray.some((reqSpec) =>
           specs.some((spec) => spec.toLowerCase().includes(reqSpec))
         );
+      });
+    }
+
+    // Filter by working hours (post-query for JSON availability field)
+    if (workingHours) {
+      filteredInterpreters = filteredInterpreters.filter((interpreter) => {
+        let availability = interpreter.interpreterProfile?.availability;
+
+        // Parse if string
+        if (typeof availability === "string") {
+          try {
+            availability = JSON.parse(availability);
+          } catch (e) {
+            return false;
+          }
+        }
+
+        if (!availability || typeof availability !== "object") return false;
+
+        // Check if any day has the requested working hours
+        // Assuming availability format: { "monday": ["morning", "afternoon"], "tuesday": [...], ... }
+        const timeSlot = workingHours.toLowerCase();
+        return Object.values(availability).some((slots) => {
+          if (!Array.isArray(slots)) return false;
+          return slots.some((slot) => slot.toLowerCase().includes(timeSlot));
+        });
+      });
+    }
+
+    // Filter by response time (based on rating and completedJobs as a heuristic)
+    if (responseTime) {
+      filteredInterpreters = filteredInterpreters.filter((interpreter) => {
+        const profile = interpreter.interpreterProfile;
+        if (!profile) return false;
+
+        const rating = parseFloat(profile.rating) || 0;
+        const completed = parseInt(profile.completedJobs) || 0;
+
+        // Heuristic: fast = high rating + many jobs, slow = low rating or few jobs
+        if (responseTime === "fast") {
+          return rating >= 4.5 && completed >= 20;
+        } else if (responseTime === "medium") {
+          return rating >= 3.5 && completed >= 5;
+        } else if (responseTime === "slow") {
+          return rating < 3.5 || completed < 5;
+        }
+        return true;
       });
     }
 

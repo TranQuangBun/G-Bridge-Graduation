@@ -31,6 +31,7 @@ const FindInterpreterPage = () => {
     minRate: "",
     maxRate: "",
     minExperience: "",
+    maxExperience: "",
     specializations: [],
     rating: "",
     location: "",
@@ -38,6 +39,14 @@ const FindInterpreterPage = () => {
     sortOrder: "DESC",
     page: 1,
     limit: 12,
+    // Advanced filters
+    availability: "", // available, busy, offline
+    verificationStatus: "", // verified, unverified
+    completedJobs: "", // min completed jobs
+    responseTime: "", // fast, medium, slow
+    hasPortfolio: false,
+    certifications: [], // specific certifications
+    workingHours: "", // morning, afternoon, evening, night, flexible
   });
 
   // Pagination
@@ -131,12 +140,13 @@ const FindInterpreterPage = () => {
   };
 
   const handleClearFilters = () => {
-    setFilters({
+    const resetFilters = {
       search: "",
       languages: [],
       minRate: "",
       maxRate: "",
       minExperience: "",
+      maxExperience: "",
       specializations: [],
       rating: "",
       location: "",
@@ -144,8 +154,21 @@ const FindInterpreterPage = () => {
       sortOrder: "DESC",
       page: 1,
       limit: 12,
-    });
-    fetchInterpreters();
+      availability: "",
+      verificationStatus: "",
+      completedJobs: "",
+      responseTime: "",
+      hasPortfolio: false,
+      certifications: [],
+      workingHours: "",
+    };
+
+    setFilters(resetFilters);
+
+    // Trigger API call immediately after resetting filters
+    setTimeout(() => {
+      fetchInterpreters();
+    }, 0);
   };
 
   const handleViewProfile = (interpreterId) => {
@@ -173,8 +196,21 @@ const FindInterpreterPage = () => {
             onClose={handleCloseModal}
           />
         )}
-        {/* Header */}
+
+        {/* Header with Animated Background */}
         <div className={styles.pageHeader}>
+          {/* Animated Background for Header Only */}
+          <div className={styles.headerBackground}>
+            <div className={styles.headerAnimation}>
+              <div className={`${styles.floatingShape} ${styles.shape1}`}></div>
+              <div className={`${styles.floatingShape} ${styles.shape2}`}></div>
+              <div className={`${styles.floatingShape} ${styles.shape3}`}></div>
+              <div className={`${styles.floatingShape} ${styles.shape4}`}></div>
+              <div className={`${styles.floatingShape} ${styles.shape5}`}></div>
+            </div>
+            <div className={styles.headerGradientOverlay}></div>
+          </div>
+
           <div className={styles.headerContent}>
             <h1>{t("findInterpreter.title")}</h1>
             <p>{t("findInterpreter.subtitle")}</p>
@@ -251,35 +287,51 @@ const FindInterpreterPage = () => {
 
             {/* Experience Filter */}
             <div className={styles.filterSection}>
-              <label>{t("findInterpreter.filters.minExperience")}</label>
-              <select
-                value={filters.minExperience}
-                onChange={(e) =>
-                  handleFilterChange("minExperience", e.target.value)
-                }
-                className={styles.selectInput}
-              >
-                <option value="">Any</option>
-                <option value="1">1+ years</option>
-                <option value="3">3+ years</option>
-                <option value="5">5+ years</option>
-                <option value="10">10+ years</option>
-              </select>
+              <label>{t("findInterpreter.filters.experience")}</label>
+              <div className={styles.rangeInputs}>
+                <input
+                  type="number"
+                  placeholder="Min years"
+                  value={filters.minExperience}
+                  onChange={(e) =>
+                    handleFilterChange("minExperience", e.target.value)
+                  }
+                  className={styles.rangeInput}
+                  min="0"
+                  max="50"
+                />
+                <span>-</span>
+                <input
+                  type="number"
+                  placeholder="Max years"
+                  value={filters.maxExperience}
+                  onChange={(e) =>
+                    handleFilterChange("maxExperience", e.target.value)
+                  }
+                  className={styles.rangeInput}
+                  min="0"
+                  max="50"
+                />
+              </div>
             </div>
 
             {/* Rating Filter */}
             <div className={styles.filterSection}>
               <label>{t("findInterpreter.filters.minRating")}</label>
-              <select
-                value={filters.rating}
-                onChange={(e) => handleFilterChange("rating", e.target.value)}
-                className={styles.selectInput}
-              >
-                <option value="">Any</option>
-                <option value="4">4+ ⭐</option>
-                <option value="4.5">4.5+ ⭐</option>
-                <option value="4.8">4.8+ ⭐</option>
-              </select>
+              <div className={styles.ratingSlider}>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.5"
+                  value={filters.rating || 0}
+                  onChange={(e) => handleFilterChange("rating", e.target.value)}
+                  className={styles.slider}
+                />
+                <div className={styles.ratingValue}>
+                  {filters.rating ? <>{filters.rating}+ ⭐</> : "Any"}
+                </div>
+              </div>
             </div>
 
             {/* Advanced Filters Toggle */}
@@ -325,6 +377,214 @@ const FindInterpreterPage = () => {
                         <label htmlFor={`spec-${spec}`}>{spec}</label>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Availability Status */}
+                <div className={styles.filterSection}>
+                  <label>🟢 Availability Status</label>
+                  <div className={styles.radioGroup}>
+                    <label className={styles.radioItem}>
+                      <input
+                        type="radio"
+                        name="availability"
+                        value=""
+                        checked={filters.availability === ""}
+                        onChange={(e) =>
+                          handleFilterChange("availability", e.target.value)
+                        }
+                      />
+                      <span>All</span>
+                    </label>
+                    <label className={styles.radioItem}>
+                      <input
+                        type="radio"
+                        name="availability"
+                        value="available"
+                        checked={filters.availability === "available"}
+                        onChange={(e) =>
+                          handleFilterChange("availability", e.target.value)
+                        }
+                      />
+                      <span>🟢 Available Now</span>
+                    </label>
+                    <label className={styles.radioItem}>
+                      <input
+                        type="radio"
+                        name="availability"
+                        value="busy"
+                        checked={filters.availability === "busy"}
+                        onChange={(e) =>
+                          handleFilterChange("availability", e.target.value)
+                        }
+                      />
+                      <span>🟡 Busy</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Verification Status */}
+                <div className={styles.filterSection}>
+                  <label>✅ Verification</label>
+                  <div className={styles.radioGroup}>
+                    <label className={styles.radioItem}>
+                      <input
+                        type="radio"
+                        name="verification"
+                        value=""
+                        checked={filters.verificationStatus === ""}
+                        onChange={(e) =>
+                          handleFilterChange(
+                            "verificationStatus",
+                            e.target.value
+                          )
+                        }
+                      />
+                      <span>All</span>
+                    </label>
+                    <label className={styles.radioItem}>
+                      <input
+                        type="radio"
+                        name="verification"
+                        value="verified"
+                        checked={filters.verificationStatus === "verified"}
+                        onChange={(e) =>
+                          handleFilterChange(
+                            "verificationStatus",
+                            e.target.value
+                          )
+                        }
+                      />
+                      <span>✅ Verified Only</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Minimum Completed Jobs */}
+                <div className={styles.filterSection}>
+                  <label>💼 Minimum Completed Jobs</label>
+                  <div className={styles.sliderContainer}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={filters.completedJobs || 0}
+                      onChange={(e) =>
+                        handleFilterChange("completedJobs", e.target.value)
+                      }
+                      className={styles.slider}
+                    />
+                    <div className={styles.sliderValue}>
+                      {filters.completedJobs || 0}+ jobs
+                    </div>
+                  </div>
+                </div>
+
+                {/* Response Time */}
+                <div className={styles.filterSection}>
+                  <label>⚡ Response Time</label>
+                  <select
+                    value={filters.responseTime}
+                    onChange={(e) =>
+                      handleFilterChange("responseTime", e.target.value)
+                    }
+                    className={styles.selectInput}
+                  >
+                    <option value="">Any</option>
+                    <option value="fast">⚡ Fast ({"<"} 1 hour)</option>
+                    <option value="medium">🕐 Medium ({"<"} 4 hours)</option>
+                    <option value="slow">🐢 Slow ({"<"} 24 hours)</option>
+                  </select>
+                </div>
+
+                {/* Working Hours Preference */}
+                <div className={styles.filterSection}>
+                  <label>🕐 Working Hours</label>
+                  <select
+                    value={filters.workingHours}
+                    onChange={(e) =>
+                      handleFilterChange("workingHours", e.target.value)
+                    }
+                    className={styles.selectInput}
+                  >
+                    <option value="">Any</option>
+                    <option value="morning">🌅 Morning (6AM - 12PM)</option>
+                    <option value="afternoon">☀️ Afternoon (12PM - 6PM)</option>
+                    <option value="evening">🌆 Evening (6PM - 10PM)</option>
+                    <option value="night">🌙 Night (10PM - 6AM)</option>
+                    <option value="flexible">🔄 Flexible (24/7)</option>
+                  </select>
+                </div>
+
+                {/* Has Portfolio */}
+                <div className={styles.filterSection}>
+                  <label className={styles.checkboxItem}>
+                    <input
+                      type="checkbox"
+                      checked={filters.hasPortfolio}
+                      onChange={(e) =>
+                        handleFilterChange("hasPortfolio", e.target.checked)
+                      }
+                    />
+                    <span>📁 Has Portfolio</span>
+                  </label>
+                </div>
+
+                {/* Quick Filters - Presets */}
+                <div className={styles.filterSection}>
+                  <label>⚡ Quick Filters</label>
+                  <div className={styles.quickFilters}>
+                    <button
+                      className={styles.quickFilterBtn}
+                      onClick={() => {
+                        setFilters({
+                          ...filters,
+                          rating: "4.5",
+                          verificationStatus: "verified",
+                          completedJobs: "20",
+                        });
+                      }}
+                    >
+                      ⭐ Top Rated
+                    </button>
+                    <button
+                      className={styles.quickFilterBtn}
+                      onClick={() => {
+                        setFilters({
+                          ...filters,
+                          availability: "available",
+                          responseTime: "fast",
+                        });
+                      }}
+                    >
+                      ⚡ Quick Response
+                    </button>
+                    <button
+                      className={styles.quickFilterBtn}
+                      onClick={() => {
+                        setFilters({
+                          ...filters,
+                          minExperience: "5",
+                          completedJobs: "50",
+                          hasPortfolio: true,
+                        });
+                      }}
+                    >
+                      💎 Experienced Pro
+                    </button>
+                    <button
+                      className={styles.quickFilterBtn}
+                      onClick={() => {
+                        setFilters({
+                          ...filters,
+                          workingHours: "flexible",
+                          availability: "available",
+                        });
+                      }}
+                    >
+                      🔄 24/7 Available
+                    </button>
                   </div>
                 </div>
               </>

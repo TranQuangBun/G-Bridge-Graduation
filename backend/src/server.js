@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import languageRoutes from "./routes/languageRoutes.js";
 import certificationRoutes from "./routes/certificationRoutes.js";
 import interpreterRoutes from "./routes/interpreterRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/languages", languageRoutes);
 app.use("/api/certifications", certificationRoutes);
 app.use("/api/interpreters", interpreterRoutes);
+app.use("/api/jobs", jobRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
