@@ -3,6 +3,7 @@ import {
   InterpreterProfile,
   Language,
   Certification,
+  SavedInterpreter,
 } from "../models/index.js";
 import { Op } from "sequelize";
 
@@ -166,26 +167,53 @@ export const getInterpreters = async (req, res) => {
         "createdAt",
       ],
       order:
-        sortBy === "rating"
+        sortBy === "rating" ||
+        sortBy === "experience" ||
+        sortBy === "hourlyRate"
           ? [
               [
                 { model: InterpreterProfile, as: "interpreterProfile" },
-                "rating",
+                sortBy,
                 sortOrder,
               ],
             ]
           : [[sortBy, sortOrder]],
       limit: parseInt(limit),
       offset: offset,
-      distinct: true,
+      // When sorting by joined table columns, we must disable subQuery
+      // to allow ORDER BY to access the joined columns
+      subQuery:
+        sortBy === "rating" ||
+        sortBy === "experience" ||
+        sortBy === "hourlyRate"
+          ? false
+          : undefined,
     });
 
+    // Deduplicate interpreters when using subQuery: false (which creates duplicate rows from LEFT JOINs)
+    let uniqueInterpreters = interpreters;
+    if (
+      sortBy === "rating" ||
+      sortBy === "experience" ||
+      sortBy === "hourlyRate"
+    ) {
+      const seen = new Map();
+      uniqueInterpreters = [];
+
+      for (const interpreter of interpreters) {
+        if (!seen.has(interpreter.id)) {
+          seen.set(interpreter.id, true);
+          uniqueInterpreters.push(interpreter);
+        }
+      }
+    }
+
     console.log(
-      `✅ Query returned ${interpreters.length} interpreters (total: ${count})`
+      `✅ Query returned ${uniqueInterpreters.length} interpreters (total: ${count})`
     );
 
     // Additional filtering for languages (post-query)
-    let filteredInterpreters = interpreters;
+    let filteredInterpreters = uniqueInterpreters;
     if (languages) {
       const langArray = languages.split(",").map((l) => l.trim().toLowerCase());
       filteredInterpreters = filteredInterpreters.filter((interpreter) => {
@@ -488,3 +516,141 @@ export const getAvailableSpecializations = async (req, res) => {
     });
   }
 };
+
+// Toggle save interpreter (Company/Client saves Interpreter)
+export async function toggleSaveInterpreter(req, res) {
+  try {
+    const { interpreterId } = req.params;
+    const userId = req.user.sub || req.user.id; // JWT uses 'sub' field
+
+    // Check if interpreter exists and has interpreter role
+    const interpreter = await User.findOne({
+      where: {
+        id: interpreterId,
+        role: "interpreter",
+      },
+    });
+
+    if (!interpreter) {
+      return res.status(404).json({
+        success: false,
+        message: "Interpreter not found",
+      });
+    }
+
+    // Prevent saving yourself
+    if (userId === parseInt(interpreterId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot save yourself",
+      });
+    }
+
+    // Check if already saved
+    const savedInterpreter = await SavedInterpreter.findOne({
+      where: {
+        userId,
+        interpreterId,
+      },
+    });
+
+    if (savedInterpreter) {
+      // Unsave
+      await savedInterpreter.destroy();
+      return res.json({
+        success: true,
+        message: "Interpreter removed from saved list",
+        isSaved: false,
+      });
+    } else {
+      // Save
+      await SavedInterpreter.create({
+        userId,
+        interpreterId,
+      });
+      return res.json({
+        success: true,
+        message: "Interpreter saved successfully",
+        isSaved: true,
+      });
+    }
+  } catch (error) {
+    console.error("Error toggling save interpreter:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error saving/unsaving interpreter",
+      error: error.message,
+    });
+  }
+}
+
+// Get saved interpreters
+export async function getSavedInterpreters(req, res) {
+  try {
+    const userId = req.user.sub || req.user.id;
+    const { page = 1, limit = 12 } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows: savedInterpreters } =
+      await SavedInterpreter.findAndCountAll({
+        where: { userId },
+        include: [
+          {
+            model: User,
+            as: "interpreter",
+            attributes: [
+              "id",
+              "fullName",
+              "email",
+              "phone",
+              "avatar",
+              "address",
+              "createdAt",
+            ],
+            include: [
+              {
+                model: InterpreterProfile,
+                as: "interpreterProfile",
+                attributes: [
+                  "experience",
+                  "hourlyRate",
+                  "specializations",
+                  "rating",
+                  "totalReviews",
+                ],
+              },
+            ],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+      });
+
+    const totalPages = Math.ceil(count / limit);
+
+    return res.json({
+      success: true,
+      data: {
+        savedInterpreters: savedInterpreters.map((saved) => ({
+          ...saved.interpreter.toJSON(),
+          savedAt: saved.createdAt,
+        })),
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching saved interpreters:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching saved interpreters",
+      error: error.message,
+    });
+  }
+}

@@ -19,6 +19,7 @@ const FindInterpreterPage = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedInterpreterId, setSelectedInterpreterId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [savedInterpreters, setSavedInterpreters] = useState(new Set());
 
   // Filter options
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -69,7 +70,10 @@ const FindInterpreterPage = () => {
   useEffect(() => {
     if (user) {
       fetchFilterOptions();
+      fetchSavedInterpreters();
+      fetchInterpreters(); // ✅ Fetch interpreters on initial load
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Fetch interpreters when filters change
@@ -91,6 +95,18 @@ const FindInterpreterPage = () => {
       setAvailableSpecializations(specsRes.data || []);
     } catch (error) {
       console.error("Error fetching filter options:", error);
+    }
+  };
+
+  const fetchSavedInterpreters = async () => {
+    try {
+      const response = await interpreterService.getSavedInterpreters(1, 1000);
+      const savedList = response.data?.savedInterpreters || [];
+      const savedIds = new Set(savedList.map((item) => item.id));
+      setSavedInterpreters(savedIds);
+    } catch (error) {
+      console.error("Error fetching saved interpreters:", error);
+      // Don't show error to user, just silently fail
     }
   };
 
@@ -184,6 +200,39 @@ const FindInterpreterPage = () => {
   const handlePageChange = (newPage) => {
     setFilters({ ...filters, page: newPage });
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSaveInterpreter = async (interpreterId, event) => {
+    event.stopPropagation(); // Prevent opening modal when clicking save button
+
+    try {
+      const response = await interpreterService.toggleSaveInterpreter(
+        interpreterId
+      );
+
+      if (response.success) {
+        // Update saved interpreters set
+        const newSavedSet = new Set(savedInterpreters);
+        if (response.isSaved) {
+          newSavedSet.add(interpreterId);
+          toast.success(response.message || "Interpreter saved successfully");
+        } else {
+          newSavedSet.delete(interpreterId);
+          toast.success(
+            response.message || "Interpreter removed from saved list"
+          );
+        }
+        setSavedInterpreters(newSavedSet);
+      }
+    } catch (error) {
+      console.error("Error saving interpreter:", error);
+      if (error.message === "Please login to save interpreters") {
+        toast.error("Please login to save interpreters");
+        navigate("/login");
+      } else {
+        toast.error(error.message || "Failed to save interpreter");
+      }
+    }
   };
 
   return (
@@ -601,7 +650,7 @@ const FindInterpreterPage = () => {
             <div className={styles.toolbar}>
               <div className={styles.resultsInfo}>
                 <span>
-                  {pagination.total} {t("findInterpreter.resultsFound")}
+                  {interpreters.length} {t("findInterpreter.resultsFound")}
                 </span>
               </div>
 
@@ -740,6 +789,25 @@ const FindInterpreterPage = () => {
 
                     {/* Footer */}
                     <div className={styles.cardFooter}>
+                      <button
+                        className={`${styles.saveBtn} ${
+                          savedInterpreters.has(interpreter.id)
+                            ? styles.saved
+                            : ""
+                        }`}
+                        onClick={(e) =>
+                          handleSaveInterpreter(interpreter.id, e)
+                        }
+                        title={
+                          savedInterpreters.has(interpreter.id)
+                            ? "Remove from saved"
+                            : "Save interpreter"
+                        }
+                      >
+                        {savedInterpreters.has(interpreter.id)
+                          ? "Saved"
+                          : "Save"}
+                      </button>
                       <button
                         className={styles.viewProfileBtn}
                         onClick={() => handleViewProfile(interpreter.id)}

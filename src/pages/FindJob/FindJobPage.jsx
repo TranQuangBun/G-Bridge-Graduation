@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styles from "./FindJobPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
@@ -10,6 +10,7 @@ export default function FindJobPage() {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // State
   const [jobs, setJobs] = useState([]);
@@ -53,7 +54,7 @@ export default function FindJobPage() {
   });
 
   // Premium state (keep for demo)
-  const [hasPremium, setHasPremium] = useState(false);
+  const hasPremium = false;
 
   // Saved jobs state
   const [savedJobIds, setSavedJobIds] = useState(new Set());
@@ -76,6 +77,20 @@ export default function FindJobPage() {
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, keyword, province, domainId, workingModeId, minSalary, maxSalary]);
+
+  // Check URL parameter for jobId to open modal
+  useEffect(() => {
+    const jobId = searchParams.get("jobId");
+    if (jobId && jobs.length > 0) {
+      const job = jobs.find((j) => j.id === parseInt(jobId));
+      if (job) {
+        openJobModal(job);
+        // Remove jobId from URL after opening modal
+        setSearchParams({});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, jobs]);
 
   async function fetchLookupData() {
     try {
@@ -320,10 +335,6 @@ export default function FindJobPage() {
     );
   }
 
-  function togglePremium() {
-    setHasPremium(!hasPremium);
-  }
-
   return (
     <MainLayout>
       <div className={styles.findJobRoot}>
@@ -334,45 +345,6 @@ export default function FindJobPage() {
             <p className={styles.subtitle}>
               Discover opportunities that match your skills
             </p>
-
-            {/* Demo buttons */}
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                gap: "10px",
-                justifyContent: "center",
-                position: "relative",
-                zIndex: 2,
-              }}
-            >
-              <button
-                onClick={() => navigate(user ? ROUTES.DASHBOARD : ROUTES.LOGIN)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  background: user ? "#22c55e" : "#f3f4f6",
-                  color: user ? "white" : "black",
-                  cursor: "pointer",
-                }}
-              >
-                {user ? `✓ ${user.fullName || user.email}` : "🔑 Login"}
-              </button>
-              <button
-                onClick={togglePremium}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  background: hasPremium ? "#f59e0b" : "#f3f4f6",
-                  color: hasPremium ? "white" : "black",
-                  cursor: "pointer",
-                }}
-              >
-                {hasPremium ? "👑 Premium" : "🔒 Free"}
-              </button>
-            </div>
           </div>
         </header>
 

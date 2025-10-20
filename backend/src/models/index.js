@@ -16,6 +16,14 @@ import JobRequiredLanguage from "./JobRequiredLanguage.js";
 import JobRequiredCertificate from "./JobRequiredCertificate.js";
 import JobApplication from "./JobApplication.js";
 import SavedJob from "./SavedJob.js";
+import SavedInterpreter from "./SavedInterpreter.js";
+
+// Import Payment-related models
+import SubscriptionPlan from "./SubscriptionPlan.js";
+import Payment from "./Payment.js";
+import UserSubscription from "./UserSubscription.js";
+import PaymentWebhook from "./PaymentWebhook.js";
+import PaymentRefund from "./PaymentRefund.js";
 
 // Define all associations here
 User.hasOne(InterpreterProfile, {
@@ -206,6 +214,143 @@ User.hasMany(SavedJob, {
   as: "savedJobRecords",
 });
 
+// ==================== SAVED INTERPRETER RELATIONSHIPS ====================
+
+// User and Interpreter (Many-to-Many through SavedInterpreter)
+// Company/Client saves Interpreters
+User.belongsToMany(User, {
+  through: SavedInterpreter,
+  foreignKey: "userId",
+  otherKey: "interpreterId",
+  as: "savedInterpreters",
+});
+User.belongsToMany(User, {
+  through: SavedInterpreter,
+  foreignKey: "interpreterId",
+  otherKey: "userId",
+  as: "savedByUsers",
+});
+
+// SavedInterpreter direct associations
+SavedInterpreter.belongsTo(User, {
+  foreignKey: "interpreterId",
+  as: "interpreter",
+});
+User.hasMany(SavedInterpreter, {
+  foreignKey: "interpreterId",
+  as: "savedByRecords",
+});
+
+SavedInterpreter.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+User.hasMany(SavedInterpreter, {
+  foreignKey: "userId",
+  as: "savedInterpreterRecords",
+});
+
+// ==================== PAYMENT RELATIONSHIPS ====================
+
+// User has many Payments
+User.hasMany(Payment, {
+  foreignKey: "userId",
+  as: "payments",
+  onDelete: "CASCADE",
+});
+Payment.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+// SubscriptionPlan has many Payments
+SubscriptionPlan.hasMany(Payment, {
+  foreignKey: "planId",
+  as: "payments",
+  onDelete: "RESTRICT",
+});
+Payment.belongsTo(SubscriptionPlan, {
+  foreignKey: "planId",
+  as: "plan",
+});
+
+// User has one active UserSubscription
+User.hasOne(UserSubscription, {
+  foreignKey: "userId",
+  as: "activeSubscription",
+  onDelete: "CASCADE",
+});
+UserSubscription.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+// SubscriptionPlan has many UserSubscriptions
+SubscriptionPlan.hasMany(UserSubscription, {
+  foreignKey: "planId",
+  as: "subscriptions",
+  onDelete: "RESTRICT",
+});
+UserSubscription.belongsTo(SubscriptionPlan, {
+  foreignKey: "planId",
+  as: "plan",
+});
+
+// Payment has one UserSubscription (created by this payment)
+Payment.hasOne(UserSubscription, {
+  foreignKey: "paymentId",
+  as: "subscription",
+  onDelete: "SET NULL",
+});
+UserSubscription.belongsTo(Payment, {
+  foreignKey: "paymentId",
+  as: "initialPayment",
+});
+
+// Payment has many PaymentWebhooks
+Payment.hasMany(PaymentWebhook, {
+  foreignKey: "paymentId",
+  as: "webhooks",
+  onDelete: "SET NULL",
+});
+PaymentWebhook.belongsTo(Payment, {
+  foreignKey: "paymentId",
+  as: "payment",
+});
+
+// Payment has many PaymentRefunds
+Payment.hasMany(PaymentRefund, {
+  foreignKey: "paymentId",
+  as: "refunds",
+  onDelete: "RESTRICT",
+});
+PaymentRefund.belongsTo(Payment, {
+  foreignKey: "paymentId",
+  as: "payment",
+});
+
+// User has many PaymentRefunds (as requester)
+User.hasMany(PaymentRefund, {
+  foreignKey: "userId",
+  as: "refundRequests",
+  onDelete: "CASCADE",
+});
+PaymentRefund.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+// User processes PaymentRefunds (as admin)
+User.hasMany(PaymentRefund, {
+  foreignKey: "processedBy",
+  as: "processedRefunds",
+  onDelete: "SET NULL",
+});
+PaymentRefund.belongsTo(User, {
+  foreignKey: "processedBy",
+  as: "processor",
+});
+
 // Export all models
 export {
   User,
@@ -223,6 +368,12 @@ export {
   JobRequiredCertificate,
   JobApplication,
   SavedJob,
+  SavedInterpreter,
+  SubscriptionPlan,
+  Payment,
+  UserSubscription,
+  PaymentWebhook,
+  PaymentRefund,
 };
 
 // Function to sync all models
@@ -256,6 +407,14 @@ export async function syncDatabase(force = false) {
     await JobRequiredCertificate.sync({ force });
     await JobApplication.sync({ force });
     await SavedJob.sync({ force });
+    await SavedInterpreter.sync({ force });
+
+    // Payment models (don't force sync - tables already created by migration)
+    await SubscriptionPlan.sync({ force: false });
+    await Payment.sync({ force: false });
+    await UserSubscription.sync({ force: false });
+    await PaymentWebhook.sync({ force: false });
+    await PaymentRefund.sync({ force: false });
 
     console.log("✓ Database models synced successfully!");
   } catch (error) {

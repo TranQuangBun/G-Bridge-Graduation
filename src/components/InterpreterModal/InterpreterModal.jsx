@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../translet/LanguageContext";
+import { useNavigate } from "react-router-dom";
 import interpreterService from "../../services/interpreterService";
 import { toast } from "react-toastify";
 import styles from "./InterpreterModal.module.css";
@@ -8,6 +9,7 @@ import styles from "./InterpreterModal.module.css";
 const InterpreterModal = ({ interpreterId, onClose }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [interpreter, setInterpreter] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,6 +51,11 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
       return;
     }
     toast.info("Booking feature coming soon!");
+  };
+
+  const handleUpgradeToPremium = () => {
+    onClose(); // Close modal first
+    navigate("/pricing"); // Navigate to pricing page
   };
 
   const handleBackdropClick = (e) => {
@@ -145,7 +152,10 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
               <strong>{t("interpreterModal.premiumRequired")}</strong>
               <p>{t("interpreterModal.premiumMessage")}</p>
             </div>
-            <button className={styles.upgradeBtn}>
+            <button
+              className={styles.upgradeBtn}
+              onClick={handleUpgradeToPremium}
+            >
               {t("interpreterModal.upgradeToPremium")}
             </button>
           </div>

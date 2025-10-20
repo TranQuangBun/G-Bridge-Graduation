@@ -84,6 +84,32 @@ const interpreterService = {
       throw error.response?.data || error;
     }
   },
+
+  // Toggle save interpreter (Company/Client saves interpreter)
+  toggleSaveInterpreter: async (interpreterId) => {
+    try {
+      const response = await apiClient.post(
+        `/interpreters/${interpreterId}/save`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error saving interpreter:", error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Get saved interpreters
+  getSavedInterpreters: async (page = 1, limit = 12) => {
+    try {
+      const response = await apiClient.get(
+        `/interpreters/saved/list?page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching saved interpreters:", error);
+      throw error.response?.data || error;
+    }
+  },
 };
 
 export default interpreterService;

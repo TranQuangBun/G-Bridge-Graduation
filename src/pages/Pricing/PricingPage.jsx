@@ -1,7 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./PricingPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
+import PaymentGatewayModal from "../../components/PaymentGatewayModal/PaymentGatewayModal";
+import * as paymentService from "../../services/paymentService";
 
 const planDefinitions = (t) => [
   {
@@ -67,13 +70,13 @@ const planDefinitions = (t) => [
 
 export default function PricingPage() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [billing, setBilling] = useState("monthly");
-  const [openPlan, setOpenPlan] = useState(null); // plan key for payment modal
+  const [openPlan, setOpenPlan] = useState(null); // plan object for payment modal
   const [purchased, setPurchased] = useState({}); // { planKey: true }
-  const [paymentTab, setPaymentTab] = useState("qr");
-  const [card, setCard] = useState({ number: "", name: "", exp: "", cvc: "" });
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState("");
+  const [backendPlans, setBackendPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
 
   const YEARLY_DISCOUNT = 10; // percent
   const basePlans = useMemo(() => planDefinitions(t), [t]);
@@ -103,33 +106,127 @@ export default function PricingPage() {
     [billing, basePlans]
   );
 
-  function openCheckout(planKey) {
-    if (purchased[planKey]) return; // already bought
-    setOpenPlan(planKey);
-    setPaymentTab("qr");
-    setError("");
-  }
+  // Load backend plans on mount (optional - can use hardcoded plans)
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setLoadingPlans(true);
+        const data = await paymentService.getSubscriptionPlans();
+        setBackendPlans(data.plans || []);
+      } catch (error) {
+        console.error("Failed to load subscription plans:", error);
+        // Fall back to hardcoded plans
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+    loadPlans();
+  }, []);
 
-  function fakeComplete(planKey) {
-    setProcessing(true);
-    setError("");
-    setTimeout(() => {
-      setProcessing(false);
-      setPurchased((prev) => ({ ...prev, [planKey]: true }));
-      setOpenPlan(null);
-    }, 1500);
-  }
+  // Check if user is already subscribed
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!paymentService.isAuthenticated()) return;
 
-  function submitCard(e) {
-    e.preventDefault();
-    if (!card.number || !card.name || !card.exp || !card.cvc) {
-      setError("Vui lòng nhập đầy đủ thông tin thẻ");
+      try {
+        const data = await paymentService.getSubscriptionStatus();
+        if (data.active) {
+          // Mark the subscribed plan as purchased
+          const planKey = data.planName?.toLowerCase() || "pro";
+          setPurchased({ [planKey]: true });
+        }
+      } catch (error) {
+        console.error("Failed to check subscription:", error);
+      }
+    };
+    checkSubscription();
+  }, []);
+
+  function openCheckout(plan) {
+    if (purchased[plan.key]) return; // already bought
+
+    // Check if user is authenticated
+    if (!paymentService.isAuthenticated()) {
+      alert(t("pricingPage.pay.loginRequired") || "Please login to upgrade");
+      navigate("/login");
       return;
     }
-    fakeComplete(openPlan);
+
+    // Open payment gateway modal with plan data
+    setOpenPlan(plan);
   }
 
-  const currentPlan = plans.find((p) => p.key === openPlan);
+  async function handleSelectGateway(gateway) {
+    if (!openPlan) return;
+
+    try {
+      setProcessing(true);
+
+      // Find backend plan ID (for now use key mapping)
+      // In production, you should map frontend plans to backend plan IDs
+      const planIdMap = {
+        free: 1,
+        pro: 3,
+        team: 3, // map to pro for now
+        enterprise: 4,
+      };
+
+      const planId = planIdMap[openPlan.key] || 3;
+
+      if (gateway === "vnpay") {
+        const response = await paymentService.createVNPayPayment(planId);
+        console.log("VNPay payment response:", response);
+
+        // Backend returns: { success, message, data: { paymentUrl, orderId, ... } }
+        const paymentUrl = response.data?.paymentUrl || response.paymentUrl;
+
+        if (paymentUrl) {
+          // Show brief success message before redirect
+          console.log("Redirecting to VNPay payment page...");
+          // Redirect to VNPay payment page (will leave the current page)
+          setTimeout(() => {
+            paymentService.redirectToPayment(paymentUrl);
+          }, 500);
+        } else {
+          throw new Error("Payment URL not received from VNPay");
+        }
+      } else if (gateway === "paypal") {
+        const response = await paymentService.createPayPalPayment(planId);
+        console.log("PayPal payment response:", response);
+
+        // Backend returns: { success, message, data: { paymentUrl, orderId, ... } }
+        const paymentUrl = response.data?.paymentUrl || response.paymentUrl;
+
+        if (paymentUrl) {
+          // Show brief success message before redirect
+          console.log("Redirecting to PayPal payment page...");
+          // Redirect to PayPal payment page (will leave the current page)
+          setTimeout(() => {
+            paymentService.redirectToPayment(paymentUrl);
+          }, 500);
+        } else {
+          throw new Error("Payment URL not received from PayPal");
+        }
+      }
+      // Note: Don't set processing to false here because we're redirecting away
+    } catch (error) {
+      console.error("Payment creation failed:", error);
+      alert(
+        error.response?.data?.message ||
+          t("pricingPage.pay.error") ||
+          "Payment failed. Please try again."
+      );
+      setProcessing(false);
+      setOpenPlan(null); // Close modal on error
+    }
+  }
+
+  function closePaymentModal() {
+    if (processing) return;
+    setOpenPlan(null);
+  }
+
+  const currentPlan = openPlan;
 
   return (
     <MainLayout>
@@ -204,7 +301,7 @@ export default function PricingPage() {
                   </ul>
                   <button
                     disabled={isBought}
-                    onClick={() => openCheckout(plan.key)}
+                    onClick={() => openCheckout(plan)}
                     className={
                       plan.outline
                         ? `${styles.ctaBtn} ${styles.outline}`
@@ -277,129 +374,15 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
+
+        {/* Real Payment Gateway Modal */}
         {openPlan && currentPlan && (
-          <div
-            className={styles.paymentOverlay}
-            onClick={() => !processing && setOpenPlan(null)}
-          >
-            <div
-              className={styles.paymentModal}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={styles.payHeader}>
-                <h3>
-                  {t("pricingPage.pay.payingFor")}: {currentPlan.name}
-                </h3>
-                <button
-                  className={styles.closeBtn}
-                  onClick={() => !processing && setOpenPlan(null)}
-                >
-                  ×
-                </button>
-              </div>
-              <div className={styles.payTabs}>
-                <button
-                  className={paymentTab === "qr" ? styles.tabActive : ""}
-                  onClick={() => setPaymentTab("qr")}
-                >
-                  {t("pricingPage.pay.qrTab")}
-                </button>
-                <button
-                  className={paymentTab === "card" ? styles.tabActive : ""}
-                  onClick={() => setPaymentTab("card")}
-                >
-                  {t("pricingPage.pay.cardTab")}
-                </button>
-              </div>
-              <div className={styles.payBody}>
-                {paymentTab === "qr" && (
-                  <div className={styles.qrSection}>
-                    <div className={styles.qrBox}>
-                      <div className={styles.fakeQr}></div>
-                    </div>
-                    <p className={styles.qrHint}>
-                      {t("pricingPage.pay.qrHint")}{" "}
-                      {currentPlan.displayPrice === 0
-                        ? "0"
-                        : `$${currentPlan.displayPrice}`}
-                    </p>
-                    <button
-                      disabled={processing}
-                      onClick={() => fakeComplete(currentPlan.key)}
-                      className={styles.payConfirm}
-                    >
-                      {processing
-                        ? t("pricingPage.pay.processing")
-                        : t("pricingPage.pay.iPaid")}
-                    </button>
-                  </div>
-                )}
-                {paymentTab === "card" && (
-                  <form className={styles.cardForm} onSubmit={submitCard}>
-                    <label>
-                      {t("pricingPage.pay.cardNumber")}
-                      <input
-                        value={card.number}
-                        onChange={(e) =>
-                          setCard((c) => ({ ...c, number: e.target.value }))
-                        }
-                        placeholder="1111 2222 3333 4444"
-                        maxLength={19}
-                      />
-                    </label>
-                    <label>
-                      {t("pricingPage.pay.cardName")}
-                      <input
-                        value={card.name}
-                        onChange={(e) =>
-                          setCard((c) => ({ ...c, name: e.target.value }))
-                        }
-                        placeholder="NGUYEN VAN A"
-                      />
-                    </label>
-                    <div className={styles.row2}>
-                      <label>
-                        {t("pricingPage.pay.cardExp")}
-                        <input
-                          value={card.exp}
-                          onChange={(e) =>
-                            setCard((c) => ({ ...c, exp: e.target.value }))
-                          }
-                          placeholder="MM/YY"
-                          maxLength={5}
-                        />
-                      </label>
-                      <label>
-                        {t("pricingPage.pay.cardCvc")}
-                        <input
-                          value={card.cvc}
-                          onChange={(e) =>
-                            setCard((c) => ({ ...c, cvc: e.target.value }))
-                          }
-                          placeholder="123"
-                          maxLength={4}
-                        />
-                      </label>
-                    </div>
-                    {error && (
-                      <div className={styles.err}>
-                        {t("pricingPage.pay.needAll")}
-                      </div>
-                    )}
-                    <button
-                      disabled={processing}
-                      className={styles.payConfirm}
-                      type="submit"
-                    >
-                      {processing
-                        ? t("pricingPage.pay.processing")
-                        : t("pricingPage.pay.activate")}
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          </div>
+          <PaymentGatewayModal
+            plan={currentPlan}
+            onClose={closePaymentModal}
+            onSelectGateway={handleSelectGateway}
+            processing={processing}
+          />
         )}
       </div>
     </MainLayout>

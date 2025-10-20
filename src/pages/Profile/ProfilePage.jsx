@@ -10,15 +10,6 @@ import languageService from "../../services/languageService";
 import certificationService from "../../services/certificationService";
 import { toast } from "react-toastify";
 
-const SIDEBAR_MENU = [
-  { id: "overview", icon: "📊", labelKey: "overview", active: false },
-  { id: "applications", icon: "📋", labelKey: "applications", active: false },
-  { id: "favorites", icon: "❤️", labelKey: "favorites", active: false },
-  { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-  { id: "profile", icon: "👤", labelKey: "profile", active: true },
-  { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-];
-
 // Language to Certification mapping
 const LANGUAGE_CERTIFICATIONS = {
   English: [
@@ -110,9 +101,6 @@ const LANGUAGE_CERTIFICATIONS = {
   Urdu: [{ name: "Urdu Proficiency Test", organization: "National Council" }],
   Bengali: [{ name: "Bengali Language Test", organization: "Bangla Academy" }],
   Turkish: [{ name: "TYS", organization: "Ankara University" }],
-  Polish: [
-    { name: "Polish Language Certificate", organization: "Polish Ministry" },
-  ],
   Greek: [
     { name: "Greek Language Certificate", organization: "Greek Ministry" },
   ],
@@ -130,6 +118,23 @@ const ProfilePage = () => {
     loading: authLoading,
     refreshUser,
   } = useAuth();
+
+  // Check if user is company/client role
+  const isCompany = user?.role === "client" || user?.role === "company";
+
+  const SIDEBAR_MENU = [
+    { id: "overview", icon: "📊", labelKey: "overview", active: false },
+    { id: "applications", icon: "📋", labelKey: "applications", active: false },
+    {
+      id: "favorites",
+      icon: "❤️",
+      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
+      active: false,
+    },
+    { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
+    { id: "profile", icon: "👤", labelKey: "profile", active: true },
+    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
+  ];
 
   // States for editing
   const [activeMenu, setActiveMenu] = useState("profile");
@@ -533,7 +538,7 @@ const ProfilePage = () => {
               >
                 <span className={styles.menuIcon}>{item.icon}</span>
                 <span className={styles.menuLabel}>
-                  {t(`dashboard.navigation.${item.labelKey}`)}
+                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
                 </span>
               </button>
             ))}

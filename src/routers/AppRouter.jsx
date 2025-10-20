@@ -16,6 +16,8 @@ import {
 import SavedJobsPage from "../pages/Dashboard/SavedJobsPage";
 import JobAlertsPage from "../pages/JobAlerts/JobAlertsPage";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
+import PaymentSuccessPage from "../pages/PaymentSuccess";
+import PaymentCancelPage from "../pages/PaymentCancel";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { ROUTES } from "../constants";
 
@@ -104,6 +106,18 @@ const router = createBrowserRouter([
   {
     path: ROUTES.PRICING,
     element: <PricingPage />,
+  },
+  {
+    path: "/payment/vnpay/callback",
+    element: <PaymentSuccessPage />,
+  },
+  {
+    path: "/payment/paypal/success",
+    element: <PaymentSuccessPage />,
+  },
+  {
+    path: "/payment/paypal/cancel",
+    element: <PaymentCancelPage />,
   },
 ]);
 

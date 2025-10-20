@@ -4,6 +4,7 @@ import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Mock data for applications
 const MOCK_APPLICATIONS = [
@@ -104,22 +105,31 @@ const MOCK_APPLICATIONS = [
   },
 ];
 
-const SIDEBAR_MENU = [
-  { id: "overview", icon: "📊", labelKey: "overview", active: false },
-  { id: "applications", icon: "📋", labelKey: "applications", active: true },
-  { id: "favorites", icon: "❤️", labelKey: "favorites", active: false },
-  { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-  { id: "profile", icon: "👤", labelKey: "profile", active: false },
-  { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-];
-
 function MyApplicationsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeMenu, setActiveMenu] = useState("applications");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [selectedApplication, setSelectedApplication] = useState(null);
+
+  // Check if user is company/client role
+  const isCompany = user?.role === "client" || user?.role === "company";
+
+  const SIDEBAR_MENU = [
+    { id: "overview", icon: "📊", labelKey: "overview", active: false },
+    { id: "applications", icon: "📋", labelKey: "applications", active: true },
+    {
+      id: "favorites",
+      icon: "❤️",
+      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
+      active: false,
+    },
+    { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
+    { id: "profile", icon: "👤", labelKey: "profile", active: false },
+    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
+  ];
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -217,7 +227,7 @@ function MyApplicationsPage() {
               >
                 <span className={styles.menuIcon}>{item.icon}</span>
                 <span className={styles.menuLabel}>
-                  {t(`dashboard.navigation.${item.labelKey}`)}
+                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
                 </span>
               </button>
             ))}

@@ -4,6 +4,7 @@ import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Mock data for saved jobs
 const MOCK_SAVED_JOBS = [
@@ -117,22 +118,31 @@ const MOCK_SAVED_JOBS = [
   },
 ];
 
-const SIDEBAR_MENU = [
-  { id: "overview", icon: "📊", labelKey: "overview", active: false },
-  { id: "applications", icon: "📋", labelKey: "applications", active: false },
-  { id: "favorites", icon: "❤️", labelKey: "favorites", active: true },
-  { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-  { id: "profile", icon: "👤", labelKey: "profile", active: false },
-  { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-];
-
 function SavedJobsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeMenu, setActiveMenu] = useState("favorites");
   const [sortBy, setSortBy] = useState("newest");
   const [selectedJob, setSelectedJob] = useState(null);
   const [savedJobs, setSavedJobs] = useState(MOCK_SAVED_JOBS);
+
+  // Check if user is company/client role
+  const isCompany = user?.role === "client" || user?.role === "company";
+
+  const SIDEBAR_MENU = [
+    { id: "overview", icon: "📊", labelKey: "overview", active: false },
+    { id: "applications", icon: "📋", labelKey: "applications", active: false },
+    {
+      id: "favorites",
+      icon: "❤️",
+      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
+      active: true,
+    },
+    { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
+    { id: "profile", icon: "👤", labelKey: "profile", active: false },
+    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
+  ];
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -197,7 +207,7 @@ function SavedJobsPage() {
               >
                 <span className={styles.menuIcon}>{item.icon}</span>
                 <span className={styles.menuLabel}>
-                  {t(`dashboard.navigation.${item.labelKey}`)}
+                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
                 </span>
               </button>
             ))}

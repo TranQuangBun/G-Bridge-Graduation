@@ -4,6 +4,7 @@ import { MainLayout } from "../../layouts";
 import { ROUTES } from "../../constants";
 import "./HomePage.css";
 import { useLanguage } from "../../translet/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   useScrollAnimation,
   useStaggeredAnimation,
@@ -121,6 +122,7 @@ const jobsData = [
 
 const HomePage = () => {
   const { lang, t } = useLanguage();
+  const { user } = useAuth();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
 
   // Anim refs
@@ -242,13 +244,18 @@ const HomePage = () => {
                     {lang === "vi" ? "Tìm phiên dịch" : "Find Interpreter"}
                   </span>
                 </Link>
-                <Link
-                  to="/post-job"
-                  className="action-button outlined ripple-effect"
-                >
-                  <i className="fas fa-plus"></i>
-                  <span>{lang === "vi" ? "Đăng tuyển dụng" : "Post Job"}</span>
-                </Link>
+                {/* Hide Post Job button for interpreter role */}
+                {user?.role !== "interpreter" && (
+                  <Link
+                    to="/post-job"
+                    className="action-button outlined ripple-effect"
+                  >
+                    <i className="fas fa-plus"></i>
+                    <span>
+                      {lang === "vi" ? "Đăng tuyển dụng" : "Post Job"}
+                    </span>
+                  </Link>
+                )}
               </div>
             </div>
             <div className="hero-stats" ref={statsRef}>

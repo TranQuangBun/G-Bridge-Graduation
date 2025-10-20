@@ -52,20 +52,28 @@ const MOCK_RECENT_JOBS = [
   },
 ];
 
-const SIDEBAR_MENU = [
-  { id: "overview", icon: "📊", labelKey: "overview", active: true },
-  { id: "applications", icon: "📋", labelKey: "applications", active: false },
-  { id: "favorites", icon: "❤️", labelKey: "favorites", active: false },
-  { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-  { id: "profile", icon: "👤", labelKey: "profile", active: false },
-  { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-];
-
 function DashboardPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
   const [activeMenu, setActiveMenu] = useState("overview");
+
+  // Check if user is company/client role
+  const isCompany = user?.role === "client" || user?.role === "company";
+
+  const SIDEBAR_MENU = [
+    { id: "overview", icon: "📊", labelKey: "overview", active: true },
+    { id: "applications", icon: "📋", labelKey: "applications", active: false },
+    {
+      id: "favorites",
+      icon: "❤️",
+      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
+      active: false,
+    },
+    { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
+    { id: "profile", icon: "👤", labelKey: "profile", active: false },
+    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
+  ];
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -153,7 +161,7 @@ function DashboardPage() {
               >
                 <span className={styles.menuIcon}>{item.icon}</span>
                 <span className={styles.menuLabel}>
-                  {t(`dashboard.navigation.${item.labelKey}`)}
+                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
                 </span>
               </button>
             ))}

@@ -254,6 +254,8 @@ const vi = {
       cardCvc: "CVC",
       needAll: "Vui lòng nhập đầy đủ thông tin thẻ",
       activate: "Thanh toán & kích hoạt",
+      loginRequired: "Vui lòng đăng nhập để nâng cấp",
+      error: "Thanh toán thất bại. Vui lòng thử lại.",
     },
   },
   applications: {

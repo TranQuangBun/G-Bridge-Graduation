@@ -250,6 +250,8 @@ const en = {
       cardCvc: "CVC",
       needAll: "Please fill all card fields",
       activate: "Pay & Activate",
+      loginRequired: "Please login to upgrade",
+      error: "Payment failed. Please try again.",
     },
   },
   applications: {
