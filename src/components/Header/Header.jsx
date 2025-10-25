@@ -9,13 +9,70 @@ import { useLanguage } from "../../translet/LanguageContext";
 
 const Header = () => {
   const { lang, setLang, t } = useLanguage();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, subscription } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+
+  console.log("🔍 Header - Current subscription:", subscription);
+
+  // Recalculate planInfo whenever subscription changes
+  const planInfo = React.useMemo(() => {
+    console.log("🔍 Calculating planInfo with:", {
+      subscription,
+      planKey: subscription?.planKey,
+      price: subscription?.price,
+    });
+
+    if (!subscription || !subscription.planKey) {
+      return {
+        name: t("common.subscription.starter"),
+        color: "#6B7280", // gray
+        icon: "🌱",
+      };
+    }
+
+    // Convert price to number for comparison (handle both string and number)
+    const price = parseFloat(subscription.price);
+
+    // Match by price as specified
+    if (price === 5) {
+      const info = {
+        name: t("common.subscription.professional"),
+        color: "#3B82F6", // blue
+        icon: "💼",
+      };
+      console.log("📦 Professional plan detected:", info);
+      return info;
+    } else if (price === 12) {
+      const info = {
+        name: t("common.subscription.team"),
+        color: "#8B5CF6", // purple
+        icon: "👥",
+      };
+      console.log("📦 Team plan detected:", info);
+      return info;
+    } else if (price === 20) {
+      const info = {
+        name: t("common.subscription.enterprise"),
+        color: "#F59E0B", // amber/gold
+        icon: "🏢",
+      };
+      console.log("📦 Enterprise plan detected:", info);
+      return info;
+    }
+
+    // Default to Starter for free plan
+    console.log("📦 Defaulting to Starter plan");
+    return {
+      name: t("common.subscription.starter"),
+      color: "#6B7280",
+      icon: "🌱",
+    };
+  }, [subscription, t]);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -47,13 +104,7 @@ const Header = () => {
 
   const handleProfileClick = () => {
     setIsUserMenuOpen(false);
-    if (user?.role === "interpreter") {
-      navigate("/profile");
-    } else if (user?.role === "client") {
-      navigate("/company/profile");
-    } else if (user?.role === "admin") {
-      navigate("/admin/profile");
-    }
+    navigate(ROUTES.PROFILE);
   };
 
   // Function to check if a route is active
@@ -235,6 +286,27 @@ const Header = () => {
                               </span>
                             </div>
                           </div>
+                          {/* Subscription Badge */}
+                          <div
+                            className="subscription-badge"
+                            style={{
+                              background: `linear-gradient(135deg, ${planInfo.color}15, ${planInfo.color}25)`,
+                              border: `1px solid ${planInfo.color}30`,
+                            }}
+                          >
+                            <span className="badge-icon">{planInfo.icon}</span>
+                            <div className="badge-info">
+                              <span
+                                className="badge-name"
+                                style={{ color: planInfo.color }}
+                              >
+                                {planInfo.name}
+                              </span>
+                              <span className="badge-label">
+                                {t("common.subscription.currentPlan")}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <div className="user-dropdown-divider"></div>
                         <div className="user-dropdown-menu">
@@ -284,7 +356,7 @@ const Header = () => {
                               className="dropdown-item"
                               onClick={() => {
                                 setIsUserMenuOpen(false);
-                                navigate("/saved-jobs");
+                                navigate(ROUTES.SAVED_JOBS);
                               }}
                             >
                               <svg
@@ -457,6 +529,29 @@ const Header = () => {
                       <p className="mobile-user-email">{user?.email}</p>
                     </div>
                   </div>
+
+                  {/* Mobile Subscription Badge */}
+                  <div
+                    className="mobile-subscription-badge"
+                    style={{
+                      background: `linear-gradient(135deg, ${planInfo.color}15, ${planInfo.color}25)`,
+                      border: `1px solid ${planInfo.color}30`,
+                    }}
+                  >
+                    <span className="badge-icon">{planInfo.icon}</span>
+                    <div className="badge-info">
+                      <span
+                        className="badge-name"
+                        style={{ color: planInfo.color }}
+                      >
+                        {planInfo.name}
+                      </span>
+                      <span className="badge-label">
+                        {lang === "vi" ? "Gói hiện tại" : "Current Plan"}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="mobile-user-actions">
                     {/* Post Job Button - Only for Company */}
                     {user?.role === "client" && (

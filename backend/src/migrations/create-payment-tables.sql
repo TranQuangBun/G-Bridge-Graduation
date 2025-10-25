@@ -177,25 +177,17 @@ INSERT INTO `subscription_plans` (`name`, `displayName`, `description`, `price`,
  JSON_ARRAY('View limited interpreter profiles', 'Post 1 job per month', 'Basic support'), 
  5, 1, TRUE, 1),
 
-('basic', 'Basic Plan', 'Essential features for individuals', 9.99, 'USD', 30, 'monthly', 
+('basic', 'Basic Plan', 'Essential features for individuals', 5.00, 'USD', 30, 'monthly', 
  JSON_ARRAY('View 50 interpreter profiles per month', 'Post 5 jobs per month', 'Email support', 'View interpreter contact info', 'Download interpreter profiles'), 
  50, 5, TRUE, 2),
 
-('pro', 'Professional Plan', 'Advanced features for businesses', 29.99, 'USD', 30, 'monthly', 
+('pro', 'Professional Plan', 'Advanced features for businesses', 12.00, 'USD', 30, 'monthly', 
  JSON_ARRAY('Unlimited interpreter views', 'Post unlimited jobs', 'Priority support', 'Advanced search filters', 'Save favorite interpreters', 'Direct messaging', 'Analytics dashboard'), 
  NULL, NULL, TRUE, 3),
 
-('enterprise', 'Enterprise Plan', 'Complete solution for large organizations', 99.99, 'USD', 30, 'monthly', 
+('enterprise', 'Enterprise Plan', 'Complete solution for large organizations', 20.00, 'USD', 30, 'monthly', 
  JSON_ARRAY('Everything in Pro', 'Dedicated account manager', '24/7 phone support', 'Custom integrations', 'Team collaboration tools', 'White-label option', 'API access'), 
- NULL, NULL, TRUE, 4),
-
-('basic_yearly', 'Basic Plan (Yearly)', 'Essential features - Save 20% with yearly billing', 95.90, 'USD', 365, 'yearly', 
- JSON_ARRAY('View 50 interpreter profiles per month', 'Post 5 jobs per month', 'Email support', 'View interpreter contact info', 'Download interpreter profiles', 'Save 20% vs monthly'), 
- 50, 5, TRUE, 5),
-
-('pro_yearly', 'Professional Plan (Yearly)', 'Advanced features - Save 20% with yearly billing', 287.90, 'USD', 365, 'yearly', 
- JSON_ARRAY('Unlimited interpreter views', 'Post unlimited jobs', 'Priority support', 'Advanced search filters', 'Save favorite interpreters', 'Direct messaging', 'Analytics dashboard', 'Save 20% vs monthly'), 
- NULL, NULL, TRUE, 6);
+ NULL, NULL, TRUE, 4);
 
 -- =====================================================
 -- INDEXES FOR PERFORMANCE

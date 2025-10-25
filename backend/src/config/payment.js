@@ -35,16 +35,33 @@ export const vnpayHelpers = {
   createSecureHash(data, secretKey) {
     const sortedData = this.sortObject(data);
     const signData = Object.keys(sortedData)
-      .map((key) => `${key}=${sortedData[key]}`)
+      .map((key) => {
+        // Encode values to handle special characters
+        return `${key}=${encodeURIComponent(sortedData[key]).replace(
+          /%20/g,
+          "+"
+        )}`;
+      })
       .join("&");
 
+    console.log("🔐 Creating hash from data:", signData);
+
+    // VNPay requires HMAC SHA512
     const hmac = crypto.createHmac("sha512", secretKey);
-    return hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+    const hash = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
+    console.log("🔐 Generated hash:", hash);
+
+    return hash;
   },
 
   // Verify secure hash from VNPay response
   verifySecureHash(data, secureHash, secretKey) {
+    console.log("🔐 Verifying hash...");
+    console.log("- Received hash:", secureHash);
     const calculatedHash = this.createSecureHash(data, secretKey);
+    console.log("- Calculated hash:", calculatedHash);
+    console.log("- Match:", calculatedHash === secureHash);
     return calculatedHash === secureHash;
   },
 

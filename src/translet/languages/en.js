@@ -17,6 +17,13 @@ const en = {
     previous: "Previous",
     next: "Next",
     close: "Close",
+    subscription: {
+      currentPlan: "Current Plan",
+      starter: "Starter",
+      professional: "Professional",
+      team: "Team",
+      enterprise: "Enterprise",
+    },
   },
   interpreterModal: {
     topRated: "Top Rated",
@@ -175,6 +182,7 @@ const en = {
     monthly: "Monthly",
     yearly: "Yearly",
     save: "SAVE",
+    billedYearly: "billed annually",
     plan: {
       freeTag: "Free",
       popularTag: "Popular",

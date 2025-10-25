@@ -35,6 +35,11 @@ const PaymentGatewayModal = ({
             <p className={styles.price}>
               ${plan.displayPrice} / {plan.priceSuffix}
             </p>
+            {plan.isYearly && (
+              <p className={styles.yearlyInfo}>
+                ${plan.fullPrice} billed annually
+              </p>
+            )}
             {plan.discountPercent > 0 && (
               <span className={styles.discount}>
                 Save {plan.discountPercent}%

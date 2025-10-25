@@ -259,10 +259,13 @@ function SavedJobsPage() {
 
                   let specializations = [];
                   try {
-                    specializations = profile.specializations
-                      ? JSON.parse(profile.specializations)
-                      : [];
+                    if (profile.specializations) {
+                      const parsed = JSON.parse(profile.specializations);
+                      // Ensure it's always an array
+                      specializations = Array.isArray(parsed) ? parsed : [];
+                    }
                   } catch (e) {
+                    console.error("Error parsing specializations:", e);
                     specializations = [];
                   }
 
@@ -295,11 +298,18 @@ function SavedJobsPage() {
                               ⭐ {rating.toFixed(1)} ({totalReviews} reviews)
                             </p>
                             <div className={styles.jobTags}>
-                              {specializations.slice(0, 3).map((spec, idx) => (
-                                <span key={idx} className={styles.tag}>
-                                  {spec}
+                              {Array.isArray(specializations) &&
+                              specializations.length > 0 ? (
+                                specializations.slice(0, 3).map((spec, idx) => (
+                                  <span key={idx} className={styles.tag}>
+                                    {spec}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className={styles.tag}>
+                                  No specializations
                                 </span>
-                              ))}
+                              )}
                             </div>
                             <div className={styles.jobMeta}>
                               <span className={styles.location}>

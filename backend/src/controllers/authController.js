@@ -6,6 +6,8 @@ import {
   ClientProfile,
   Language,
   Certification,
+  UserSubscription,
+  SubscriptionPlan,
 } from "../models/index.js";
 
 const JWT_EXPIRES = "7d";
@@ -279,6 +281,21 @@ export async function me(req, res) {
             "isActive",
           ],
         },
+        {
+          model: UserSubscription,
+          as: "activeSubscription",
+          required: false,
+          where: {
+            status: "active",
+          },
+          include: [
+            {
+              model: SubscriptionPlan,
+              as: "plan",
+              attributes: ["id", "name", "displayName", "price"],
+            },
+          ],
+        },
       ],
     });
 
@@ -292,11 +309,31 @@ export async function me(req, res) {
       profileData = user.clientProfile;
     }
 
+    // Get subscription info
+    let subscription = null;
+    if (user.activeSubscription) {
+      subscription = {
+        planId: user.activeSubscription.planId,
+        planKey: user.activeSubscription.plan?.name || "free",
+        displayName: user.activeSubscription.plan?.displayName || "Free",
+        price: user.activeSubscription.plan?.price || 0,
+        status: user.activeSubscription.status,
+        startDate: user.activeSubscription.startDate,
+        endDate: user.activeSubscription.endDate,
+      };
+      console.log("📦 /auth/me - User has active subscription:", subscription);
+    } else {
+      console.log("⚠️ /auth/me - User has no active subscription");
+    }
+
+    console.log("✅ /auth/me - Returning user data with subscription");
+
     return res.json({
       user: user.toJSON(),
       profile: profileData,
       languages: user.languages || [],
       certifications: user.certifications || [],
+      subscription: subscription,
     });
   } catch (err) {
     console.error("Get user error:", err);

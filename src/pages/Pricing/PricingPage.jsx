@@ -25,7 +25,7 @@ const planDefinitions = (t) => [
     key: "pro",
     name: t("pricingPage.plan.proName"),
     tag: t("pricingPage.plan.popularTag"),
-    monthly: 10,
+    monthly: 5, // Match database: Basic Plan = $5.00
     desc: t("pricingPage.plan.proDesc"),
     features: [
       t("pricingPage.plan.feature.unlimitedApply"),
@@ -40,7 +40,7 @@ const planDefinitions = (t) => [
     key: "team",
     name: t("pricingPage.plan.teamName"),
     tag: t("pricingPage.plan.growthTag"),
-    monthly: 15,
+    monthly: 12, // Match database: Pro Plan = $12.00
     desc: t("pricingPage.plan.teamDesc"),
     features: [
       t("pricingPage.plan.feature.teamMembers"),
@@ -55,7 +55,7 @@ const planDefinitions = (t) => [
     key: "enterprise",
     name: t("pricingPage.plan.enterpriseName"),
     tag: t("pricingPage.plan.customTag"),
-    monthly: 21,
+    monthly: 20, // Match database: Enterprise Plan = $20.00
     desc: t("pricingPage.plan.enterpriseDesc"),
     features: [
       t("pricingPage.plan.feature.unlimitedMembers"),
@@ -71,39 +71,46 @@ const planDefinitions = (t) => [
 export default function PricingPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [billing, setBilling] = useState("monthly");
   const [openPlan, setOpenPlan] = useState(null); // plan object for payment modal
   const [purchased, setPurchased] = useState({}); // { planKey: true }
   const [processing, setProcessing] = useState(false);
   const [backendPlans, setBackendPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
+  const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' or 'yearly'
 
-  const YEARLY_DISCOUNT = 10; // percent
+  // Toggle between monthly and yearly
+  const toggleBillingCycle = () => {
+    setBillingCycle((prev) => (prev === "monthly" ? "yearly" : "monthly"));
+  };
+
   const basePlans = useMemo(() => planDefinitions(t), [t]);
+
+  // Calculate prices based on billing cycle
   const plans = useMemo(
     () =>
       basePlans.map((p) => {
-        if (billing === "monthly") {
-          return {
-            ...p,
-            displayPrice: p.monthly,
-            priceSuffix: "mo",
-            discountPercent: 0,
-          };
-        }
-        // yearly total = monthly * 12 with discount
-        const fullYear = p.monthly * 12;
-        const discounted = Math.round(fullYear * (1 - YEARLY_DISCOUNT / 100));
+        const isYearly = billingCycle === "yearly";
+        const monthlyPrice = p.monthly;
+
+        // Yearly: 12 months * 80% = 9.6 months price (20% discount)
+        const yearlyPrice = isYearly ? Math.round(monthlyPrice * 12 * 0.8) : 0;
+        const yearlyMonthlyEquivalent = isYearly
+          ? Math.round((yearlyPrice / 12) * 100) / 100
+          : 0;
+
         return {
           ...p,
-          displayPrice: discounted,
-          fullYear,
-          monthlyEquivalent: p.monthly,
-          priceSuffix: "yr",
-          discountPercent: p.monthly > 0 ? YEARLY_DISCOUNT : 0,
+          // Display the actual price users will pay
+          displayPrice: isYearly ? yearlyPrice : monthlyPrice,
+          // For yearly, also show the monthly equivalent
+          monthlyEquivalent: yearlyMonthlyEquivalent,
+          fullPrice: isYearly ? yearlyPrice : monthlyPrice,
+          priceSuffix: isYearly ? "yr" : "mo",
+          discountPercent: isYearly ? 20 : 0,
+          isYearly: isYearly,
         };
       }),
-    [billing, basePlans]
+    [basePlans, billingCycle]
   );
 
   // Load backend plans on mount (optional - can use hardcoded plans)
@@ -162,19 +169,41 @@ export default function PricingPage() {
     try {
       setProcessing(true);
 
-      // Find backend plan ID (for now use key mapping)
-      // In production, you should map frontend plans to backend plan IDs
+      // Map frontend plan keys to backend plan IDs
       const planIdMap = {
-        free: 1,
-        pro: 3,
-        team: 3, // map to pro for now
-        enterprise: 4,
+        free: 1, // Free Plan - $0
+        pro: 2, // Basic Plan - $5
+        team: 3, // Pro Plan - $12
+        enterprise: 4, // Enterprise Plan - $20
       };
 
-      const planId = planIdMap[openPlan.key] || 3;
+      const planId = planIdMap[openPlan.key] || 2;
+
+      // Determine billing cycle
+      const billingCycleParam = openPlan.isYearly ? "yearly" : "monthly";
+
+      // Calculate final amount based on billing cycle
+      // For yearly: use fullPrice (already calculated with 20% discount)
+      // For monthly: use monthly price
+      const finalAmount = openPlan.isYearly
+        ? openPlan.fullPrice
+        : openPlan.monthly;
+
+      console.log("Payment info:", {
+        plan: openPlan.name,
+        cycle: billingCycleParam,
+        displayPrice: openPlan.displayPrice,
+        fullPrice: openPlan.fullPrice,
+        finalAmount: finalAmount,
+        discount: openPlan.discountPercent,
+      });
 
       if (gateway === "vnpay") {
-        const response = await paymentService.createVNPayPayment(planId);
+        // Pass billing cycle to backend
+        const response = await paymentService.createVNPayPayment(
+          planId,
+          billingCycleParam
+        );
         console.log("VNPay payment response:", response);
 
         // Backend returns: { success, message, data: { paymentUrl, orderId, ... } }
@@ -191,7 +220,11 @@ export default function PricingPage() {
           throw new Error("Payment URL not received from VNPay");
         }
       } else if (gateway === "paypal") {
-        const response = await paymentService.createPayPalPayment(planId);
+        // Pass billing cycle to backend
+        const response = await paymentService.createPayPalPayment(
+          planId,
+          billingCycleParam
+        );
         console.log("PayPal payment response:", response);
 
         // Backend returns: { success, message, data: { paymentUrl, orderId, ... } }
@@ -236,24 +269,34 @@ export default function PricingPage() {
             <div className={styles.badge}>{t("pricingPage.heroBadge")}</div>
             <h1 className={styles.title}>{t("pricingPage.heroTitle")}</h1>
             <p className={styles.subtitle}>{t("pricingPage.heroSubtitle")}</p>
-            <div className={styles.toggleRow}>
-              <div className={styles.billingToggle}>
-                <button
-                  className={billing === "monthly" ? styles.active : ""}
-                  onClick={() => setBilling("monthly")}
-                >
-                  {t("pricingPage.monthly")}
-                </button>
-                <button
-                  className={billing === "yearly" ? styles.active : ""}
-                  onClick={() => setBilling("yearly")}
-                >
-                  {t("pricingPage.yearly")}
-                </button>
-              </div>
-              {billing === "yearly" && (
+
+            {/* Billing Cycle Toggle */}
+            <div className={styles.billingToggle}>
+              <span
+                className={
+                  billingCycle === "monthly" ? styles.activeToggle : ""
+                }
+              >
+                {t("pricingPage.monthly")}
+              </span>
+              <button
+                className={styles.toggleSwitch}
+                onClick={toggleBillingCycle}
+                aria-label="Toggle billing cycle"
+              >
+                <span
+                  className={styles.toggleSlider}
+                  data-yearly={billingCycle === "yearly"}
+                ></span>
+              </button>
+              <span
+                className={billingCycle === "yearly" ? styles.activeToggle : ""}
+              >
+                {t("pricingPage.yearly")}
+              </span>
+              {billingCycle === "yearly" && (
                 <span className={styles.saveBadge}>
-                  {t("pricingPage.save")}
+                  {t("pricingPage.save")} 20%
                 </span>
               )}
             </div>
@@ -275,6 +318,11 @@ export default function PricingPage() {
                     <span className={styles.planTag}>{plan.tag}</span>
                     <h3 className={styles.planName}>{plan.name}</h3>
                     <div className={styles.priceWrap}>
+                      {plan.discountPercent > 0 && (
+                        <div className={styles.discountBadge}>
+                          -{plan.discountPercent}%
+                        </div>
+                      )}
                       <span className={styles.price}>
                         {plan.displayPrice === 0
                           ? "Free"
@@ -283,10 +331,10 @@ export default function PricingPage() {
                       {plan.displayPrice !== 0 && (
                         <span className={styles.per}>/ {plan.priceSuffix}</span>
                       )}
-                      {billing === "yearly" && plan.discountPercent > 0 && (
-                        <span className={styles.discountNote}>
-                          - {plan.discountPercent}%
-                        </span>
+                      {plan.isYearly && plan.monthlyEquivalent > 0 && (
+                        <div className={styles.billedYearly}>
+                          (${plan.monthlyEquivalent}/mo equivalent)
+                        </div>
                       )}
                     </div>
                     <p className={styles.desc}>{plan.desc}</p>

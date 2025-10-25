@@ -124,7 +124,9 @@ const authService = {
    */
   getCurrentUser: async () => {
     try {
+      console.log("🔄 authService - Calling /auth/me...");
       const response = await apiClient.get("/auth/me");
+      console.log("📦 authService - Response from /auth/me:", response.data);
 
       // Cập nhật localStorage
       if (response.data.user) {
@@ -138,10 +140,19 @@ const authService = {
           "certifications",
           JSON.stringify(response.data.certifications || [])
         );
+        localStorage.setItem(
+          "subscription",
+          JSON.stringify(response.data.subscription || null)
+        );
+        console.log(
+          "✅ authService - Saved subscription to localStorage:",
+          response.data.subscription
+        );
       }
 
       return response.data;
     } catch (error) {
+      console.error("❌ authService - Error:", error);
       throw error.response?.data || { message: "Không thể lấy thông tin user" };
     }
   },

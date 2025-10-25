@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [languages, setLanguages] = useState([]);
   const [certifications, setCertifications] = useState([]);
+  const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
             setProfile(data.profile);
             setLanguages(data.languages || []);
             setCertifications(data.certifications || []);
+            setSubscription(data.subscription || null);
             setIsAuthenticated(true);
           } catch (error) {
             // Token is invalid or expired, clear everything
@@ -36,6 +38,7 @@ export const AuthProvider = ({ children }) => {
             setProfile(null);
             setLanguages([]);
             setCertifications([]);
+            setSubscription(null);
             setIsAuthenticated(false);
           }
         } else {
@@ -63,6 +66,7 @@ export const AuthProvider = ({ children }) => {
       setProfile(data.profile);
       setLanguages(data.languages || []);
       setCertifications(data.certifications || []);
+      setSubscription(data.subscription || null);
       setIsAuthenticated(true);
 
       return { success: true, data };
@@ -86,6 +90,7 @@ export const AuthProvider = ({ children }) => {
       setProfile(data.profile);
       setLanguages(data.languages || []);
       setCertifications(data.certifications || []);
+      setSubscription(data.subscription || null);
       setIsAuthenticated(true);
 
       return { success: true, data };
@@ -106,19 +111,28 @@ export const AuthProvider = ({ children }) => {
     setProfile(null);
     setLanguages([]);
     setCertifications([]);
+    setSubscription(null);
     setIsAuthenticated(false);
   };
 
   // Refresh user data
   const refreshUser = async () => {
     try {
+      console.log("🔄 AuthContext - Fetching user data...");
       const data = await authService.getCurrentUser();
+      console.log("📦 AuthContext - Received data:", data);
+      console.log("📦 AuthContext - New subscription:", data.subscription);
+
       setUser(data.user);
       setProfile(data.profile);
       setLanguages(data.languages || []);
       setCertifications(data.certifications || []);
+      setSubscription(data.subscription || null);
+
+      console.log("✅ AuthContext - Subscription updated in state!");
       return { success: true, data };
     } catch (error) {
+      console.error("❌ AuthContext - Refresh error:", error);
       return {
         success: false,
         error: error.message || "Không thể cập nhật thông tin",
@@ -131,6 +145,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     languages,
     certifications,
+    subscription,
     loading,
     isAuthenticated,
     register,

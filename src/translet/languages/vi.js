@@ -17,6 +17,13 @@ const vi = {
     previous: "Trước",
     next: "Tiếp theo",
     close: "Đóng",
+    subscription: {
+      currentPlan: "Gói hiện tại",
+      starter: "Khởi đầu",
+      professional: "Chuyên nghiệp",
+      team: "Nhóm",
+      enterprise: "Doanh nghiệp",
+    },
   },
   interpreterModal: {
     topRated: "Đánh giá cao",
@@ -179,6 +186,7 @@ const vi = {
     monthly: "Theo tháng",
     yearly: "Theo năm",
     save: "TIẾT KIỆM",
+    billedYearly: "thanh toán hàng năm",
     plan: {
       freeTag: "Miễn phí",
       popularTag: "Phổ biến",

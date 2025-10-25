@@ -41,13 +41,14 @@ export const getSubscriptionPlans = async () => {
 /**
  * Create VNPay payment
  * @param {number} planId - Subscription plan ID
+ * @param {string} billingCycle - 'monthly' or 'yearly'
  * @returns {Promise} Payment URL and order info
  */
-export const createVNPayPayment = async (planId) => {
+export const createVNPayPayment = async (planId, billingCycle = "monthly") => {
   try {
     const response = await axios.post(
       `${API_URL}/payments/vnpay/create`,
-      { planId },
+      { planId, billingCycle },
       createAuthConfig()
     );
     return response.data;
@@ -60,13 +61,14 @@ export const createVNPayPayment = async (planId) => {
 /**
  * Create PayPal payment
  * @param {number} planId - Subscription plan ID
+ * @param {string} billingCycle - 'monthly' or 'yearly'
  * @returns {Promise} PayPal order ID and approval URL
  */
-export const createPayPalPayment = async (planId) => {
+export const createPayPalPayment = async (planId, billingCycle = "monthly") => {
   try {
     const response = await axios.post(
       `${API_URL}/payments/paypal/create`,
-      { planId },
+      { planId, billingCycle },
       createAuthConfig()
     );
     return response.data;

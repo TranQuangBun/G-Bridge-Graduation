@@ -175,6 +175,51 @@ const ProfilePage = () => {
   const [suggestedCertifications, setSuggestedCertifications] = useState([]);
   const [showSuggestedCerts, setShowSuggestedCerts] = useState(false);
 
+  // Helper function to parse specializations (handle both array and string)
+  const parseSpecializations = (specializations) => {
+    if (!specializations) return [];
+    if (Array.isArray(specializations)) return specializations;
+    if (typeof specializations === "string") {
+      try {
+        const parsed = JSON.parse(specializations);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to parse languages (handle both array and string)
+  const parseLanguages = (languages) => {
+    if (!languages) return [];
+    if (Array.isArray(languages)) return languages;
+    if (typeof languages === "string") {
+      try {
+        const parsed = JSON.parse(languages);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to parse certifications (handle both array and string)
+  const parseCertifications = (certifications) => {
+    if (!certifications) return [];
+    if (Array.isArray(certifications)) return certifications;
+    if (typeof certifications === "string") {
+      try {
+        const parsed = JSON.parse(certifications);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
   // Redirect if not authenticated
   useEffect(() => {
     // Đợi cho loading xong trước khi redirect
@@ -200,7 +245,7 @@ const ProfilePage = () => {
       setProfessionalForm({
         hourlyRate: userProfile.hourlyRate || "",
         experience: userProfile.experience || "",
-        specializations: userProfile.specializations || [],
+        specializations: parseSpecializations(userProfile.specializations),
         portfolio: userProfile.portfolio || "",
       });
     }
@@ -219,9 +264,12 @@ const ProfilePage = () => {
     const missing = [];
     if (!user?.phone) missing.push("Phone Number");
     if (!user?.address) missing.push("Address");
-    if (!userProfile?.languages?.length) missing.push("Languages");
-    if (!userProfile?.certifications?.length) missing.push("Certifications");
-    if (!userProfile?.specializations?.length) missing.push("Specializations");
+    if (!parseLanguages(userProfile?.languages).length)
+      missing.push("Languages");
+    if (!parseCertifications(userProfile?.certifications).length)
+      missing.push("Certifications");
+    if (!parseSpecializations(userProfile?.specializations).length)
+      missing.push("Specializations");
     if (!userProfile?.experience) missing.push("Years of Experience");
     if (!userProfile?.hourlyRate) missing.push("Hourly Rate");
     if (!userProfile?.portfolio) missing.push("Portfolio/Bio");
@@ -1190,8 +1238,11 @@ const ProfilePage = () => {
                     <div className={styles.infoItem}>
                       <label>{t("profile.professional.specializations")}</label>
                       <p>
-                        {userProfile?.specializations?.length
-                          ? userProfile.specializations.join(", ")
+                        {parseSpecializations(userProfile?.specializations)
+                          .length
+                          ? parseSpecializations(
+                              userProfile.specializations
+                            ).join(", ")
                           : t("profile.professional.notProvided")}
                       </p>
                     </div>

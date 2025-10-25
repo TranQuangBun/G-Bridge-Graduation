@@ -55,7 +55,7 @@ const MOCK_RECENT_JOBS = [
 function DashboardPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, subscription, isAuthenticated, loading } = useAuth();
   const [activeMenu, setActiveMenu] = useState("overview");
 
   // Check if user is company/client role
@@ -85,6 +85,27 @@ function DashboardPage() {
 
   // Get user's full name or email
   const userName = user?.fullName || user?.email?.split("@")[0] || "User";
+
+  // Calculate subscription days remaining
+  const getSubscriptionInfo = () => {
+    if (!subscription || !subscription.endDate) {
+      return null;
+    }
+
+    const endDate = new Date(subscription.endDate);
+    const today = new Date();
+    const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+
+    return {
+      planName: subscription.displayName || subscription.planKey || "Free",
+      endDate: endDate,
+      daysRemaining: daysRemaining,
+      isExpiringSoon: daysRemaining <= 7 && daysRemaining > 0,
+      isExpired: daysRemaining <= 0,
+    };
+  };
+
+  const subscriptionInfo = getSubscriptionInfo();
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -177,6 +198,86 @@ function DashboardPage() {
             </h1>
             <p className={styles.subGreeting}>{t("dashboard.todayActivity")}</p>
           </header>
+
+          {/* Subscription Section */}
+          {subscriptionInfo && (
+            <section className={styles.subscriptionSection}>
+              <div
+                className={`${styles.subscriptionCard} ${
+                  subscriptionInfo.isExpiringSoon
+                    ? styles.expiringSoon
+                    : subscriptionInfo.isExpired
+                    ? styles.expired
+                    : ""
+                }`}
+              >
+                <div className={styles.subscriptionHeader}>
+                  <div className={styles.subscriptionIcon}>
+                    <span role="img" aria-label="subscription">
+                      {subscriptionInfo.isExpired
+                        ? "⚠️"
+                        : subscriptionInfo.isExpiringSoon
+                        ? "⏰"
+                        : "💎"}
+                    </span>
+                  </div>
+                  <div className={styles.subscriptionInfo}>
+                    <h3 className={styles.subscriptionTitle}>
+                      {subscriptionInfo.planName}
+                    </h3>
+                    <p className={styles.subscriptionStatus}>
+                      {subscriptionInfo.isExpired
+                        ? "Your subscription has expired"
+                        : subscriptionInfo.isExpiringSoon
+                        ? `Expiring soon - ${
+                            subscriptionInfo.daysRemaining
+                          } day${
+                            subscriptionInfo.daysRemaining !== 1 ? "s" : ""
+                          } remaining`
+                        : `Active - ${subscriptionInfo.daysRemaining} days remaining`}
+                    </p>
+                  </div>
+                  {(subscriptionInfo.isExpired ||
+                    subscriptionInfo.isExpiringSoon) && (
+                    <button
+                      className={styles.renewBtn}
+                      onClick={() => navigate(ROUTES.PRICING)}
+                    >
+                      {subscriptionInfo.isExpired ? "Renew Now" : "Extend Plan"}
+                    </button>
+                  )}
+                </div>
+                <div className={styles.subscriptionDetails}>
+                  <div className={styles.detailItem}>
+                    <span className={styles.detailLabel}>Valid Until</span>
+                    <span className={styles.detailValue}>
+                      {subscriptionInfo.endDate.toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span className={styles.detailLabel}>Days Remaining</span>
+                    <span className={styles.detailValue}>
+                      {subscriptionInfo.daysRemaining} days
+                    </span>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span className={styles.detailLabel}>Status</span>
+                    <span className={styles.detailValue}>
+                      {subscriptionInfo.isExpired
+                        ? "Expired"
+                        : subscriptionInfo.isExpiringSoon
+                        ? "Expiring Soon"
+                        : "Active"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Summary Stats */}
           <section className={styles.summarySection}>

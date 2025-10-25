@@ -110,6 +110,13 @@
   margin: 8px 0;
 }
 
+.yearlyInfo {
+  font-size: 0.9375rem;
+  margin: 4px 0 8px;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
 .discount {
   display: inline-block;
   background: rgba(255, 255, 255, 0.2);
