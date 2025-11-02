@@ -95,7 +95,19 @@ Job.init(
     contactEmail: {
       type: DataTypes.STRING(120),
       allowNull: true,
-      validate: { isEmail: true },
+      validate: {
+        isEmail: {
+          msg: "Please provide a valid email address",
+        },
+      },
+      set(value) {
+        // If value is empty string or invalid, set to null
+        if (!value || value.trim() === "") {
+          this.setDataValue("contactEmail", null);
+        } else {
+          this.setDataValue("contactEmail", value);
+        }
+      },
     },
     contactPhone: {
       type: DataTypes.STRING(20),

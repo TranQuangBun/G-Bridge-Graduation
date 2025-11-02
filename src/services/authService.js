@@ -98,6 +98,16 @@ const authService = {
           "certifications",
           JSON.stringify(response.data.certifications || [])
         );
+        localStorage.setItem(
+          "subscription",
+          JSON.stringify(response.data.subscription || null)
+        );
+
+        console.log("✅ authService - Login successful");
+        console.log(
+          "📦 authService - Subscription:",
+          response.data.subscription
+        );
       }
 
       return response.data;
@@ -115,6 +125,7 @@ const authService = {
     localStorage.removeItem("profile");
     localStorage.removeItem("languages");
     localStorage.removeItem("certifications");
+    localStorage.removeItem("subscription");
     window.location.href = "/login";
   },
 

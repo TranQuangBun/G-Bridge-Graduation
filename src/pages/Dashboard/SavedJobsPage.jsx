@@ -21,7 +21,12 @@ function SavedJobsPage() {
   // Dynamic sidebar menu based on role
   const SIDEBAR_MENU = [
     { id: "overview", icon: "📊", label: "Overview", active: false },
-    { id: "applications", icon: "📋", label: "My Applications", active: false },
+    {
+      id: "applications",
+      icon: "📋",
+      label: isCompany ? "Job Applications" : "My Applications",
+      active: false,
+    },
     {
       id: "favorites",
       icon: "❤️",
@@ -29,7 +34,12 @@ function SavedJobsPage() {
       active: true,
     },
     { id: "alerts", icon: "🔔", label: "Job Alerts", active: false },
-    { id: "profile", icon: "👤", label: "Profile", active: false },
+    {
+      id: "profile",
+      icon: isCompany ? "🏢" : "👤",
+      label: isCompany ? "Company Profile" : "Profile",
+      active: false,
+    },
     { id: "settings", icon: "⚙️", label: "Settings", active: false },
   ];
 
@@ -145,7 +155,12 @@ function SavedJobsPage() {
     } else if (menuId === "alerts") {
       navigate(ROUTES.JOB_ALERTS);
     } else if (menuId === "profile") {
-      navigate(ROUTES.PROFILE);
+      // Redirect to Company Profile for clients, regular Profile for interpreters
+      if (isCompany) {
+        navigate(ROUTES.COMPANY_PROFILE);
+      } else {
+        navigate(ROUTES.PROFILE);
+      }
     }
   };
 

@@ -167,6 +167,40 @@ export async function login(req, res) {
     // Update last login
     await user.update({ lastLoginAt: new Date() });
 
+    // Get active subscription
+    const activeSubscription = await UserSubscription.findOne({
+      where: {
+        userId: user.id,
+        status: "active",
+      },
+      include: [
+        {
+          model: SubscriptionPlan,
+          as: "plan",
+          attributes: ["id", "name", "displayName", "price"],
+        },
+      ],
+      order: [["endDate", "DESC"]],
+    });
+
+    let subscriptionData = null;
+    if (activeSubscription && activeSubscription.plan) {
+      const plan = activeSubscription.plan;
+      subscriptionData = {
+        id: activeSubscription.id,
+        planId: plan.id,
+        planKey: plan.name,
+        displayName: plan.displayName,
+        price: plan.price,
+        status: activeSubscription.status,
+        startDate: activeSubscription.startDate,
+        endDate: activeSubscription.endDate,
+      };
+      console.log("📦 Login - User has active subscription:", subscriptionData);
+    } else {
+      console.log("⚠️ Login - User has no active subscription");
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { sub: user.id, role: user.role },
@@ -212,6 +246,7 @@ export async function login(req, res) {
         lastLoginAt: user.lastLoginAt,
       },
       profile: profileData,
+      subscription: subscriptionData,
     });
   } catch (err) {
     console.error("Login error:", err);

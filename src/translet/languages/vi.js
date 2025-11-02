@@ -312,6 +312,7 @@ const vi = {
       overview: "Tổng quan",
       applications: "Đơn ứng tuyển",
       favorites: "Công việc đã lưu",
+      savedInterpreters: "Thông Dịch Viên Đã Lưu",
       alerts: "Thông báo việc làm",
       profile: "Hồ sơ",
       settings: "Cài đặt",
@@ -786,6 +787,9 @@ const vi = {
       "Lương tối thiểu là bắt buộc cho mức lương không thỏa thuận",
     maxSalaryMustBeGreater: "Lương tối đa phải lớn hơn lương tối thiểu",
     contactEmailRequired: "Email liên hệ là bắt buộc",
+    invalidEmailFormat:
+      "Vui lòng nhập địa chỉ email hợp lệ (VD: hr@congty.com)",
+    requiredLanguagesRequired: "Vui lòng thêm ít nhất một ngôn ngữ yêu cầu",
     pleaseSelectLanguageAndLevel: "Vui lòng chọn cả ngôn ngữ và trình độ",
     pleaseEnterCertificateName: "Vui lòng nhập tên chứng chỉ",
 
@@ -793,6 +797,199 @@ const vi = {
     jobPostedSuccessfully: "Đăng tin tuyển dụng thành công!",
     errorPostingJob: "Lỗi khi đăng tin. Vui lòng thử lại.",
     postJob: "Đăng tin tuyển dụng",
+  },
+  companyProfile: {
+    title: "Hồ Sơ Công Ty",
+    savedInterpreters: "Thông Dịch Viên Đã Lưu",
+
+    // Status badges
+    statusUnverified: "Chưa Xác Minh",
+    statusPending: "Đang Chờ",
+    statusVerified: "Đã Xác Minh",
+    statusRejected: "Bị Từ Chối",
+
+    // Alert messages
+    accountNotVerified: "Tài Khoản Chưa Được Xác Minh",
+    accountNotVerifiedMsg:
+      "Vui lòng hoàn thiện thông tin công ty và tải lên giấy chứng nhận đăng ký doanh nghiệp để xác minh tài khoản.",
+    verificationPending: "Đang Chờ Xác Minh",
+    verificationPendingMsg:
+      "Tài liệu của bạn đang được đội ngũ quản trị xem xét. Bạn sẽ được thông báo khi hoàn tất xác minh.",
+    verificationRejected: "Xác Minh Bị Từ Chối",
+    verificationRejectedMsg:
+      "Vui lòng cập nhật thông tin và tải lại giấy phép kinh doanh.",
+
+    // Logo section
+    companyLogo: "Logo Công Ty",
+    noLogoUploaded: "Chưa tải logo",
+    logoHint:
+      "Tải lên logo công ty. Logo sẽ hiển thị trên tin tuyển dụng và hồ sơ công khai.",
+    logoRecommendation:
+      "Khuyến nghị: Hình vuông, tối thiểu 200x200px. Tối đa 2MB. (JPEG, PNG)",
+    chooseLogo: "Chọn Logo",
+    changeLogo: "Đổi Logo",
+    uploadLogo: "Tải Logo Lên",
+    uploading: "Đang tải lên...",
+
+    // Basic information
+    basicInformation: "Thông Tin Cơ Bản",
+    edit: "Chỉnh Sửa",
+    companyName: "Tên Công Ty",
+    industry: "Ngành Nghề",
+    companySize: "Quy Mô Công Ty",
+    website: "Website",
+    headquarters: "Trụ Sở Chính",
+    foundedYear: "Năm Thành Lập",
+    companyDescription: "Mô Tả Công Ty",
+    description: "Mô Tả",
+    notProvided: "Chưa cung cấp",
+    enterCompanyName: "Nhập tên công ty",
+    selectIndustry: "Chọn ngành nghề",
+    selectCompanySize: "Chọn quy mô công ty",
+    websitePlaceholder: "https://example.com",
+    headquartersPlaceholder: "Thành phố, Quốc gia",
+    foundedYearPlaceholder: "2020",
+    descriptionPlaceholder: "Giới thiệu ngắn gọn về công ty...",
+
+    // Business license
+    businessCertificate: "Giấy Chứng Nhận Đăng Ký Doanh Nghiệp",
+    businessLicenseNumber: "Mã Số Giấy Phép",
+    enterLicenseNumber: "Nhập mã số giấy phép kinh doanh",
+    licenseNumberHint: "Nhập mã số đăng ký kinh doanh chính thức",
+    uploadBusinessLicense: "Tải Giấy Phép Kinh Doanh (Bản Scan/Ảnh - Màu)",
+    licenseHint:
+      "Vui lòng tải lên bản scan hoặc ảnh rõ nét có màu của giấy chứng nhận đăng ký doanh nghiệp. Định dạng: JPEG, PNG, PDF (Tối đa 5MB)",
+    completeBasicInfo: "Vui lòng hoàn thiện thông tin cơ bản công ty",
+    completeBasicInfoMessage:
+      "Vui lòng hoàn thiện thông tin cơ bản công ty trước khi tải giấy phép kinh doanh",
+    businessLicenseAlt: "Giấy Phép Kinh Doanh",
+    removeFile: "Xóa tệp đã chọn",
+    chooseFile: "Chọn Tệp",
+    changeFile: "Đổi Tệp",
+    submitForVerification: "Gửi Xác Minh",
+
+    // Verification info
+    companyVerified: "Công Ty Đã Xác Minh",
+    verifiedOn: "Công ty của bạn đã được xác minh vào ngày",
+    verifiedBadgeInfo:
+      'Huy hiệu "Công Ty Đã Xác Minh" sẽ hiển thị trên tất cả tin tuyển dụng của bạn.',
+
+    // Actions
+    cancel: "Hủy",
+    saveChanges: "Lưu Thay Đổi",
+    saving: "Đang lưu...",
+
+    // Validation
+    fillRequiredFields:
+      "Vui lòng điền đầy đủ các trường bắt buộc (Tên Công Ty, Ngành Nghề, Quy Mô, Mô Tả)",
+    selectLicenseFile: "Vui lòng chọn tệp giấy phép kinh doanh",
+
+    // Success messages
+    profileUpdated: "Cập nhật hồ sơ thành công",
+    logoUploadSuccess: "Tải logo lên thành công",
+    licenseUploadSuccess:
+      "Tải giấy phép kinh doanh thành công! Hồ sơ của bạn đang chờ quản trị xác minh.",
+
+    // Error messages
+    failedToLoad: "Không thể tải hồ sơ",
+    updateFailed: "Không thể cập nhật hồ sơ",
+    logoUploadFailed: "Không thể tải logo lên",
+    licenseUploadFailed: "Không thể tải giấy phép kinh doanh lên",
+    invalidImageType: "Vui lòng tải lên tệp hình ảnh (JPEG, PNG)",
+    invalidLicenseType: "Vui lòng tải lên hình ảnh (JPEG, PNG) hoặc tệp PDF",
+    fileSizeTooLarge: "Kích thước tệp phải nhỏ hơn",
+    logoSizeTooLarge: "Kích thước tệp phải nhỏ hơn 2MB",
+    licenseSizeTooLarge: "Kích thước tệp phải nhỏ hơn 5MB",
+
+    // Coming soon
+    settingsComingSoon: "Trang cài đặt sắp ra mắt!",
+
+    // Page access
+    companyAccountOnly: "Trang này chỉ dành cho tài khoản công ty",
+  },
+  bookingModal: {
+    title: "Đặt Lịch Phiên Dịch Viên",
+    bookingWith: "Bạn đang đặt lịch với",
+    close: "Đóng",
+
+    // Form fields
+    serviceType: "Dịch Vụ",
+    selectService: "Chọn loại dịch vụ",
+    services: {
+      consecutive: "Dịch Đuổi",
+      simultaneous: "Dịch Cabin (Đồng Thời)",
+      escort: "Dịch Tháp Tùng",
+      online: "Dịch Online (Zoom/Teams)",
+    },
+
+    bookingType: "Hình Thức",
+    online: "Trực Tuyến (Online)",
+    offline: "Tại Chỗ (Offline)",
+
+    location: "Địa Điểm/Địa Chỉ Sự Kiện",
+    locationPlaceholder: "Nhập địa chỉ địa điểm tổ chức",
+
+    eventDuration: "Thời Lượng Sự Kiện",
+    singleDay: "Trong Ngày",
+    multipleDays: "Nhiều Ngày",
+
+    eventDate: "Ngày Sự Kiện",
+    startDate: "Ngày Bắt Đầu",
+    endDate: "Ngày Kết Thúc",
+    startTime: "Giờ Bắt Đầu",
+    endTime: "Giờ Kết Thúc",
+
+    timeRequirement: "Yêu Cầu Thời Gian",
+    selectTimeRequirement: "Chọn yêu cầu thời gian",
+    timeOptions: {
+      fullDay: "Cả Ngày (8 giờ)",
+      halfDay: "Nửa Ngày (4 giờ)",
+      eventSchedule: "Theo Lịch Sự Kiện",
+      other: "Khác (ghi rõ trong chủ đề)",
+    },
+
+    topic: "Chủ Đề/Nội Dung",
+    topicPlaceholder:
+      "Vui lòng mô tả ngắn gọn về chủ đề buổi dịch (ví dụ: họp kinh doanh, khám sức khỏe...)",
+
+    // Contact info
+    contactInfo: "Thông Tin Liên Hệ Của Bạn",
+    fullName: "Họ và Tên",
+    fullNamePlaceholder: "Nhập họ tên đầy đủ",
+    email: "Email",
+    emailPlaceholder: "email.cua.ban@example.com",
+    phone: "Số Điện Thoại",
+    phonePlaceholder: "0123456789",
+
+    // Actions
+    cancel: "Hủy",
+    submit: "Gửi Yêu Cầu Đặt Lịch",
+
+    // Estimated cost
+    estimatedCost: "Chi Phí Dự Kiến",
+    hours: "giờ",
+
+    // Errors
+    errors: {
+      serviceTypeRequired: "Vui lòng chọn loại dịch vụ",
+      locationRequired: "Vui lòng nhập địa điểm tổ chức",
+      eventDateRequired: "Vui lòng chọn ngày sự kiện",
+      startDateRequired: "Vui lòng chọn ngày bắt đầu",
+      endDateRequired: "Vui lòng chọn ngày kết thúc",
+      endDateAfterStart: "Ngày kết thúc phải sau ngày bắt đầu",
+      startTimeRequired: "Vui lòng chọn giờ bắt đầu",
+      endTimeRequired: "Vui lòng chọn giờ kết thúc",
+      endTimeAfterStart: "Giờ kết thúc phải sau giờ bắt đầu",
+      timeRequirementRequired: "Vui lòng chọn yêu cầu thời gian",
+      topicRequired: "Vui lòng mô tả chủ đề (tối thiểu 10 ký tự)",
+      fullNameRequired: "Vui lòng nhập họ tên đầy đủ",
+      emailInvalid: "Vui lòng nhập địa chỉ email hợp lệ",
+      phoneInvalid: "Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số)",
+    },
+
+    // Success
+    successMessage:
+      "Yêu cầu đặt lịch đã được gửi thành công! Phiên dịch viên sẽ liên hệ với bạn sớm.",
   },
 };
 

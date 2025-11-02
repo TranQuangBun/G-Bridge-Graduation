@@ -1,0 +1,86 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.content {
+  max-width: 500px;
+  width: 100%;
+}
+
+.interpreterCard {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #667eea;
+  margin-bottom: 20px;
+}
+
+.interpreterCard h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 10px 0;
+}
+
+.languages {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 8px 0;
+}
+
+.specializations {
+  font-size: 14px;
+  color: #374151;
+  margin: 8px 0;
+}
+
+.rating {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin: 12px 0;
+}
+
+.rate {
+  font-size: 20px;
+  font-weight: 700;
+  color: #10b981;
+  margin: 12px 0 24px;
+}
+
+.bookButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 16px 40px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  width: 100%;
+}
+
+.bookButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(102, 126, 234, 0.5);
+}
+
+.bookButton:active {
+  transform: translateY(0);
+}

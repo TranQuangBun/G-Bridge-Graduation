@@ -307,6 +307,7 @@ const en = {
       overview: "Overview",
       applications: "My Applications",
       favorites: "Saved Jobs",
+      savedInterpreters: "Saved Interpreters",
       alerts: "Job Alerts",
       profile: "Profile",
       settings: "Settings",
@@ -780,6 +781,9 @@ const en = {
     maxSalaryMustBeGreater:
       "Maximum salary must be greater than minimum salary",
     contactEmailRequired: "Contact email is required",
+    invalidEmailFormat:
+      "Please enter a valid email address (e.g., hr@company.com)",
+    requiredLanguagesRequired: "Please add at least one required language",
     pleaseSelectLanguageAndLevel: "Please select both language and level",
     pleaseEnterCertificateName: "Please enter certificate name",
 
@@ -787,6 +791,199 @@ const en = {
     jobPostedSuccessfully: "Job posted successfully!",
     errorPostingJob: "Error posting job. Please try again.",
     postJob: "Post Job",
+  },
+  companyProfile: {
+    title: "Company Profile",
+    savedInterpreters: "Saved Interpreters",
+
+    // Status badges
+    statusUnverified: "Unverified",
+    statusPending: "Pending",
+    statusVerified: "Verified",
+    statusRejected: "Rejected",
+
+    // Alert messages
+    accountNotVerified: "Account Not Verified",
+    accountNotVerifiedMsg:
+      "Please complete your company information and upload your business registration certificate to verify your account.",
+    verificationPending: "Verification Pending",
+    verificationPendingMsg:
+      "Your documents are being reviewed by our admin team. You will be notified once the verification is complete.",
+    verificationRejected: "Verification Rejected",
+    verificationRejectedMsg:
+      "Please update your information and re-upload your business license.",
+
+    // Logo section
+    companyLogo: "Company Logo",
+    noLogoUploaded: "No logo uploaded",
+    logoHint:
+      "Upload your company logo. This will be displayed on job postings and your public profile.",
+    logoRecommendation:
+      "Recommended: Square image, min 200x200px. Max 2MB. (JPEG, PNG)",
+    chooseLogo: "Choose Logo",
+    changeLogo: "Change Logo",
+    uploadLogo: "Upload Logo",
+    uploading: "Uploading...",
+
+    // Basic information
+    basicInformation: "Basic Information",
+    edit: "Edit",
+    companyName: "Company Name",
+    industry: "Industry",
+    companySize: "Company Size",
+    website: "Website",
+    headquarters: "Headquarters",
+    foundedYear: "Founded Year",
+    companyDescription: "Company Description",
+    description: "Description",
+    notProvided: "Not provided",
+    enterCompanyName: "Enter company name",
+    selectIndustry: "Select industry",
+    selectCompanySize: "Select company size",
+    websitePlaceholder: "https://example.com",
+    headquartersPlaceholder: "City, Country",
+    foundedYearPlaceholder: "2020",
+    descriptionPlaceholder: "Brief introduction about your company...",
+
+    // Business license
+    businessCertificate: "Business Registration Certificate",
+    businessLicenseNumber: "Business License Number",
+    enterLicenseNumber: "Enter business license number",
+    licenseNumberHint: "Enter your official business registration number",
+    uploadBusinessLicense: "Upload Business License (Scan/Photo - Color)",
+    licenseHint:
+      "Please upload a clear color scan or photo of your business registration certificate. Accepted formats: JPEG, PNG, PDF (Max 5MB)",
+    completeBasicInfo: "Please complete basic company information",
+    completeBasicInfoMessage:
+      "Please complete basic company information before uploading business license",
+    businessLicenseAlt: "Business License",
+    removeFile: "Remove selected file",
+    chooseFile: "Choose File",
+    changeFile: "Change File",
+    submitForVerification: "Submit for Verification",
+
+    // Verification info
+    companyVerified: "Company Verified",
+    verifiedOn: "Your company has been verified on",
+    verifiedBadgeInfo:
+      'A "Verified Company" badge will be displayed on all your job postings.',
+
+    // Actions
+    cancel: "Cancel",
+    saveChanges: "Save Changes",
+    saving: "Saving...",
+
+    // Validation
+    fillRequiredFields:
+      "Please fill in all required fields (Company Name, Industry, Size, Description)",
+    selectLicenseFile: "Please select a business license file",
+
+    // Success messages
+    profileUpdated: "Profile updated successfully",
+    logoUploadSuccess: "Logo uploaded successfully",
+    licenseUploadSuccess:
+      "Business license uploaded successfully! Your profile is now pending admin verification.",
+
+    // Error messages
+    failedToLoad: "Failed to load profile",
+    updateFailed: "Failed to update profile",
+    logoUploadFailed: "Failed to upload logo",
+    licenseUploadFailed: "Failed to upload business license",
+    invalidImageType: "Please upload an image file (JPEG, PNG)",
+    invalidLicenseType: "Please upload an image (JPEG, PNG) or PDF file",
+    fileSizeTooLarge: "File size must be less than",
+    logoSizeTooLarge: "File size must be less than 2MB",
+    licenseSizeTooLarge: "File size must be less than 5MB",
+
+    // Coming soon
+    settingsComingSoon: "Settings page coming soon!",
+
+    // Page access
+    companyAccountOnly: "This page is only for company accounts",
+  },
+  bookingModal: {
+    title: "Book an Interpreter",
+    bookingWith: "You are booking with",
+    close: "Close",
+
+    // Form fields
+    serviceType: "Service Type",
+    selectService: "Select service type",
+    services: {
+      consecutive: "Consecutive Interpreting",
+      simultaneous: "Simultaneous Interpreting (Booth)",
+      escort: "Escort Interpreting",
+      online: "Online Interpreting (Zoom/Teams)",
+    },
+
+    bookingType: "Meeting Format",
+    online: "Online (Remote)",
+    offline: "Offline (In-person)",
+
+    location: "Event Location/Address",
+    locationPlaceholder: "Enter event venue or address",
+
+    eventDuration: "Event Duration",
+    singleDay: "Single Day",
+    multipleDays: "Multiple Days",
+
+    eventDate: "Event Date",
+    startDate: "Start Date",
+    endDate: "End Date",
+    startTime: "Start Time",
+    endTime: "End Time",
+
+    timeRequirement: "Time Requirement",
+    selectTimeRequirement: "Select time requirement",
+    timeOptions: {
+      fullDay: "Full Day (8 hours)",
+      halfDay: "Half Day (4 hours)",
+      eventSchedule: "Per Event Schedule",
+      other: "Other (specify in topic)",
+    },
+
+    topic: "Topic/Content",
+    topicPlaceholder:
+      "Please briefly describe the topic of the interpreting session (e.g., business meeting, medical consultation...)",
+
+    // Contact info
+    contactInfo: "Your Contact Information",
+    fullName: "Full Name",
+    fullNamePlaceholder: "Enter your full name",
+    email: "Email",
+    emailPlaceholder: "your.email@example.com",
+    phone: "Phone Number",
+    phonePlaceholder: "0123456789",
+
+    // Actions
+    cancel: "Cancel",
+    submit: "Send Booking Request",
+
+    // Estimated cost
+    estimatedCost: "Estimated Cost",
+    hours: "hours",
+
+    // Errors
+    errors: {
+      serviceTypeRequired: "Please select a service type",
+      locationRequired: "Please enter the event location",
+      eventDateRequired: "Please select an event date",
+      startDateRequired: "Please select a start date",
+      endDateRequired: "Please select an end date",
+      endDateAfterStart: "End date must be after start date",
+      startTimeRequired: "Please select a start time",
+      endTimeRequired: "Please select an end time",
+      endTimeAfterStart: "End time must be after start time",
+      timeRequirementRequired: "Please select a time requirement",
+      topicRequired: "Please describe the topic (minimum 10 characters)",
+      fullNameRequired: "Please enter your full name",
+      emailInvalid: "Please enter a valid email address",
+      phoneInvalid: "Please enter a valid phone number (10-11 digits)",
+    },
+
+    // Success
+    successMessage:
+      "Booking request submitted successfully! The interpreter will contact you soon.",
   },
 };
 

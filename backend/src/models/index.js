@@ -18,6 +18,9 @@ import JobApplication from "./JobApplication.js";
 import SavedJob from "./SavedJob.js";
 import SavedInterpreter from "./SavedInterpreter.js";
 
+// Import Booking-related models
+import BookingRequest from "./BookingRequest.js";
+
 // Import Payment-related models
 import SubscriptionPlan from "./SubscriptionPlan.js";
 import Payment from "./Payment.js";
@@ -250,6 +253,30 @@ User.hasMany(SavedInterpreter, {
   as: "savedInterpreterRecords",
 });
 
+// ==================== BOOKING REQUEST RELATIONSHIPS ====================
+
+// User (Client) has many BookingRequests
+User.hasMany(BookingRequest, {
+  foreignKey: "clientId",
+  as: "sentBookingRequests",
+  onDelete: "CASCADE",
+});
+BookingRequest.belongsTo(User, {
+  foreignKey: "clientId",
+  as: "client",
+});
+
+// User (Interpreter) has many BookingRequests
+User.hasMany(BookingRequest, {
+  foreignKey: "interpreterId",
+  as: "receivedBookingRequests",
+  onDelete: "CASCADE",
+});
+BookingRequest.belongsTo(User, {
+  foreignKey: "interpreterId",
+  as: "interpreter",
+});
+
 // ==================== PAYMENT RELATIONSHIPS ====================
 
 // User has many Payments
@@ -369,6 +396,7 @@ export {
   JobApplication,
   SavedJob,
   SavedInterpreter,
+  BookingRequest,
   SubscriptionPlan,
   Payment,
   UserSubscription,
@@ -408,6 +436,9 @@ export async function syncDatabase(force = false) {
     await JobApplication.sync({ force });
     await SavedJob.sync({ force });
     await SavedInterpreter.sync({ force });
+
+    // Booking requests
+    await BookingRequest.sync({ force });
 
     // Payment models (don't force sync - tables already created by migration)
     await SubscriptionPlan.sync({ force: false });

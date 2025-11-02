@@ -11,6 +11,7 @@ export const ROUTES = {
   SAVED_JOBS: "/dashboard/saved-jobs",
   JOB_ALERTS: "/dashboard/job-alerts",
   PROFILE: "/profile",
+  COMPANY_PROFILE: "/company/profile",
   PRICING: "/pricing",
   LOGIN: "/login",
   REGISTER: "/register",

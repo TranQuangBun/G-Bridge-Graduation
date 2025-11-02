@@ -61,19 +61,53 @@ function DashboardPage() {
   // Check if user is company/client role
   const isCompany = user?.role === "client" || user?.role === "company";
 
-  const SIDEBAR_MENU = [
-    { id: "overview", icon: "📊", labelKey: "overview", active: true },
-    { id: "applications", icon: "📋", labelKey: "applications", active: false },
-    {
-      id: "favorites",
-      icon: "❤️",
-      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
-      active: false,
-    },
-    { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-    { id: "profile", icon: "👤", labelKey: "profile", active: false },
-    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-  ];
+  const SIDEBAR_MENU = React.useMemo(
+    () => [
+      {
+        id: "overview",
+        icon: "📊",
+        label: t("dashboard.navigation.overview"),
+        active: true,
+      },
+      {
+        id: "applications",
+        icon: "📋",
+        label: isCompany
+          ? "Job Applications"
+          : t("dashboard.navigation.applications"),
+        active: false,
+      },
+      {
+        id: "favorites",
+        icon: "❤️",
+        label: isCompany
+          ? t("dashboard.navigation.savedInterpreters")
+          : t("dashboard.navigation.favorites"),
+        active: false,
+      },
+      {
+        id: "alerts",
+        icon: "🔔",
+        label: t("dashboard.navigation.alerts"),
+        active: false,
+      },
+      {
+        id: "profile",
+        icon: isCompany ? "🏢" : "👤",
+        label: isCompany
+          ? "Company Profile"
+          : t("dashboard.navigation.profile"),
+        active: false,
+      },
+      {
+        id: "settings",
+        icon: "⚙️",
+        label: t("dashboard.navigation.settings"),
+        active: false,
+      },
+    ],
+    [t, isCompany]
+  );
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -175,15 +209,18 @@ function DashboardPage() {
                   } else if (item.id === "alerts") {
                     navigate(ROUTES.JOB_ALERTS);
                   } else if (item.id === "profile") {
-                    navigate(ROUTES.PROFILE);
+                    // Redirect to Company Profile for clients, regular Profile for interpreters
+                    if (isCompany) {
+                      navigate(ROUTES.COMPANY_PROFILE);
+                    } else {
+                      navigate(ROUTES.PROFILE);
+                    }
                   }
                   // Add other navigation logic for other menu items when implemented
                 }}
               >
                 <span className={styles.menuIcon}>{item.icon}</span>
-                <span className={styles.menuLabel}>
-                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
-                </span>
+                <span className={styles.menuLabel}>{item.label}</span>
               </button>
             ))}
           </nav>

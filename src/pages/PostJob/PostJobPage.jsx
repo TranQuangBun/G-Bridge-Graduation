@@ -4,6 +4,8 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { MainLayout } from "../../layouts";
 import styles from "./PostJobPage.module.css";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000/api";
+
 const PostJobPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
@@ -61,21 +63,21 @@ const PostJobPage = () => {
   const fetchLookupData = async () => {
     try {
       // Fetch working modes
-      const modesRes = await fetch("/api/jobs/lookup/working-modes");
+      const modesRes = await fetch(`${API_URL}/jobs/lookup/working-modes`);
       const modesData = await modesRes.json();
       if (modesData.success) {
         setWorkingModes(modesData.data);
       }
 
       // Fetch domains
-      const domainsRes = await fetch("/api/jobs/lookup/domains");
+      const domainsRes = await fetch(`${API_URL}/jobs/lookup/domains`);
       const domainsData = await domainsRes.json();
       if (domainsData.success) {
         setDomains(domainsData.data);
       }
 
       // Fetch levels
-      const levelsRes = await fetch("/api/jobs/lookup/levels");
+      const levelsRes = await fetch(`${API_URL}/jobs/lookup/levels`);
       const levelsData = await levelsRes.json();
       if (levelsData.success) {
         setLevels(levelsData.data);
@@ -195,8 +197,27 @@ const PostJobPage = () => {
           newErrors.maxSalary = t("postJob.maxSalaryMustBeGreater");
         }
       }
-      if (!formData.contactEmail.trim())
+      if (!formData.contactEmail.trim()) {
         newErrors.contactEmail = t("postJob.contactEmailRequired");
+      } else {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.contactEmail)) {
+          newErrors.contactEmail = t("postJob.invalidEmailFormat");
+        }
+      }
+    }
+
+    if (currentStep === 4) {
+      // Yêu cầu ít nhất 1 ngôn ngữ
+      if (
+        !formData.requiredLanguages ||
+        formData.requiredLanguages.length === 0
+      ) {
+        newErrors.requiredLanguages =
+          t("postJob.requiredLanguagesRequired") ||
+          "Please add at least one required language";
+      }
     }
 
     setErrors(newErrors);
@@ -216,6 +237,13 @@ const PostJobPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Nếu chưa đến bước cuối, chỉ next step
+    if (step < totalSteps) {
+      nextStep();
+      return;
+    }
+
+    // Validate bước cuối trước khi submit
     if (!validateStep(step)) {
       return;
     }
@@ -223,11 +251,11 @@ const PostJobPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/jobs", {
+      const response = await fetch(`${API_URL}/jobs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
         body: JSON.stringify(formData),
       });
@@ -665,6 +693,12 @@ const PostJobPage = () => {
                   {t("postJob.add")}
                 </button>
               </div>
+
+              {errors.requiredLanguages && (
+                <span className={styles.errorText}>
+                  {errors.requiredLanguages}
+                </span>
+              )}
 
               {formData.requiredLanguages.length > 0 && (
                 <div className={styles.itemsList}>

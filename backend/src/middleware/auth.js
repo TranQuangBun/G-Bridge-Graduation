@@ -8,7 +8,11 @@ export function authRequired(req, res, next) {
   const token = header.slice(7);
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload;
+    // Map 'sub' to 'id' for easier access in controllers
+    req.user = {
+      ...payload,
+      id: payload.sub,
+    };
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

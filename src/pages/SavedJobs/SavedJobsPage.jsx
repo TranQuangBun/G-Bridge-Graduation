@@ -132,7 +132,13 @@ function SavedJobsPage() {
 
   const SIDEBAR_MENU = [
     { id: "overview", icon: "📊", labelKey: "overview", active: false },
-    { id: "applications", icon: "📋", labelKey: "applications", active: false },
+    {
+      id: "applications",
+      icon: "📋",
+      label: isCompany ? "Job Applications" : null,
+      labelKey: isCompany ? null : "applications",
+      active: false,
+    },
     {
       id: "favorites",
       icon: "❤️",
@@ -140,7 +146,13 @@ function SavedJobsPage() {
       active: true,
     },
     { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-    { id: "profile", icon: "👤", labelKey: "profile", active: false },
+    {
+      id: "profile",
+      icon: isCompany ? "🏢" : "👤",
+      label: isCompany ? "Company Profile" : null,
+      labelKey: isCompany ? null : "profile",
+      active: false,
+    },
     { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
   ];
 
@@ -200,7 +212,12 @@ function SavedJobsPage() {
                   } else if (item.id === "alerts") {
                     navigate(ROUTES.JOB_ALERTS);
                   } else if (item.id === "profile") {
-                    navigate(ROUTES.PROFILE);
+                    // Redirect to Company Profile for clients, regular Profile for interpreters
+                    if (isCompany) {
+                      navigate(ROUTES.COMPANY_PROFILE);
+                    } else {
+                      navigate(ROUTES.PROFILE);
+                    }
                   }
                   // Add other navigation logic for other menu items when implemented
                 }}

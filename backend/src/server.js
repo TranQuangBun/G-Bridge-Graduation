@@ -11,6 +11,8 @@ import certificationRoutes from "./routes/certificationRoutes.js";
 import interpreterRoutes from "./routes/interpreterRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import clientRoutes from "./routes/clientRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
 
 dotenv.config();
 
@@ -49,6 +51,8 @@ app.use("/api/certifications", certificationRoutes);
 app.use("/api/interpreters", interpreterRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/clients", clientRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

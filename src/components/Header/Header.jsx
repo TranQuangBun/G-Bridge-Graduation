@@ -104,7 +104,12 @@ const Header = () => {
 
   const handleProfileClick = () => {
     setIsUserMenuOpen(false);
-    navigate(ROUTES.PROFILE);
+    // Redirect to company profile for client role
+    if (user?.role === "client") {
+      navigate(ROUTES.COMPANY_PROFILE);
+    } else {
+      navigate(ROUTES.PROFILE);
+    }
   };
 
   // Function to check if a route is active

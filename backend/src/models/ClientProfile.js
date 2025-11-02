@@ -33,14 +33,15 @@ ClientProfile.init(
     },
     companySize: {
       type: DataTypes.ENUM(
-        "1-10",
-        "11-50",
-        "51-200",
+        "under_10",
+        "10-50",
+        "51-100",
+        "101-200",
         "201-500",
-        "501-1000",
-        "1000+"
+        "500+"
       ),
       allowNull: true,
+      comment: "Company size (number of employees)",
     },
     website: {
       type: DataTypes.STRING(255),
@@ -52,10 +53,27 @@ ClientProfile.init(
     industry: {
       type: DataTypes.STRING(100),
       allowNull: true,
+      comment: "Main industry/business sector",
     },
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
+      comment: "Company introduction/about us",
+    },
+    businessLicense: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: "URL to business registration certificate image",
+    },
+    businessLicenseNumber: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: "Business registration certificate number",
+    },
+    businessLicenseVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: "Whether business license has been verified by admin",
     },
     logo: {
       type: DataTypes.STRING(255),
@@ -120,8 +138,19 @@ ClientProfile.init(
       defaultValue: 0,
     },
     verificationStatus: {
-      type: DataTypes.ENUM("pending", "verified", "rejected"),
-      defaultValue: "pending",
+      type: DataTypes.ENUM("unverified", "pending", "verified", "rejected"),
+      defaultValue: "unverified",
+      comment: "Document verification status by admin",
+    },
+    verificationNote: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "Admin notes for verification (rejection reason, etc.)",
+    },
+    verifiedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Date when company was verified",
     },
     accountStatus: {
       type: DataTypes.ENUM("active", "suspended", "pending_approval"),

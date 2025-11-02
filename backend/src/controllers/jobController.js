@@ -336,7 +336,9 @@ export async function createJob(req, res) {
       await JobRequiredLanguage.bulkCreate(
         requiredLanguages.map((lang) => ({
           jobId: job.id,
-          ...lang,
+          languageId: parseInt(lang.languageId),
+          levelId: parseInt(lang.levelId),
+          isSourceLanguage: lang.isSourceLanguage || false,
         }))
       );
     }

@@ -16,6 +16,7 @@ import {
 import SavedJobsPage from "../pages/Dashboard/SavedJobsPage";
 import JobAlertsPage from "../pages/JobAlerts/JobAlertsPage";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
+import CompanyProfilePage from "../pages/CompanyProfile";
 import PaymentSuccessPage from "../pages/PaymentSuccess";
 import PaymentCancelPage from "../pages/PaymentCancel";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -84,6 +85,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.COMPANY_PROFILE,
+    element: (
+      <ProtectedRoute allowedRoles={["client"]}>
+        <CompanyProfilePage />
       </ProtectedRoute>
     ),
   },

@@ -4,6 +4,7 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import interpreterService from "../../services/interpreterService";
 import { toast } from "react-toastify";
+import BookingModal from "../BookingModal/BookingModal";
 import styles from "./InterpreterModal.module.css";
 
 const InterpreterModal = ({ interpreterId, onClose }) => {
@@ -12,9 +13,55 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
   const navigate = useNavigate();
   const [interpreter, setInterpreter] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   // Check if user has premium access (chưa trả phí = isPremium false)
   const hasPremiumAccess = user?.isPremium || false;
+
+  // Helper function to parse specializations (handle both array and string)
+  const parseSpecializations = (specializations) => {
+    if (!specializations) return [];
+    if (Array.isArray(specializations)) return specializations;
+    if (typeof specializations === "string") {
+      try {
+        const parsed = JSON.parse(specializations);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to parse languages (handle both array and string)
+  const parseLanguages = (languages) => {
+    if (!languages) return [];
+    if (Array.isArray(languages)) return languages;
+    if (typeof languages === "string") {
+      try {
+        const parsed = JSON.parse(languages);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to parse certifications (handle both array and string)
+  const parseCertifications = (certifications) => {
+    if (!certifications) return [];
+    if (Array.isArray(certifications)) return certifications;
+    if (typeof certifications === "string") {
+      try {
+        const parsed = JSON.parse(certifications);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
 
   useEffect(() => {
     fetchInterpreterDetails();
@@ -50,7 +97,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
       toast.warning(t("interpreterModal.premiumMessage"));
       return;
     }
-    toast.info("Booking feature coming soon!");
+    setIsBookingModalOpen(true);
   };
 
   const handleUpgradeToPremium = () => {
@@ -181,7 +228,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
               {t("interpreterModal.languages")}
             </h3>
             <div className={styles.tagsList}>
-              {interpreter.languages?.map((lang) => (
+              {parseLanguages(interpreter.languages).map((lang) => (
                 <span key={lang.id} className={styles.tag}>
                   {lang.name}
                 </span>
@@ -190,31 +237,34 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           </div>
 
           {/* Specializations Section */}
-          {interpreter.profile?.specializations?.length > 0 && (
+          {parseSpecializations(interpreter.profile?.specializations).length >
+            0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
                 <span className={styles.icon}>🎯</span>
                 {t("interpreterModal.specializations")}
               </h3>
               <div className={styles.tagsList}>
-                {interpreter.profile.specializations.map((spec, idx) => (
-                  <span key={idx} className={styles.tag}>
-                    {spec}
-                  </span>
-                ))}
+                {parseSpecializations(interpreter.profile.specializations).map(
+                  (spec, idx) => (
+                    <span key={idx} className={styles.tag}>
+                      {spec}
+                    </span>
+                  )
+                )}
               </div>
             </div>
           )}
 
           {/* Certifications Section */}
-          {interpreter.certifications?.length > 0 && (
+          {parseCertifications(interpreter.certifications).length > 0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
                 <span className={styles.icon}>🏆</span>
                 {t("interpreterModal.certifications")}
               </h3>
               <div className={styles.certificationsList}>
-                {interpreter.certifications.map((cert) => (
+                {parseCertifications(interpreter.certifications).map((cert) => (
                   <div key={cert.id} className={styles.certificationItem}>
                     <div className={styles.certIcon}>📜</div>
                     <div className={styles.certInfo}>
@@ -414,6 +464,20 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        interpreter={{
+          id: interpreter.id,
+          name: interpreter.fullName,
+          avatar: interpreter.avatar
+            ? `http://localhost:4000${interpreter.avatar}`
+            : null,
+          hourlyRate: interpreter.profile?.hourlyRate || 0,
+        }}
+      />
     </div>
   );
 };

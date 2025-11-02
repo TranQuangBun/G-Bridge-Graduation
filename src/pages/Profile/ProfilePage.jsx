@@ -119,12 +119,25 @@ const ProfilePage = () => {
     refreshUser,
   } = useAuth();
 
-  // Check if user is company/client role
+  // Check if user is company/client role - redirect them to company profile
   const isCompany = user?.role === "client" || user?.role === "company";
+
+  // Redirect company users to their company profile page
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && isCompany) {
+      navigate(ROUTES.COMPANY_PROFILE);
+    }
+  }, [isCompany, isAuthenticated, authLoading, navigate]);
 
   const SIDEBAR_MENU = [
     { id: "overview", icon: "📊", labelKey: "overview", active: false },
-    { id: "applications", icon: "📋", labelKey: "applications", active: false },
+    {
+      id: "applications",
+      icon: "📋",
+      label: isCompany ? "Job Applications" : null,
+      labelKey: isCompany ? null : "applications",
+      active: false,
+    },
     {
       id: "favorites",
       icon: "❤️",
@@ -132,7 +145,13 @@ const ProfilePage = () => {
       active: false,
     },
     { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-    { id: "profile", icon: "👤", labelKey: "profile", active: true },
+    {
+      id: "profile",
+      icon: isCompany ? "🏢" : "👤",
+      label: isCompany ? "Company Profile" : null,
+      labelKey: isCompany ? null : "profile",
+      active: true,
+    },
     { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
   ];
 
