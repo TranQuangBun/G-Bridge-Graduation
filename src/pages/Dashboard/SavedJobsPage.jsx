@@ -4,11 +4,13 @@ import { MainLayout } from "../../layouts";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
 import interpreterService from "../../services/interpreterService";
 
 function SavedJobsPage() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const { t } = useLanguage();
   const [savedJobs, setSavedJobs] = useState([]);
   const [savedInterpreters, setSavedInterpreters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +19,41 @@ function SavedJobsPage() {
 
   // Check if user is company role
   const isCompany = user?.role === "client" || user?.role === "company";
+
+  // Specialization keys (language-independent)
+  const SPECIALIZATION_KEYS = [
+    "medical",
+    "legal",
+    "business",
+    "technical",
+    "conference",
+    "community",
+    "education",
+    "government",
+    "tourism",
+    "media",
+    "pharmaceutical",
+    "engineering",
+    "realEstate",
+    "immigration",
+    "courtroom",
+    "telecommunications",
+    "aviation",
+    "manufacturing",
+    "insurance",
+    "scientific",
+  ];
+
+  // Get translated label from key
+  const getSpecializationLabel = (keyOrLabel) => {
+    const options = t("profile.professional.specializationOptions");
+    // Check if it's a key
+    if (SPECIALIZATION_KEYS.includes(keyOrLabel)) {
+      return options[keyOrLabel];
+    }
+    // Otherwise return as is (custom specialization)
+    return keyOrLabel;
+  };
 
   // Dynamic sidebar menu based on role
   const SIDEBAR_MENU = [
@@ -317,7 +354,7 @@ function SavedJobsPage() {
                               specializations.length > 0 ? (
                                 specializations.slice(0, 3).map((spec, idx) => (
                                   <span key={idx} className={styles.tag}>
-                                    {spec}
+                                    {getSpecializationLabel(spec)}
                                   </span>
                                 ))
                               ) : (

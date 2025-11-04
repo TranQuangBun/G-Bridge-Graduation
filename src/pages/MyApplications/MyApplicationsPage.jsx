@@ -9,6 +9,7 @@ import bookingService from "../../services/bookingService";
 import { toast } from "react-toastify";
 import CompanyInfoModal from "../../components/CompanyInfoModal";
 import { InterpreterModal } from "../../components/InterpreterModal";
+import { DashboardSidebar } from "../../components";
 
 // Mock data for applications
 const MOCK_APPLICATIONS = [
@@ -123,6 +124,7 @@ function MyApplicationsPage() {
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [hideCancelled, setHideCancelled] = useState(true); // Hide cancelled by default
 
   // States for interpreter modal
   const [selectedInterpreterId, setSelectedInterpreterId] = useState(null);
@@ -348,32 +350,6 @@ function MyApplicationsPage() {
     setRatingComment("");
   };
 
-  const SIDEBAR_MENU = [
-    { id: "overview", icon: "📊", labelKey: "overview", active: false },
-    {
-      id: "applications",
-      icon: "📋",
-      label: isCompany ? "Job Applications" : null,
-      labelKey: isCompany ? null : "applications",
-      active: true,
-    },
-    {
-      id: "favorites",
-      icon: "❤️",
-      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
-      active: false,
-    },
-    { id: "alerts", icon: "🔔", labelKey: "alerts", active: false },
-    {
-      id: "profile",
-      icon: isCompany ? "🏢" : "👤",
-      label: isCompany ? "Company Profile" : null,
-      labelKey: isCompany ? null : "profile",
-      active: false,
-    },
-    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-  ];
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -417,6 +393,28 @@ function MyApplicationsPage() {
     }
   };
 
+  // Filter booking requests
+  const filteredBookingRequests = bookingRequests
+    .filter((booking) => {
+      // Hide cancelled if option is enabled
+      if (hideCancelled && booking.status === "cancelled") {
+        return false;
+      }
+      // Filter by selected status
+      if (selectedStatus !== "all" && booking.status !== selectedStatus) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      } else if (sortBy === "oldest") {
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      }
+      return 0;
+    });
+
   const filteredApplications = MOCK_APPLICATIONS.filter(
     (app) =>
       selectedStatus === "all" || app.status.toLowerCase() === selectedStatus
@@ -443,44 +441,10 @@ function MyApplicationsPage() {
     <MainLayout>
       <div className={styles.dashboardRoot}>
         {/* Sidebar - Using exact same structure as DashboardPage */}
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h2 className={styles.sidebarTitle}>{t("dashboard.pageTitle")}</h2>
-          </div>
-          <nav className={styles.sidebarNav}>
-            {SIDEBAR_MENU.map((item) => (
-              <button
-                key={item.id}
-                className={`${styles.menuItem} ${
-                  activeMenu === item.id ? styles.menuItemActive : ""
-                }`}
-                onClick={() => {
-                  setActiveMenu(item.id);
-                  if (item.id === "overview") {
-                    navigate(ROUTES.DASHBOARD);
-                  } else if (item.id === "favorites") {
-                    navigate(ROUTES.SAVED_JOBS);
-                  } else if (item.id === "alerts") {
-                    navigate(ROUTES.JOB_ALERTS);
-                  } else if (item.id === "profile") {
-                    // Redirect to Company Profile for clients, regular Profile for interpreters
-                    if (isCompany) {
-                      navigate(ROUTES.COMPANY_PROFILE);
-                    } else {
-                      navigate(ROUTES.PROFILE);
-                    }
-                  }
-                  // Add other navigation logic for other menu items when implemented
-                }}
-              >
-                <span className={styles.menuIcon}>{item.icon}</span>
-                <span className={styles.menuLabel}>
-                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebar
+          activeMenu={activeMenu}
+          onMenuChange={setActiveMenu}
+        />
 
         {/* Main Content */}
         <main className={styles.mainContent}>
@@ -503,21 +467,34 @@ function MyApplicationsPage() {
                   className={styles.filterSelect}
                 >
                   <option value="all">{t("applications.status.all")}</option>
-                  <option value="active">
-                    {t("applications.status.active")}
-                  </option>
-                  <option value="under review">
-                    {t("applications.status.underReview")}
-                  </option>
-                  <option value="shortlisted">
-                    {t("applications.status.shortlisted")}
-                  </option>
-                  <option value="interview scheduled">
-                    {t("applications.status.interviewScheduled")}
-                  </option>
-                  <option value="rejected">
-                    {t("applications.status.rejected")}
-                  </option>
+                  {(isInterpreter || isCompany) && (
+                    <>
+                      <option value="pending">⏳ Pending</option>
+                      <option value="accepted">✓ Accepted</option>
+                      <option value="completed">✓ Completed</option>
+                      <option value="rejected">✕ Rejected</option>
+                      <option value="cancelled">✕ Cancelled</option>
+                    </>
+                  )}
+                  {!isInterpreter && !isCompany && (
+                    <>
+                      <option value="active">
+                        {t("applications.status.active")}
+                      </option>
+                      <option value="under review">
+                        {t("applications.status.underReview")}
+                      </option>
+                      <option value="shortlisted">
+                        {t("applications.status.shortlisted")}
+                      </option>
+                      <option value="interview scheduled">
+                        {t("applications.status.interviewScheduled")}
+                      </option>
+                      <option value="rejected">
+                        {t("applications.status.rejected")}
+                      </option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -536,11 +513,38 @@ function MyApplicationsPage() {
                   <option value="oldest">
                     {t("applications.sort.oldest")}
                   </option>
-                  <option value="company">
-                    {t("applications.sort.company")}
-                  </option>
+                  {!isInterpreter && !isCompany && (
+                    <option value="company">
+                      {t("applications.sort.company")}
+                    </option>
+                  )}
                 </select>
               </div>
+
+              {/* Hide Cancelled Toggle */}
+              {(isInterpreter || isCompany) && (
+                <div className={styles.filterGroup}>
+                  <label className={styles.filterLabel}>Display:</label>
+                  <div className={styles.toggleContainer}>
+                    <input
+                      type="checkbox"
+                      id="hideCancelledToggle"
+                      checked={hideCancelled}
+                      onChange={(e) => setHideCancelled(e.target.checked)}
+                      className={styles.toggleInput}
+                    />
+                    <label
+                      htmlFor="hideCancelledToggle"
+                      className={styles.toggleLabel}
+                    >
+                      <span className={styles.toggleButton}></span>
+                      <span className={styles.toggleText}>
+                        {hideCancelled ? "🚫 Hide Cancelled" : "✓ Show All"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -554,7 +558,21 @@ function MyApplicationsPage() {
                     <span>Booking Requests</span>
                   </h2>
                   <span className={styles.requestCount}>
-                    {bookingRequests.length} requests
+                    {filteredBookingRequests.length} requests
+                    {hideCancelled &&
+                      bookingRequests.filter((b) => b.status === "cancelled")
+                        .length > 0 && (
+                        <span className={styles.hiddenCount}>
+                          {" "}
+                          (
+                          {
+                            bookingRequests.filter(
+                              (b) => b.status === "cancelled"
+                            ).length
+                          }{" "}
+                          hidden)
+                        </span>
+                      )}
                   </span>
                 </div>
                 {loadingBookings ? (
@@ -562,9 +580,9 @@ function MyApplicationsPage() {
                     <div className={styles.loadingSpinner}></div>
                     <p>Loading booking requests...</p>
                   </div>
-                ) : bookingRequests.length > 0 ? (
+                ) : filteredBookingRequests.length > 0 ? (
                   <div className={styles.bookingGrid}>
-                    {bookingRequests.map((booking) => (
+                    {filteredBookingRequests.map((booking) => (
                       <div
                         key={booking.id}
                         className={styles.modernBookingCard}
@@ -870,7 +888,21 @@ function MyApplicationsPage() {
                     <span>Sent Booking Requests</span>
                   </h2>
                   <span className={styles.requestCount}>
-                    {bookingRequests.length} requests
+                    {filteredBookingRequests.length} requests
+                    {hideCancelled &&
+                      bookingRequests.filter((b) => b.status === "cancelled")
+                        .length > 0 && (
+                        <span className={styles.hiddenCount}>
+                          {" "}
+                          (
+                          {
+                            bookingRequests.filter(
+                              (b) => b.status === "cancelled"
+                            ).length
+                          }{" "}
+                          hidden)
+                        </span>
+                      )}
                   </span>
                 </div>
                 {loadingBookings ? (
@@ -878,9 +910,9 @@ function MyApplicationsPage() {
                     <div className={styles.loadingSpinner}></div>
                     <p>Loading booking requests...</p>
                   </div>
-                ) : bookingRequests.length > 0 ? (
+                ) : filteredBookingRequests.length > 0 ? (
                   <div className={styles.bookingGrid}>
-                    {bookingRequests.map((booking) => (
+                    {filteredBookingRequests.map((booking) => (
                       <div
                         key={booking.id}
                         className={styles.modernBookingCard}

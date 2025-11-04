@@ -21,6 +21,9 @@ import SavedInterpreter from "./SavedInterpreter.js";
 // Import Booking-related models
 import BookingRequest from "./BookingRequest.js";
 
+// Import Notification model
+import Notification from "./Notification.js";
+
 // Import Payment-related models
 import SubscriptionPlan from "./SubscriptionPlan.js";
 import Payment from "./Payment.js";
@@ -378,6 +381,19 @@ PaymentRefund.belongsTo(User, {
   as: "processor",
 });
 
+// ==================== NOTIFICATION RELATIONSHIPS ====================
+
+// User has many Notifications
+User.hasMany(Notification, {
+  foreignKey: "userId",
+  as: "notifications",
+  onDelete: "CASCADE",
+});
+Notification.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
 // Export all models
 export {
   User,
@@ -397,6 +413,7 @@ export {
   SavedJob,
   SavedInterpreter,
   BookingRequest,
+  Notification,
   SubscriptionPlan,
   Payment,
   UserSubscription,
@@ -439,6 +456,9 @@ export async function syncDatabase(force = false) {
 
     // Booking requests
     await BookingRequest.sync({ force });
+
+    // Notifications
+    await Notification.sync({ force });
 
     // Payment models (don't force sync - tables already created by migration)
     await SubscriptionPlan.sync({ force: false });

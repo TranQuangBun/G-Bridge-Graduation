@@ -5,6 +5,7 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { DashboardSidebar } from "../../components";
 
 // Mock data for dashboard stats (will be replaced with real API data later)
 const MOCK_STATS = {
@@ -57,57 +58,6 @@ function DashboardPage() {
   const navigate = useNavigate();
   const { user, subscription, isAuthenticated, loading } = useAuth();
   const [activeMenu, setActiveMenu] = useState("overview");
-
-  // Check if user is company/client role
-  const isCompany = user?.role === "client" || user?.role === "company";
-
-  const SIDEBAR_MENU = React.useMemo(
-    () => [
-      {
-        id: "overview",
-        icon: "📊",
-        label: t("dashboard.navigation.overview"),
-        active: true,
-      },
-      {
-        id: "applications",
-        icon: "📋",
-        label: isCompany
-          ? "Job Applications"
-          : t("dashboard.navigation.applications"),
-        active: false,
-      },
-      {
-        id: "favorites",
-        icon: "❤️",
-        label: isCompany
-          ? t("dashboard.navigation.savedInterpreters")
-          : t("dashboard.navigation.favorites"),
-        active: false,
-      },
-      {
-        id: "alerts",
-        icon: "🔔",
-        label: t("dashboard.navigation.alerts"),
-        active: false,
-      },
-      {
-        id: "profile",
-        icon: isCompany ? "🏢" : "👤",
-        label: isCompany
-          ? "Company Profile"
-          : t("dashboard.navigation.profile"),
-        active: false,
-      },
-      {
-        id: "settings",
-        icon: "⚙️",
-        label: t("dashboard.navigation.settings"),
-        active: false,
-      },
-    ],
-    [t, isCompany]
-  );
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -189,42 +139,10 @@ function DashboardPage() {
     <MainLayout>
       <div className={styles.dashboardRoot}>
         {/* Sidebar */}
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h2 className={styles.sidebarTitle}>{t("dashboard.pageTitle")}</h2>
-          </div>
-          <nav className={styles.sidebarNav}>
-            {SIDEBAR_MENU.map((item) => (
-              <button
-                key={item.id}
-                className={`${styles.menuItem} ${
-                  activeMenu === item.id ? styles.menuItemActive : ""
-                }`}
-                onClick={() => {
-                  setActiveMenu(item.id);
-                  if (item.id === "applications") {
-                    navigate(ROUTES.MY_APPLICATIONS);
-                  } else if (item.id === "favorites") {
-                    navigate(ROUTES.SAVED_JOBS);
-                  } else if (item.id === "alerts") {
-                    navigate(ROUTES.JOB_ALERTS);
-                  } else if (item.id === "profile") {
-                    // Redirect to Company Profile for clients, regular Profile for interpreters
-                    if (isCompany) {
-                      navigate(ROUTES.COMPANY_PROFILE);
-                    } else {
-                      navigate(ROUTES.PROFILE);
-                    }
-                  }
-                  // Add other navigation logic for other menu items when implemented
-                }}
-              >
-                <span className={styles.menuIcon}>{item.icon}</span>
-                <span className={styles.menuLabel}>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebar
+          activeMenu={activeMenu}
+          onMenuChange={setActiveMenu}
+        />
 
         {/* Main Content */}
         <main className={styles.mainContent}>

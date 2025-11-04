@@ -18,6 +18,41 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
   // Check if user has premium access (chưa trả phí = isPremium false)
   const hasPremiumAccess = user?.isPremium || false;
 
+  // Specialization keys (language-independent)
+  const SPECIALIZATION_KEYS = [
+    "medical",
+    "legal",
+    "business",
+    "technical",
+    "conference",
+    "community",
+    "education",
+    "government",
+    "tourism",
+    "media",
+    "pharmaceutical",
+    "engineering",
+    "realEstate",
+    "immigration",
+    "courtroom",
+    "telecommunications",
+    "aviation",
+    "manufacturing",
+    "insurance",
+    "scientific",
+  ];
+
+  // Get translated label from key
+  const getSpecializationLabel = (keyOrLabel) => {
+    const options = t("profile.professional.specializationOptions");
+    // Check if it's a key
+    if (SPECIALIZATION_KEYS.includes(keyOrLabel)) {
+      return options[keyOrLabel];
+    }
+    // Otherwise return as is (custom specialization)
+    return keyOrLabel;
+  };
+
   // Helper function to parse specializations (handle both array and string)
   const parseSpecializations = (specializations) => {
     if (!specializations) return [];
@@ -248,7 +283,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                 {parseSpecializations(interpreter.profile.specializations).map(
                   (spec, idx) => (
                     <span key={idx} className={styles.tag}>
-                      {spec}
+                      {getSpecializationLabel(spec)}
                     </span>
                   )
                 )}

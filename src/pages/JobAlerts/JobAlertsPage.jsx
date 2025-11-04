@@ -5,6 +5,7 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { DashboardSidebar } from "../../components";
 
 // Mock data for job alerts
 const MOCK_JOB_ALERTS = [
@@ -131,35 +132,6 @@ function JobAlertsPage() {
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [alerts, setAlerts] = useState(MOCK_JOB_ALERTS);
 
-  // Check if user is company/client role
-  const isCompany = user?.role === "client" || user?.role === "company";
-
-  const SIDEBAR_MENU = [
-    { id: "overview", icon: "📊", labelKey: "overview", active: false },
-    {
-      id: "applications",
-      icon: "📋",
-      label: isCompany ? "Job Applications" : null,
-      labelKey: isCompany ? null : "applications",
-      active: false,
-    },
-    {
-      id: "favorites",
-      icon: "❤️",
-      label: isCompany ? "Saved Interpreters" : "Saved Jobs",
-      active: false,
-    },
-    { id: "alerts", icon: "🔔", labelKey: "alerts", active: true },
-    {
-      id: "profile",
-      icon: isCompany ? "🏢" : "👤",
-      label: isCompany ? "Company Profile" : null,
-      labelKey: isCompany ? null : "profile",
-      active: false,
-    },
-    { id: "settings", icon: "⚙️", labelKey: "settings", active: false },
-  ];
-
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -259,43 +231,10 @@ function JobAlertsPage() {
     <MainLayout>
       <div className={styles.dashboardRoot}>
         {/* Sidebar */}
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h2 className={styles.sidebarTitle}>{t("dashboard.pageTitle")}</h2>
-          </div>
-          <nav className={styles.sidebarNav}>
-            {SIDEBAR_MENU.map((item) => (
-              <button
-                key={item.id}
-                className={`${styles.menuItem} ${
-                  activeMenu === item.id ? styles.menuItemActive : ""
-                }`}
-                onClick={() => {
-                  setActiveMenu(item.id);
-                  if (item.id === "overview") {
-                    navigate(ROUTES.DASHBOARD);
-                  } else if (item.id === "applications") {
-                    navigate(ROUTES.MY_APPLICATIONS);
-                  } else if (item.id === "favorites") {
-                    navigate(ROUTES.SAVED_JOBS);
-                  } else if (item.id === "profile") {
-                    // Redirect to Company Profile for clients, regular Profile for interpreters
-                    if (isCompany) {
-                      navigate(ROUTES.COMPANY_PROFILE);
-                    } else {
-                      navigate(ROUTES.PROFILE);
-                    }
-                  }
-                }}
-              >
-                <span className={styles.menuIcon}>{item.icon}</span>
-                <span className={styles.menuLabel}>
-                  {item.label || t(`dashboard.navigation.${item.labelKey}`)}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebar
+          activeMenu={activeMenu}
+          onMenuChange={setActiveMenu}
+        />
 
         {/* Main Content */}
         <main className={styles.mainContent}>

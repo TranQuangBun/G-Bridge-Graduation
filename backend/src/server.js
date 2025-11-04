@@ -13,6 +13,7 @@ import jobRoutes from "./routes/jobRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import clientRoutes from "./routes/clientRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

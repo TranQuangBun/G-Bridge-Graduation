@@ -119,6 +119,50 @@ const ProfilePage = () => {
     refreshUser,
   } = useAuth();
 
+  // Specialization keys (language-independent)
+  const SPECIALIZATION_KEYS = [
+    "medical",
+    "legal",
+    "business",
+    "technical",
+    "conference",
+    "community",
+    "education",
+    "government",
+    "tourism",
+    "media",
+    "pharmaceutical",
+    "engineering",
+    "realEstate",
+    "immigration",
+    "courtroom",
+    "telecommunications",
+    "aviation",
+    "manufacturing",
+    "insurance",
+    "scientific",
+  ];
+
+  // Get specialization options from translation
+  const getSpecializationOptions = () => {
+    const options = t("profile.professional.specializationOptions");
+    return SPECIALIZATION_KEYS.map((key) => ({
+      key,
+      label: options[key],
+    }));
+  };
+
+  // Get translated label from key
+  const getSpecializationLabel = (keyOrLabel) => {
+    const options = t("profile.professional.specializationOptions");
+    // Check if it's a key
+    if (SPECIALIZATION_KEYS.includes(keyOrLabel)) {
+      return options[keyOrLabel];
+    }
+    // Otherwise return as is (custom specialization)
+    return keyOrLabel;
+  };
+
   // Check if user is company/client role - redirect them to company profile
   const isCompany = user?.role === "client" || user?.role === "company";
 
@@ -193,6 +237,12 @@ const ProfilePage = () => {
 
   const [suggestedCertifications, setSuggestedCertifications] = useState([]);
   const [showSuggestedCerts, setShowSuggestedCerts] = useState(false);
+
+  // State for specializations dropdown
+  const [specializationInput, setSpecializationInput] = useState("");
+  const [showSpecializationDropdown, setShowSpecializationDropdown] =
+    useState(false);
+  const [filteredSpecializations, setFilteredSpecializations] = useState([]);
 
   // Helper function to parse specializations (handle both array and string)
   const parseSpecializations = (specializations) => {
@@ -269,6 +319,14 @@ const ProfilePage = () => {
       });
     }
   }, [userProfile]);
+
+  // Update filtered specializations when language changes
+  useEffect(() => {
+    if (!specializationInput.trim()) {
+      setFilteredSpecializations(getSpecializationOptions());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   // Calculate profile completeness
   const calculateProfileCompleteness = () => {
@@ -544,6 +602,34 @@ const ProfilePage = () => {
         ...prev,
         specializations: [...prev.specializations, spec],
       }));
+      // Reset input and close dropdown
+      setSpecializationInput("");
+      setShowSpecializationDropdown(false);
+    }
+  };
+
+  // Handle specialization input change
+  const handleSpecializationInputChange = (value) => {
+    setSpecializationInput(value);
+    setShowSpecializationDropdown(true);
+
+    const specializationOptions = getSpecializationOptions();
+
+    // Filter options based on input
+    if (value.trim()) {
+      const filtered = specializationOptions.filter((option) =>
+        option.label.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredSpecializations(filtered);
+    } else {
+      setFilteredSpecializations(specializationOptions);
+    }
+  };
+
+  // Handle add custom specialization
+  const handleAddCustomSpecialization = () => {
+    if (specializationInput.trim()) {
+      handleAddSpecialization(specializationInput.trim());
     }
   };
 
@@ -1259,9 +1345,9 @@ const ProfilePage = () => {
                       <p>
                         {parseSpecializations(userProfile?.specializations)
                           .length
-                          ? parseSpecializations(
-                              userProfile.specializations
-                            ).join(", ")
+                          ? parseSpecializations(userProfile.specializations)
+                              .map((spec) => getSpecializationLabel(spec))
+                              .join(", ")
                           : t("profile.professional.notProvided")}
                       </p>
                     </div>
@@ -1318,19 +1404,61 @@ const ProfilePage = () => {
                     <div className={styles.formGroup}>
                       <label>{t("profile.professional.specializations")}</label>
                       <div className={styles.specializationsInput}>
-                        <input
-                          type="text"
-                          placeholder={t(
-                            "profile.professional.specializationsPlaceholder"
-                          )}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddSpecialization(e.target.value);
-                              e.target.value = "";
+                        <div className={styles.autocompleteWrapper}>
+                          <input
+                            type="text"
+                            value={specializationInput}
+                            onChange={(e) =>
+                              handleSpecializationInputChange(e.target.value)
                             }
-                          }}
-                        />
+                            onFocus={() => {
+                              setShowSpecializationDropdown(true);
+                              if (!specializationInput.trim()) {
+                                setFilteredSpecializations(
+                                  getSpecializationOptions()
+                                );
+                              }
+                            }}
+                            onBlur={() => {
+                              // Delay to allow click on dropdown options
+                              setTimeout(
+                                () => setShowSpecializationDropdown(false),
+                                200
+                              );
+                            }}
+                            placeholder={t(
+                              "profile.professional.specializationsPlaceholder"
+                            )}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddCustomSpecialization();
+                              }
+                            }}
+                          />
+                          {showSpecializationDropdown && (
+                            <div className={styles.autocompleteDropdown}>
+                              {filteredSpecializations.length > 0 ? (
+                                filteredSpecializations.map((option, index) => (
+                                  <div
+                                    key={index}
+                                    className={styles.autocompleteOption}
+                                    onClick={() =>
+                                      handleAddSpecialization(option.key)
+                                    }
+                                  >
+                                    {option.label}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className={styles.autocompleteOption}>
+                                  {t("profile.professional.noMatches")} "
+                                  {specializationInput}"
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <div className={styles.specializationTags}>
                           {professionalForm.specializations.map(
                             (spec, index) => (
@@ -1338,7 +1466,7 @@ const ProfilePage = () => {
                                 key={index}
                                 className={styles.specializationTag}
                               >
-                                {spec}
+                                {getSpecializationLabel(spec)}
                                 <button
                                   type="button"
                                   onClick={() =>

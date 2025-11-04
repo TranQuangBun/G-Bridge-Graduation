@@ -7,6 +7,7 @@ import { ROUTES } from "../../constants";
 import clientService from "../../services/clientService";
 import { toast } from "react-toastify";
 import { useLanguage } from "../../translet/LanguageContext";
+import { DashboardSidebar } from "../../components";
 
 const INDUSTRIES = [
   { value: "technology", label: "Technology & IT" },
@@ -51,20 +52,6 @@ function CompanyProfilePage() {
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [activeMenu, setActiveMenu] = useState("profile");
-
-  // Sidebar menu for companies
-  const SIDEBAR_MENU = [
-    { id: "overview", icon: "📊", labelKey: "overview" },
-    { id: "applications", icon: "📋", label: "Job Applications" },
-    {
-      id: "favorites",
-      icon: "❤️",
-      label: t("companyProfile.savedInterpreters"),
-    },
-    { id: "alerts", icon: "🔔", labelKey: "alerts" },
-    { id: "profile", icon: "🏢", label: t("companyProfile.title") },
-    { id: "settings", icon: "⚙️", labelKey: "settings" },
-  ];
 
   const [formData, setFormData] = useState({
     companyName: "",
@@ -349,42 +336,10 @@ function CompanyProfilePage() {
     <MainLayout>
       <div className={styles.dashboardRoot}>
         {/* Sidebar */}
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h2 className={styles.sidebarTitle}>Dashboard</h2>
-          </div>
-          <nav className={styles.sidebarNav}>
-            {SIDEBAR_MENU.map((item) => (
-              <button
-                key={item.id}
-                className={`${styles.menuItem} ${
-                  activeMenu === item.id ? styles.menuItemActive : ""
-                }`}
-                onClick={() => {
-                  setActiveMenu(item.id);
-                  if (item.id === "overview") {
-                    navigate(ROUTES.DASHBOARD);
-                  } else if (item.id === "applications") {
-                    navigate(ROUTES.MY_APPLICATIONS);
-                  } else if (item.id === "favorites") {
-                    navigate(ROUTES.SAVED_JOBS);
-                  } else if (item.id === "alerts") {
-                    navigate(ROUTES.JOB_ALERTS);
-                  } else if (item.id === "profile") {
-                    navigate(ROUTES.COMPANY_PROFILE);
-                  } else if (item.id === "settings") {
-                    toast.info("Settings page coming soon!");
-                  }
-                }}
-              >
-                <span className={styles.menuIcon}>{item.icon}</span>
-                <span className={styles.menuLabel}>
-                  {item.label || t(`dashboard.${item.labelKey}`)}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <DashboardSidebar
+          activeMenu={activeMenu}
+          onMenuChange={setActiveMenu}
+        />
 
         {/* Main Content */}
         <main className={styles.mainContent}>

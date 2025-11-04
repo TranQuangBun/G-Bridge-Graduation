@@ -13,6 +13,41 @@ const FindInterpreterPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Specialization keys (language-independent)
+  const SPECIALIZATION_KEYS = [
+    "medical",
+    "legal",
+    "business",
+    "technical",
+    "conference",
+    "community",
+    "education",
+    "government",
+    "tourism",
+    "media",
+    "pharmaceutical",
+    "engineering",
+    "realEstate",
+    "immigration",
+    "courtroom",
+    "telecommunications",
+    "aviation",
+    "manufacturing",
+    "insurance",
+    "scientific",
+  ];
+
+  // Get translated label from key
+  const getSpecializationLabel = (keyOrLabel) => {
+    const options = t("profile.professional.specializationOptions");
+    // Check if it's a key
+    if (SPECIALIZATION_KEYS.includes(keyOrLabel)) {
+      return options[keyOrLabel];
+    }
+    // Otherwise return as is (custom specialization)
+    return keyOrLabel;
+  };
+
   // State
   const [interpreters, setInterpreters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -779,7 +814,7 @@ const FindInterpreterPage = () => {
                                 .slice(0, 2)
                                 .map((spec, idx) => (
                                   <span key={idx} className={styles.tag}>
-                                    {spec}
+                                    {getSpecializationLabel(spec)}
                                   </span>
                                 ))}
                           </div>
