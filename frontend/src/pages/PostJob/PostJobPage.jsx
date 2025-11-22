@@ -1,0 +1,1026 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MainLayout } from "../../layouts";
+import { useLanguage } from "../../translet/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { ROUTES } from "../../constants";
+import jobService from "../../services/jobService";
+import organizationService from "../../services/organizationService";
+import languageService from "../../services/languageService";
+import { toast } from "react-toastify";
+import styles from "./PostJobPage.module.css";
+
+const defaultOrganizationForm = {
+  name: "",
+  email: "",
+  phone: "",
+  website: "",
+  province: "",
+  address: "",
+  description: "",
+};
+
+// Common languages list for job posting
+const COMMON_LANGUAGES = [
+  "English",
+  "Vietnamese",
+  "Japanese",
+  "Korean",
+  "Chinese",
+  "French",
+  "German",
+  "Spanish",
+  "Italian",
+  "Portuguese",
+  "Russian",
+  "Arabic",
+  "Thai",
+  "Indonesian",
+  "Malay",
+  "Hindi",
+  "Dutch",
+  "Swedish",
+  "Norwegian",
+  "Danish",
+  "Polish",
+  "Turkish",
+  "Greek",
+  "Czech",
+  "Hungarian",
+  "Romanian",
+  "Finnish",
+];
+
+// Default working modes fallback (if API doesn't return data)
+const DEFAULT_WORKING_MODES = [
+  { id: 1, name: "Full-time" },
+  { id: 2, name: "Part-time" },
+  { id: 3, name: "Remote" },
+  { id: 4, name: "Hybrid" },
+  { id: 5, name: "Contract" },
+  { id: 6, name: "Freelance" },
+];
+
+// Default proficiency levels fallback (if API doesn't return data)
+const DEFAULT_LEVELS = [
+  { id: 1, name: "Beginner", nameVi: "Sơ cấp" },
+  { id: 2, name: "Elementary", nameVi: "Cơ bản" },
+  { id: 3, name: "Intermediate", nameVi: "Trung cấp" },
+  { id: 4, name: "Upper Intermediate", nameVi: "Trung cấp cao" },
+  { id: 5, name: "Advanced", nameVi: "Cao cấp" },
+  { id: 6, name: "Native", nameVi: "Bản ngữ" },
+];
+
+const defaultJobData = {
+  organizationId: "",
+  workingModeId: "",
+  title: "",
+  province: "",
+  commune: "",
+  address: "",
+  expirationDate: "",
+  quantity: 1,
+  descriptions: "",
+  responsibility: "",
+  benefits: "",
+  salaryType: "NEGOTIABLE",
+  minSalary: "",
+  maxSalary: "",
+  contactEmail: "",
+  contactPhone: "",
+  domainIds: [],
+};
+
+const PostJobPage = () => {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+
+  const [lookupsLoading, setLookupsLoading] = useState(true);
+  const [submittingJob, setSubmittingJob] = useState(false);
+  const [savingOrganization, setSavingOrganization] = useState(false);
+  const [organizations, setOrganizations] = useState([]);
+  const [workingModes, setWorkingModes] = useState([]);
+  const [domains, setDomains] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [hasApiWorkingModes, setHasApiWorkingModes] = useState(false);
+  const [hasApiLevels, setHasApiLevels] = useState(false);
+  const [languageOptions, setLanguageOptions] = useState([]);
+  const [availableLanguages, setAvailableLanguages] = useState(COMMON_LANGUAGES);
+  const [showOrganizationForm, setShowOrganizationForm] = useState(false);
+  const [organizationForm, setOrganizationForm] = useState(defaultOrganizationForm);
+  const [jobData, setJobData] = useState(defaultJobData);
+  const [languageRequirements, setLanguageRequirements] = useState([]);
+
+  const isClientOrAdmin = user?.role === "client" || user?.role === "admin";
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+    if (!isClientOrAdmin) {
+      navigate(ROUTES.DASHBOARD);
+    }
+  }, [authLoading, isAuthenticated, isClientOrAdmin, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    setJobData((prev) => ({
+      ...prev,
+      contactEmail: prev.contactEmail || user.email || "",
+      contactPhone: prev.contactPhone || user.phone || "",
+    }));
+    setOrganizationForm((prev) => ({
+      ...prev,
+      email: prev.email || user.email || "",
+      phone: prev.phone || user.phone || "",
+    }));
+  }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isClientOrAdmin) return;
+    const fetchLookups = async () => {
+      try {
+        setLookupsLoading(true);
+        const [domainsRes, workingModesRes, levelsRes, orgsRes, languagesRes] = await Promise.all([
+          jobService.getDomains(),
+          jobService.getWorkingModes(),
+          jobService.getLevels(),
+          organizationService.getOrganizations({
+            ownerUserId: user?.id,
+            limit: 100,
+          }),
+          languageService
+            .getMyLanguages()
+            .catch(() => null),
+        ]);
+
+        if (domainsRes?.success) {
+          setDomains(domainsRes.data || []);
+        }
+        // Handle working modes - use API data if available, otherwise use defaults for display only
+        if (workingModesRes?.success && Array.isArray(workingModesRes.data) && workingModesRes.data.length > 0) {
+          console.log("Using working modes from API:", workingModesRes.data);
+          setWorkingModes(workingModesRes.data);
+          setHasApiWorkingModes(true);
+        } else {
+          // If API call failed, returned empty, or returned error, use defaults for display only
+          console.log("Working modes API response:", workingModesRes);
+          if (!workingModesRes) {
+            console.warn("Working modes API call failed (no response), using defaults for display");
+          } else if (!workingModesRes.success) {
+            console.warn("Working modes API call failed:", workingModesRes.message || "Unknown error");
+          } else if (Array.isArray(workingModesRes.data) && workingModesRes.data.length === 0) {
+            console.warn("Working modes API returned empty array - database may be empty");
+          } else {
+            console.warn("Working modes API returned invalid data format:", workingModesRes);
+          }
+          // Use defaults for display only - these IDs won't work when submitting
+          console.log("Using default working modes for display:", DEFAULT_WORKING_MODES);
+          setWorkingModes(DEFAULT_WORKING_MODES);
+          setHasApiWorkingModes(false);
+        }
+        // Handle proficiency levels - use API data if available, otherwise use defaults for display only
+        const apiLevels = levelsRes?.success && Array.isArray(levelsRes.data) && levelsRes.data.length > 0 
+          ? levelsRes.data 
+          : null;
+        if (apiLevels) {
+          console.log("Using levels from API:", apiLevels);
+          setLevels(apiLevels);
+          setHasApiLevels(true);
+        } else {
+          // If API call failed, returned empty, or returned error, use defaults for display only
+          console.log("Levels API response:", levelsRes);
+          if (!levelsRes?.success) {
+            console.warn("Levels API call failed, using defaults for display");
+          } else if (levelsRes.data && Array.isArray(levelsRes.data) && levelsRes.data.length === 0) {
+            console.warn("Levels API returned empty array, using defaults for display");
+          } else {
+            console.warn("Levels API returned invalid data, using defaults for display");
+          }
+          // Use defaults for display only - these IDs won't work when submitting
+          console.log("Using default levels for display:", DEFAULT_LEVELS);
+          setLevels(DEFAULT_LEVELS);
+          setHasApiLevels(false);
+        }
+        if (orgsRes?.success) {
+          const orgList = Array.isArray(orgsRes.data) ? orgsRes.data : [];
+          const owned = orgList.filter((org) => org.ownerUserId === user?.id);
+          setOrganizations(owned);
+          if (!jobData.organizationId && owned.length > 0) {
+            setJobData((prev) => ({
+              ...prev,
+              organizationId: String(owned[0].id),
+            }));
+          }
+        }
+        // Combine common languages with user's languages
+        const allLanguages = new Set(COMMON_LANGUAGES);
+        if (languagesRes?.data) {
+          const langs = Array.isArray(languagesRes.data) ? languagesRes.data : [];
+          langs.forEach((lang) => {
+            if (lang.name) {
+              allLanguages.add(lang.name);
+            }
+          });
+        }
+        // Convert to array of objects with id (using index as temporary id for common languages)
+        const languageList = Array.from(allLanguages).map((name, idx) => ({
+          id: idx + 1000, // Use high number to avoid conflicts
+          name: name,
+        }));
+        setLanguageOptions(languageList);
+        setAvailableLanguages(Array.from(allLanguages).sort());
+      } catch (error) {
+        console.error("Error fetching job posting data:", error);
+        toast.error(error.message || t("postJob.messages.error"));
+      } finally {
+        setLookupsLoading(false);
+      }
+    };
+
+    fetchLookups();
+  }, [isAuthenticated, isClientOrAdmin, t, user, jobData.organizationId]);
+
+  const handleJobInputChange = (field) => (event) => {
+    const value = event.target.value;
+    setJobData((prev) => ({
+      ...prev,
+      [field]:
+        field === "quantity"
+          ? Math.max(1, parseInt(value, 10) || 1)
+          : field === "minSalary" || field === "maxSalary"
+          ? value.replace(/[^\d.]/g, "")
+          : value,
+    }));
+  };
+
+  const toggleDomainSelection = (domainId) => {
+    setJobData((prev) => {
+      const exists = prev.domainIds.includes(domainId);
+      return {
+        ...prev,
+        domainIds: exists
+          ? prev.domainIds.filter((id) => id !== domainId)
+          : [...prev.domainIds, domainId],
+      };
+    });
+  };
+
+  const handleLanguageRequirementChange = (index, field, value) => {
+    setLanguageRequirements((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              [field]: field === "isSourceLanguage" ? value : value,
+            }
+          : item
+      )
+    );
+  };
+
+  const handleLanguageNameChange = (index, languageName) => {
+    // Find or create language option
+    let langOption = languageOptions.find((lang) => lang.name === languageName);
+    if (!langOption) {
+      // Create new language option
+      const newId = languageOptions.length > 0 
+        ? Math.max(...languageOptions.map(l => l.id)) + 1 
+        : 1000;
+      langOption = { id: newId, name: languageName };
+      setLanguageOptions((prev) => [...prev, langOption]);
+    }
+    handleLanguageRequirementChange(index, "languageId", String(langOption.id));
+  };
+
+  const addLanguageRequirement = () => {
+    setLanguageRequirements((prev) => [
+      ...prev,
+      { languageId: "", levelId: "", isSourceLanguage: false },
+    ]);
+  };
+
+  const removeLanguageRequirement = (index) => {
+    setLanguageRequirements((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleOrganizationFormChange = (field) => (event) => {
+    setOrganizationForm((prev) => ({
+      ...prev,
+      [field]: event.target.value,
+    }));
+  };
+
+  const handleCreateOrganization = async (event) => {
+    event.preventDefault();
+    if (!organizationForm.name) {
+      toast.error(t("postJob.messages.organizationRequired"));
+      return;
+    }
+    setSavingOrganization(true);
+    try {
+      const payload = {
+        ...organizationForm,
+      };
+      const response = await organizationService.createOrganization(payload);
+      if (response?.success && response.data) {
+        toast.success(t("postJob.messages.orgSuccess"));
+        const newOrg = response.data;
+        setOrganizations((prev) => [newOrg, ...prev]);
+        setJobData((prev) => ({
+          ...prev,
+          organizationId: String(newOrg.id),
+        }));
+        setOrganizationForm(defaultOrganizationForm);
+        setShowOrganizationForm(false);
+      } else {
+        throw new Error(response?.message || "Unable to save");
+      }
+    } catch (error) {
+      toast.error(error.message || t("postJob.messages.error"));
+    } finally {
+      setSavingOrganization(false);
+    }
+  };
+
+  const validateJobData = () => {
+    if (!jobData.organizationId) {
+      return t("postJob.messages.organizationRequired");
+    }
+    if (!jobData.title) {
+      return t("postJob.messages.titleRequired");
+    }
+    if (!jobData.workingModeId) {
+      return t("postJob.messages.workingModeRequired");
+    }
+    // Validate that workingModeId exists in the actual API data
+    if (!hasApiWorkingModes || !workingModes.find(m => String(m.id) === String(jobData.workingModeId))) {
+      return "Working mode data is not available. Please refresh the page and try again.";
+    }
+    if (!jobData.descriptions) {
+      return t("postJob.messages.descriptionRequired");
+    }
+    if (!jobData.contactEmail) {
+      return t("postJob.messages.contactEmailRequired");
+    }
+    if (jobData.minSalary && jobData.maxSalary) {
+      if (parseFloat(jobData.minSalary) > parseFloat(jobData.maxSalary)) {
+        return t("postJob.messages.salaryRangeInvalid");
+      }
+    }
+    // Validate language requirements if any
+    if (languageRequirements.length > 0) {
+      for (const req of languageRequirements) {
+        if (req.languageId && req.levelId) {
+          // Validate levelId exists in actual API data
+          if (!hasApiLevels || !levels.find(l => String(l.id) === String(req.levelId))) {
+            return "Proficiency level data is not available. Please refresh the page and try again.";
+          }
+        }
+      }
+    }
+    return "";
+  };
+
+  const handleSubmitJob = async (event) => {
+    event.preventDefault();
+    const validationMessage = validateJobData();
+    if (validationMessage) {
+      toast.error(validationMessage);
+      return;
+    }
+
+    const payload = {
+      organizationId: parseInt(jobData.organizationId),
+      workingModeId: jobData.workingModeId ? parseInt(jobData.workingModeId) : null,
+      title: jobData.title,
+      province: jobData.province || null,
+      commune: jobData.commune || null,
+      address: jobData.address || null,
+      expirationDate: jobData.expirationDate || null,
+      quantity: parseInt(jobData.quantity, 10) || 1,
+      descriptions: jobData.descriptions,
+      responsibility: jobData.responsibility,
+      benefits: jobData.benefits,
+      minSalary: jobData.minSalary ? parseFloat(jobData.minSalary) : null,
+      maxSalary: jobData.maxSalary ? parseFloat(jobData.maxSalary) : null,
+      salaryType: jobData.salaryType,
+      contactEmail: jobData.contactEmail,
+      contactPhone: jobData.contactPhone,
+      domains: jobData.domainIds.map((id) => parseInt(id)),
+      requiredLanguages: languageRequirements
+        .filter((lr) => {
+          const selectedLang = languageOptions.find((lang) => String(lang.id) === lr.languageId);
+          return selectedLang && selectedLang.name && lr.levelId;
+        })
+        .map((lr) => {
+          const selectedLang = languageOptions.find((lang) => String(lang.id) === lr.languageId);
+          // Send languageName for common languages, languageId for user's languages
+          const payload = {
+            levelId: parseInt(lr.levelId),
+            isSourceLanguage: !!lr.isSourceLanguage,
+          };
+          // If it's a common language (ID >= 1000), send name; otherwise send ID
+          if (selectedLang.id >= 1000) {
+            payload.languageName = selectedLang.name;
+          } else {
+            payload.languageId = parseInt(lr.languageId);
+          }
+          return payload;
+        }),
+    };
+
+    setSubmittingJob(true);
+    try {
+      const response = await jobService.createJob(payload);
+      if (response?.success) {
+        toast.success(t("postJob.messages.success"));
+        navigate(ROUTES.DASHBOARD);
+      } else {
+        throw new Error(response?.message || "Unable to submit job");
+      }
+    } catch (error) {
+      toast.error(error.message || t("postJob.messages.error"));
+    } finally {
+      setSubmittingJob(false);
+    }
+  };
+
+  const salaryPreview = useMemo(() => {
+    if (jobData.salaryType === "FIXED" && jobData.minSalary) {
+      return `$${jobData.minSalary}`;
+    }
+    if (jobData.salaryType === "RANGE" && jobData.minSalary && jobData.maxSalary) {
+      return `$${jobData.minSalary} - $${jobData.maxSalary}`;
+    }
+    if (jobData.salaryType === "NEGOTIABLE") {
+      return t("postJob.salaryTypes.NEGOTIABLE");
+    }
+    return t("postJob.salaryTypes.RANGE");
+  }, [jobData.maxSalary, jobData.minSalary, jobData.salaryType, t]);
+
+  const minDate = useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  }, []);
+
+  return (
+    <MainLayout>
+      <div className={styles.postJobPage}>
+        <header className={styles.pageHeader}>
+          <div>
+            <p className={styles.eyebrow}>{t("postJob.eyebrow")}</p>
+            <h1 className={styles.pageTitle}>{t("postJob.title")}</h1>
+            <p className={styles.pageSubtitle}>{t("postJob.subtitle")}</p>
+          </div>
+          <div className={styles.reviewNotice}>
+            <span>⚠️</span>
+            <p>{t("postJob.reviewNotice")}</p>
+          </div>
+        </header>
+
+        <div className={styles.layout}>
+          <section className={styles.formColumn}>
+            <form onSubmit={handleSubmitJob} className={styles.formContent}>
+              <div className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <div>
+                    <h2 className={styles.sectionTitle}>{t("postJob.organization.title")}</h2>
+                    <p className={styles.sectionDescription}>
+                      {t("postJob.organization.description")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.inlineButton}
+                    onClick={() => setShowOrganizationForm((prev) => !prev)}
+                  >
+                    {showOrganizationForm
+                      ? t("postJob.organization.cancel")
+                      : t("postJob.organization.add")}
+                  </button>
+                </div>
+
+                {organizations.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <p>{t("postJob.organization.none")}</p>
+                    {!showOrganizationForm && (
+                      <button
+                        type="button"
+                        className={styles.inlineButton}
+                        onClick={() => setShowOrganizationForm(true)}
+                      >
+                        {t("postJob.organization.add")}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className={styles.orgList}>
+                    {organizations.map((org) => (
+                      <label
+                        key={org.id}
+                        className={`${styles.orgCard} ${
+                          jobData.organizationId === String(org.id) ? styles.selected : ""
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="organizationId"
+                          value={org.id}
+                          checked={jobData.organizationId === String(org.id)}
+                          onChange={() =>
+                            setJobData((prev) => ({ ...prev, organizationId: String(org.id) }))
+                          }
+                        />
+                        <div>
+                          <strong>{org.name}</strong>
+                          {org.province && <p>{org.province}</p>}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {showOrganizationForm && (
+                  <div className={styles.organizationForm}>
+                    <h3>{t("postJob.organization.formTitle")}</h3>
+                    <div className={styles.fieldGrid}>
+                      <div className={styles.field}>
+                        <label>{t("postJob.organization.fields.name")}</label>
+                        <input
+                          type="text"
+                          value={organizationForm.name}
+                          onChange={handleOrganizationFormChange("name")}
+                          required
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label>{t("postJob.organization.fields.email")}</label>
+                        <input
+                          type="email"
+                          value={organizationForm.email}
+                          onChange={handleOrganizationFormChange("email")}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label>{t("postJob.organization.fields.phone")}</label>
+                        <input
+                          type="tel"
+                          value={organizationForm.phone}
+                          onChange={handleOrganizationFormChange("phone")}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label>{t("postJob.organization.fields.website")}</label>
+                        <input
+                          type="text"
+                          value={organizationForm.website}
+                          onChange={handleOrganizationFormChange("website")}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label>{t("postJob.organization.fields.province")}</label>
+                        <input
+                          type="text"
+                          value={organizationForm.province}
+                          onChange={handleOrganizationFormChange("province")}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label>{t("postJob.organization.fields.address")}</label>
+                        <input
+                          type="text"
+                          value={organizationForm.address}
+                          onChange={handleOrganizationFormChange("address")}
+                        />
+                      </div>
+                    </div>
+                    <div className={styles.field}>
+                      <label>{t("postJob.organization.fields.description")}</label>
+                      <textarea
+                        value={organizationForm.description}
+                        onChange={handleOrganizationFormChange("description")}
+                        rows={3}
+                      />
+                    </div>
+                    <div className={styles.orgFormActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => {
+                          setShowOrganizationForm(false);
+                          setOrganizationForm(defaultOrganizationForm);
+                        }}
+                      >
+                        {t("postJob.organization.cancel")}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.primaryButton}
+                        onClick={handleCreateOrganization}
+                        disabled={savingOrganization}
+                      >
+                        {savingOrganization
+                          ? t("postJob.actions.savingOrg")
+                          : t("postJob.organization.save")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>{t("postJob.form.basicInfo")}</h2>
+                <div className={styles.fieldGrid}>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.title")}</label>
+                    <input
+                      type="text"
+                      value={jobData.title}
+                      onChange={handleJobInputChange("title")}
+                      required
+                      placeholder="e.g. EN-VI Medical Interpreter"
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.workingMode")} *</label>
+                    <select
+                      value={jobData.workingModeId}
+                      onChange={handleJobInputChange("workingModeId")}
+                      required
+                      className={!jobData.workingModeId && !lookupsLoading ? styles.requiredField : ""}
+                      disabled={lookupsLoading}
+                    >
+                      <option value="">{t("postJob.form.placeholders.selectOption")}</option>
+                      {(workingModes && workingModes.length > 0 ? workingModes : DEFAULT_WORKING_MODES).map((mode) => (
+                        <option key={mode.id} value={mode.id}>
+                          {mode.name || mode.nameVi || `Mode ${mode.id}`}
+                        </option>
+                      ))}
+                    </select>
+                    {lookupsLoading && (
+                      <p className={styles.helperText}>
+                        {t("common.loading") || "Loading..."}
+                      </p>
+                    )}
+                    {!lookupsLoading && !hasApiWorkingModes && (
+                      <p className={styles.helperText} style={{ color: "#ef4444" }}>
+                        ⚠️ Working mode data is not available from server. Please check your connection or contact administrator. The form cannot be submitted until working modes are loaded.
+                      </p>
+                    )}
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.province")}</label>
+                    <input
+                      type="text"
+                      value={jobData.province}
+                      onChange={handleJobInputChange("province")}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.commune")}</label>
+                    <input
+                      type="text"
+                      value={jobData.commune}
+                      onChange={handleJobInputChange("commune")}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.address")}</label>
+                    <input
+                      type="text"
+                      value={jobData.address}
+                      onChange={handleJobInputChange("address")}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.quantity")}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={jobData.quantity}
+                      onChange={handleJobInputChange("quantity")}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.expirationDate")}</label>
+                    <input
+                      type="date"
+                      min={minDate}
+                      value={jobData.expirationDate}
+                      onChange={handleJobInputChange("expirationDate")}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.salaryType")}</label>
+                    <select
+                      value={jobData.salaryType}
+                      onChange={handleJobInputChange("salaryType")}
+                    >
+                      <option value="NEGOTIABLE">{t("postJob.salaryTypes.NEGOTIABLE")}</option>
+                      <option value="FIXED">{t("postJob.salaryTypes.FIXED")}</option>
+                      <option value="RANGE">{t("postJob.salaryTypes.RANGE")}</option>
+                    </select>
+                  </div>
+                  {jobData.salaryType !== "NEGOTIABLE" && (
+                    <>
+                      <div className={styles.field}>
+                        <label>{t("postJob.form.labels.minSalary")}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={jobData.minSalary}
+                          onChange={handleJobInputChange("minSalary")}
+                          placeholder="e.g. 1200"
+                        />
+                      </div>
+                      {jobData.salaryType === "RANGE" && (
+                        <div className={styles.field}>
+                          <label>{t("postJob.form.labels.maxSalary")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={jobData.maxSalary}
+                            onChange={handleJobInputChange("maxSalary")}
+                            placeholder="e.g. 1600"
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>{t("postJob.form.jobDetails")}</h2>
+                <div className={styles.field}>
+                  <label>{t("postJob.form.labels.descriptions")}</label>
+                  <textarea
+                    rows={4}
+                    value={jobData.descriptions}
+                    onChange={handleJobInputChange("descriptions")}
+                    placeholder={t("postJob.form.placeholders.description")}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label>{t("postJob.form.labels.responsibility")}</label>
+                  <textarea
+                    rows={3}
+                    value={jobData.responsibility}
+                    onChange={handleJobInputChange("responsibility")}
+                    placeholder={t("postJob.form.placeholders.responsibility")}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label>{t("postJob.form.labels.benefits")}</label>
+                  <textarea
+                    rows={3}
+                    value={jobData.benefits}
+                    onChange={handleJobInputChange("benefits")}
+                    placeholder={t("postJob.form.placeholders.benefits")}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>{t("postJob.form.requirements")}</h2>
+                <div className={styles.field}>
+                  <label>{t("postJob.form.labels.domains")}</label>
+                  <div className={styles.domainList}>
+                    {domains.map((domain) => (
+                      <label key={domain.id} className={styles.domainOption}>
+                        <input
+                          type="checkbox"
+                          value={domain.id}
+                          checked={jobData.domainIds.includes(domain.id)}
+                          onChange={() => toggleDomainSelection(domain.id)}
+                        />
+                        {domain.name || domain.nameVi}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.languageSection}>
+                  <div className={styles.languageHeader}>
+                    <label>{t("postJob.form.labels.languages")}</label>
+                    <button
+                      type="button"
+                      className={styles.inlineButton}
+                      onClick={addLanguageRequirement}
+                    >
+                      + {t("postJob.actions.addLanguage")}
+                    </button>
+                  </div>
+                  {languageRequirements.length === 0 ? (
+                    <div className={styles.emptyLanguageState}>
+                      <p className={styles.helperText}>{t("postJob.form.placeholders.languages")}</p>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={addLanguageRequirement}
+                      >
+                        {t("postJob.actions.addFirstLanguage") || "Add First Language"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.languageList}>
+                      {languageRequirements.map((req, index) => {
+                        const selectedLanguage = languageOptions.find(
+                          (lang) => String(lang.id) === req.languageId
+                        );
+                        return (
+                          <div key={`lang-${index}`} className={styles.languageCard}>
+                            <div className={styles.languageCardHeader}>
+                              <span className={styles.languageNumber}>#{index + 1}</span>
+                              <button
+                                type="button"
+                                className={styles.removeButton}
+                                onClick={() => removeLanguageRequirement(index)}
+                                title={t("postJob.actions.removeLanguage") || "Remove"}
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <div className={styles.languageCardBody}>
+                              <div className={styles.field}>
+                                <label>{t("postJob.form.labels.language") || "Language"}</label>
+                                <select
+                                  value={selectedLanguage?.name || ""}
+                                  onChange={(e) => handleLanguageNameChange(index, e.target.value)}
+                                  required
+                                >
+                                  <option value="">{t("postJob.form.placeholders.selectLanguage") || "Select Language"}</option>
+                                  {availableLanguages.map((langName) => (
+                                    <option key={langName} value={langName}>
+                                      {langName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className={styles.field}>
+                                <label>{t("postJob.form.labels.level") || "Proficiency Level"}</label>
+                                <select
+                                  value={req.levelId}
+                                  onChange={(e) =>
+                                    handleLanguageRequirementChange(index, "levelId", e.target.value)
+                                  }
+                                  required
+                                >
+                                  <option value="">{t("postJob.form.placeholders.selectLevel")}</option>
+                                  {(levels && levels.length > 0 ? levels : DEFAULT_LEVELS).map((level) => (
+                                    <option key={level.id} value={level.id}>
+                                      {level.name || level.nameVi || `Level ${level.id}`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <label className={styles.checkboxLabel}>
+                                <input
+                                  type="checkbox"
+                                  checked={req.isSourceLanguage}
+                                  onChange={(e) =>
+                                    handleLanguageRequirementChange(
+                                      index,
+                                      "isSourceLanguage",
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                                <span>{t("postJob.form.labels.sourceLanguage")}</span>
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        className={styles.addMoreButton}
+                        onClick={addLanguageRequirement}
+                      >
+                        + {t("postJob.actions.addAnotherLanguage") || "Add Another Language"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>{t("postJob.form.contact")}</h2>
+                <div className={styles.fieldGrid}>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.contactEmail")}</label>
+                    <input
+                      type="email"
+                      value={jobData.contactEmail}
+                      onChange={handleJobInputChange("contactEmail")}
+                      required
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>{t("postJob.form.labels.contactPhone")}</label>
+                    <input
+                      type="tel"
+                      value={jobData.contactPhone}
+                      onChange={handleJobInputChange("contactPhone")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.actionsRow}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => navigate(ROUTES.DASHBOARD)}
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={submittingJob || lookupsLoading}
+                >
+                  {submittingJob ? t("postJob.actions.saving") : t("postJob.actions.submit")}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <aside className={styles.previewColumn}>
+            <div className={styles.previewCard}>
+              <div className={styles.previewHeader}>
+                <span className={styles.previewStatus}>{t("postJob.preview.pendingReview")}</span>
+                <h3>{jobData.title || t("postJob.form.placeholders.previewTitle")}</h3>
+                <p className={styles.previewCompany}>
+                  {organizations.find((org) => String(org.id) === jobData.organizationId)?.name ||
+                    t("postJob.form.placeholders.previewCompany")}
+                </p>
+              </div>
+              <div className={styles.previewMeta}>
+                <span>{jobData.province || t("postJob.form.placeholders.province")}</span>
+                <span>{salaryPreview}</span>
+                <span>
+                  {workingModes.find((mode) => String(mode.id) === jobData.workingModeId)?.name ||
+                    t("postJob.form.placeholders.mode")}
+                </span>
+              </div>
+              <div className={styles.previewSection}>
+                <h4>{t("postJob.form.labels.descriptions")}</h4>
+                <p>
+                  {jobData.descriptions || t("postJob.form.placeholders.descriptionFallback")}
+                </p>
+              </div>
+              {jobData.responsibility && (
+                <div className={styles.previewSection}>
+                  <h4>{t("postJob.form.labels.responsibility")}</h4>
+                  <p>{jobData.responsibility}</p>
+                </div>
+              )}
+              {jobData.benefits && (
+                <div className={styles.previewSection}>
+                  <h4>{t("postJob.form.labels.benefits")}</h4>
+                  <p>{jobData.benefits}</p>
+                </div>
+              )}
+              {languageRequirements.length > 0 && (
+                <div className={styles.previewSection}>
+                  <h4>{t("postJob.form.labels.languages")}</h4>
+                  <ul>
+                    {languageRequirements.map((req, idx) => {
+                      const languageName =
+                        languageOptions.find((lang) => String(lang.id) === req.languageId)?.name ||
+                        t("postJob.form.placeholders.selectOption");
+                      const levelName =
+                        levels.find((level) => String(level.id) === req.levelId)?.name ||
+                        t("postJob.form.placeholders.selectLevel");
+                      return (
+                        <li key={`prev-lang-${idx}`}>
+                          {languageName} · {levelName}
+                          {req.isSourceLanguage ? ` (${t("postJob.form.labels.sourceLanguage")})` : ""}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              <div className={styles.previewSection}>
+                <h4>{t("postJob.preview.contact")}</h4>
+                <p>{jobData.contactEmail || t("postJob.form.placeholders.contactEmail")}</p>
+                {jobData.contactPhone && <p>{jobData.contactPhone}</p>}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </MainLayout>
+  );
+};
+
+export default PostJobPage;
+
+

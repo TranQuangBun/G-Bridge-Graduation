@@ -1,0 +1,542 @@
+/* Modern Footer 2025 - Artistic Design */
+:root {
+  --primary: #1e3a8a;
+  --primary-light: #3b82f6;
+  --primary-dark: #1e40af;
+  --primary-hover: #1e40af;
+  --accent: #0ea5e9;
+
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #374151;
+  --gray-700: #111827;
+  --gray-800: #1f2937;
+  --gray-900: #0f172a;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s ease;
+}
+
+.modern-footer {
+  position: relative;
+  background: var(--gray-900);
+  color: var(--white);
+  border-top: 2px solid var(--gray-800);
+  margin-top: 0;
+}
+
+/* Clean Footer - No Background Effects */
+
+.footer-container {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Main Footer Content */
+.footer-main {
+  padding: 2.5rem 0 4rem; /* reduced top padding to bring footer closer to content */
+  animation: footerSlideUp 1s ease-out;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 3rem;
+}
+
+@keyframes footerSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Company Info Section */
+.company-info {
+  padding-right: 2rem;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.footer-logo .logo-icon {
+  width: 50px;
+  height: 50px;
+  background: var(--primary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--primary-dark);
+}
+
+
+.footer-logo .logo-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.footer-logo .brand-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+}
+
+.company-description {
+  color: var(--gray-300);
+  line-height: 1.7;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  max-width: 400px;
+}
+
+/* Social Links */
+.social-links .social-title {
+  display: block;
+  color: var(--gray-400);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.social-icons {
+  display: flex;
+  gap: 1rem;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--gray-300);
+  text-decoration: none;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.social-icon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--primary);
+  opacity: 0;
+  transition: var(--transition);
+  border-radius: var(--radius-sm);
+}
+
+.social-icon:hover::before {
+  opacity: 1;
+}
+
+.social-icon:hover {
+  color: var(--white);
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: var(--shadow-xl), 0 0 20px rgba(10, 101, 204, 0.4);
+  border-color: var(--primary);
+}
+
+.social-icon i {
+  position: relative;
+  z-index: 1;
+  font-size: 1.1rem;
+}
+
+.social-image {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: var(--transition);
+}
+
+.social-icon:hover .social-image {
+  transform: scale(1.1);
+}
+
+/* Footer Sections */
+.footer-section .section-title {
+  color: #ffffff !important;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+/* Additional specificity for section titles */
+.modern-footer .footer-section h4,
+.modern-footer .footer-section .section-title,
+.footer-section h4.section-title {
+  color: #ffffff !important;
+}
+
+/* Even more specific selectors */
+footer .footer-section h4,
+footer .footer-section .section-title,
+footer.modern-footer .footer-section h4,
+footer.modern-footer .footer-section .section-title {
+  color: white !important;
+  color: #fff !important;
+  color: #ffffff !important;
+}
+
+/* Ultra-specific selectors to override HomePage.css */
+body .modern-footer .footer-section .section-title,
+body footer .footer-section h4,
+body footer .footer-section .section-title,
+html body .modern-footer .footer-section h4,
+html body .modern-footer .footer-section .section-title {
+  color: #ffffff !important;
+  background: none !important;
+  background-color: transparent !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-clip: initial !important;
+}
+
+.footer-section .section-title::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px;
+}
+
+/* Footer Links */
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+  color: var(--gray-300);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: var(--transition);
+  position: relative;
+  padding-left: 1rem;
+}
+
+.footer-links a::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: var(--transition);
+}
+
+.footer-links a:hover::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.footer-links a:hover {
+  color: var(--primary-light);
+  padding-left: 1.5rem;
+}
+
+/* Contact Section */
+/* Removed - Contact section no longer used */
+
+/* Newsletter Section */
+.newsletter-section {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  height: fit-content;
+}
+
+.newsletter-desc {
+  color: var(--gray-300);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.newsletter-form {
+  margin-top: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.newsletter-input {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-size: 0.95rem;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+.newsletter-input::placeholder {
+  color: var(--gray-400);
+}
+
+.newsletter-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(10, 101, 204, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.newsletter-btn {
+  width: 100%;
+  background: var(--primary);
+  border: none;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.newsletter-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.newsletter-btn:hover::before {
+  left: 100%;
+}
+
+.newsletter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(10, 101, 204, 0.4);
+}
+
+/* Footer Bottom */
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2rem 0;
+  margin-top: 2rem;
+}
+
+.footer-bottom-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.copyright p {
+  color: var(--gray-400);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.footer-bottom-links {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.footer-bottom-links a {
+  color: var(--gray-400);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: var(--transition);
+  position: relative;
+}
+
+.footer-bottom-links a::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.footer-bottom-links a:hover::after {
+  width: 100%;
+}
+
+.footer-bottom-links a:hover {
+  color: var(--primary-light);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .footer-top {
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .newsletter-section {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-container {
+    padding: 0 1rem;
+  }
+
+  .footer-top {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .company-info {
+    padding-right: 0;
+    text-align: center;
+  }
+
+  .footer-section {
+    text-align: center;
+  }
+
+  .footer-links a {
+    padding-left: 0;
+  }
+
+  .footer-links a:hover {
+    padding-left: 0;
+  }
+
+  .footer-links a::before {
+    display: none;
+  }
+
+  .social-icons {
+    justify-content: center;
+  }
+
+  .footer-bottom-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-bottom-links {
+    justify-content: center;
+  }
+
+  .newsletter-section {
+    text-align: left;
+  }
+
+  .input-group {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-main {
+    padding: 2rem 0;
+    gap: 2rem;
+  }
+
+  .footer-logo .brand-name {
+    font-size: 1.5rem;
+  }
+
+  .footer-logo .logo-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .footer-logo .logo-text {
+    font-size: 1.25rem;
+  }
+
+  .newsletter-section {
+    padding: 1.5rem;
+  }
+
+  .social-icons {
+    gap: 0.75rem;
+  }
+
+  .social-image {
+    width: 20px;
+    height: 20px;
+  }
+
+  .footer-bottom-links {
+    gap: 1rem;
+  }
+}

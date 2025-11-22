@@ -1,0 +1,46 @@
+# ============================================
+# Docker Compose Override Example
+# ============================================
+# 
+# MỤC ĐÍCH:
+# File này cho phép bạn override/extend cấu hình từ docker-compose.yml
+# mà không cần sửa file docker-compose.yml chính
+#
+# CÁCH SỬ DỤNG:
+# 1. Copy file này: cp docker-compose.override.yml.example docker-compose.override.yml
+# 2. Sửa các giá trị cần thiết trong docker-compose.override.yml
+# 3. docker-compose.override.yml sẽ tự động được load khi chạy docker-compose
+#
+# LỢI ÍCH:
+# - Giữ docker-compose.yml gốc không đổi (cho team)
+# - Mỗi developer có thể customize riêng
+# - File .override.yml thường được gitignore (chứa secrets/passwords)
+#
+# LƯU Ý:
+# - docker-compose.override.yml tự động được merge với docker-compose.yml
+# - Giá trị trong override sẽ thay thế giá trị trong file gốc
+# - Có thể override bất kỳ field nào: environment, ports, volumes, etc.
+
+version: '3.8'
+
+services:
+  mysql:
+    environment:
+      # Override MySQL root password (thay đổi password mặc định)
+      MYSQL_ROOT_PASSWORD: your_secure_root_password
+      # Override MySQL user password
+      MYSQL_PASSWORD: your_secure_user_password
+
+  backend:
+    environment:
+      # Override JWT secret (QUAN TRỌNG: đổi trong production)
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      # Override port nếu port 4000 đã bị chiếm
+      PORT: 4000
+      # Override NODE_ENV nếu cần (development/production)
+      # NODE_ENV: development
+
+  frontend:
+    environment:
+      # Override API URL nếu backend chạy trên port khác
+      REACT_APP_API_URL: http://localhost:4000/api

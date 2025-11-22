@@ -1,247 +1,138 @@
-# 🚀 G-Bridge - Quick Start Guide
+# 🌉 G-Bridge Platform
 
-Hướng dẫn nhanh để chạy dự án trong vài bước đơn giản!
+Platform kết nối phiên dịch viên và doanh nghiệp - Graduation Project
 
-## 📋 Yêu cầu
+## 📋 Tổng quan
 
-- Node.js v18+ đã cài đặt
-- MySQL đã cài đặt và đang chạy
-- Git (optional)
+G-Bridge là một platform cho phép:
+- Phiên dịch viên đăng ký và quản lý profile
+- Doanh nghiệp tìm kiếm và thuê phiên dịch viên
+- Quản lý ngôn ngữ, chứng chỉ và đánh giá
 
-## ⚡ Cài đặt nhanh
+## 🏗️ Cấu trúc dự án
 
-### 1. Clone/Download dự án
+Dự án được chia thành 2 phần độc lập hoàn toàn:
 
-```bash
-git clone <repository-url>
-cd G-Bridge-Graduation
+```
+G-Bridge-Graduation/
+├── frontend/          # React Frontend Application (ĐỘC LẬP)
+│   ├── src/          # Source code
+│   ├── public/       # Static files
+│   ├── package.json  # Frontend dependencies
+│   └── .env.example  # Frontend env template
+│
+├── backend/           # Node.js/Express Backend API (ĐỘC LẬP)
+│   ├── src/          # Source code
+│   ├── uploads/     # Uploaded files
+│   ├── package.json  # Backend dependencies
+│   └── .env.example  # Backend env template
+│
+├── docker/            # Docker configuration
+│   └── mysql/init/   # MySQL init scripts
+│
+├── README.md          # Main documentation
+├── DOCUMENTATION.md   # Complete documentation
+├── docker-compose.yml # Docker Compose config
+└── .gitignore         # Git ignore (chung cho cả project)
 ```
 
-### 2. Cài đặt tất cả dependencies (Frontend + Backend)
+## 🚀 Quick Start
 
-```bash
-npm run install:all
-```
+### Yêu cầu
 
-Hoặc cài riêng từng phần:
+- Node.js v18+
+- MySQL 8.0+
+- npm hoặc yarn
 
-```bash
-# Frontend
-npm install
+### Cài đặt và chạy
 
-# Backend
-cd backend
-npm install
-cd ..
-```
+📖 **Xem hướng dẫn chi tiết**: [DOCUMENTATION.md](./DOCUMENTATION.md)
 
-### 3. Setup Database
+#### Tóm tắt nhanh:
 
-#### Tạo database trong MySQL:
-
+**1. Setup Database:**
 ```sql
 CREATE DATABASE gbridge_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-#### Cấu hình Backend (.env):
-
+**2. Backend:**
 ```bash
 cd backend
-```
-
-Sửa file `backend/.env` (đã có sẵn):
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=gbridge_db
-DB_USER=root
-DB_PASSWORD=your_mysql_password_here
-
-JWT_SECRET=gbridge-super-secret-jwt-key-2025-change-in-production
-PORT=4000
-NODE_ENV=development
-```
-
-**Quan trọng**: Sửa `DB_PASSWORD` thành password MySQL của bạn!
-
-### 4. Chạy dự án
-
-#### 🎯 Cách 1: Chạy cả Frontend + Backend cùng lúc (Khuyên dùng)
-
-```bash
+npm install
+cp .env.example .env
+# Sửa .env với thông tin database
 npm run dev
 ```
 
-hoặc
-
+**3. Frontend:**
 ```bash
-npm run start:all
-```
-
-#### 🔧 Cách 2: Chạy riêng từng phần
-
-**Terminal 1 - Backend:**
-
-```bash
-npm run start:backend
-```
-
-**Terminal 2 - Frontend:**
-
-```bash
-npm run start:frontend
-```
-
-### 5. Truy cập ứng dụng
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:4000
-- **API Health Check**: http://localhost:4000/
-
-## 📚 Available Scripts
-
-```bash
-# Chạy cả Frontend + Backend
-npm run dev
-npm run start:all
-
-# Chỉ chạy Frontend
+cd frontend
+npm install
 npm start
-npm run start:frontend
-
-# Chỉ chạy Backend
-npm run start:backend
-
-# Build Frontend
-npm run build
-
-# Cài đặt dependencies
-npm run install:all      # Cài cả FE + BE
-npm install              # Chỉ FE
-npm run install:backend  # Chỉ BE
 ```
 
-## 🗂️ Cấu trúc dự án
+**Kết quả:**
+- Backend: http://localhost:4000
+- Frontend: http://localhost:3000
 
-```
-G-Bridge-Graduation/
-├── backend/                 # Backend API (Node.js + Express)
-│   ├── src/
-│   │   ├── config/         # Database config
-│   │   ├── controllers/    # Business logic
-│   │   ├── middleware/     # Auth middleware
-│   │   ├── models/         # Database models
-│   │   ├── routes/         # API routes
-│   │   └── server.js       # Entry point
-│   ├── .env               # Backend environment variables
-│   └── package.json
-│
-├── src/                    # Frontend React app
-│   ├── components/        # Reusable components
-│   ├── contexts/          # React contexts (Auth, etc.)
-│   ├── pages/             # Page components
-│   ├── services/          # API services
-│   ├── assets/            # Images, fonts, etc.
-│   └── App.jsx            # Main app component
-│
-├── .env                   # Frontend environment variables
-├── package.json           # Frontend package.json
-├── INTEGRATION_GUIDE.md   # Chi tiết tích hợp FE-BE
-└── README.md              # File này
+### Hoặc sử dụng Docker Compose
+
+```bash
+# Build và chạy tất cả services (Frontend, Backend, MySQL)
+docker-compose up --build
+
+# Hoặc chạy ở background
+docker-compose up -d
 ```
 
-## 🔐 Test Authentication
+**Kết quả:**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:4000
+- MySQL: localhost:3306
 
-### 1. Đăng ký tài khoản
+📖 **Xem tài liệu đầy đủ**: [DOCUMENTATION.md](./DOCUMENTATION.md)
 
-#### Phiên dịch viên:
+Tài liệu bao gồm:
+- Quick Start & Setup Guide
+- Local Development Setup
+- Docker Setup & Multi-stage Build
+- Backend & Frontend Documentation
+- Project Structure & Migration Notes
 
-```
-URL: http://localhost:3000/register
-- Họ tên: Nguyễn Văn A
-- Email: interpreter@test.com
-- Password: 123456
-- Role: Phiên dịch viên
-```
+## 🔧 Development
 
-#### Doanh nghiệp:
+Mỗi project có thể được phát triển độc lập:
 
-```
-URL: http://localhost:3000/register
-- Họ tên: Nguyễn Thị B
-- Email: client@test.com
-- Password: 123456
-- Role: Doanh nghiệp
-- Tên công ty: ABC Company
-- Loại hình: Corporation
-```
+- **Frontend**: React application với các tính năng UI/UX
+- **Backend**: RESTful API với Express và Sequelize
 
-### 2. Đăng nhập
+## 📦 Tech Stack
 
-```
-URL: http://localhost:3000/login
-Email: interpreter@test.com (hoặc client@test.com)
-Password: 123456
-```
+### Frontend
+- React 19.1.1
+- React Router 7.8.0
+- Axios 1.12.2
+- React Toastify
 
-## 🗄️ Kiểm tra Database
+### Backend
+- Node.js
+- Express 4.19.2
+- Sequelize 6.37.3
+- MySQL2 3.11.0
+- JWT Authentication
+- Multer (File upload)
 
-Mở MySQL Workbench hoặc phpMyAdmin và chạy:
+## 🔐 Environment Variables
 
-```sql
--- Xem users
-SELECT * FROM users;
+Mỗi project có file `.env.example`. Copy và đổi tên thành `.env`, sau đó cấu hình:
 
--- Xem interpreter profiles
-SELECT * FROM interpreter_profiles;
+- **Backend**: Database, JWT secret, CORS settings
+- **Frontend**: API base URL
 
--- Xem client profiles
-SELECT * FROM client_profiles;
-```
+## 📝 License
 
-## ❓ Troubleshooting
+ISC
 
-### Backend không kết nối được MySQL
+## 👥 Contributors
 
-```
-Error: Access denied for user 'root'@'localhost'
-```
-
-**Fix**: Check lại `DB_PASSWORD` trong `backend/.env`
-
-### Port 3000 hoặc 4000 đã được sử dụng
-
-```
-Error: Port 3000 is already in use
-```
-
-**Fix**:
-
-- Tắt process đang dùng port đó
-- Hoặc đổi port trong `.env` files
-
-### CORS Error
-
-```
-Access to XMLHttpRequest blocked by CORS policy
-```
-
-**Fix**: Backend đã có CORS middleware, nhưng check lại `FRONTEND_URL` trong `backend/.env`
-
-## 📖 Documentation
-
-- **Chi tiết tích hợp**: Xem `INTEGRATION_GUIDE.md`
-- **Backend API**: Xem `backend/README.md`
-- **Animation Guide**: Xem `ANIMATION_GUIDE.md`
-
-## 🎉 Done!
-
-Bây giờ bạn có thể:
-
-- ✅ Đăng ký/Đăng nhập
-- ✅ Data được lưu vào MySQL
-- ✅ Chạy cả Frontend + Backend với 1 lệnh
-- ✅ Phát triển thêm features mới
-
-Happy coding! 🚀
+G-Bridge Team
