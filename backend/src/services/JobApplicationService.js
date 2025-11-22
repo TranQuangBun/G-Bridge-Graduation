@@ -2,7 +2,8 @@ import { JobApplicationRepository } from "../repositories/JobApplicationReposito
 import { AppDataSource } from "../config/DataSource.js";
 import { Job } from "../entities/Job.js";
 import { User } from "../entities/User.js";
-import { ApplicationStatus } from "../entities/JobApplication.js";
+import { ApplicationStatusEnum } from "../entities/JobApplication.js";
+import { ApplicationStatus } from "../entities/ApplicationStatus.js";
 import { NotificationService } from "./NotificationService.js";
 import { NotificationType } from "../entities/Notification.js";
 
@@ -11,6 +12,7 @@ export class JobApplicationService {
     this.jobApplicationRepository = new JobApplicationRepository();
     this.jobRepository = AppDataSource.getRepository(Job);
     this.userRepository = AppDataSource.getRepository(User);
+    this.applicationStatusRepository = AppDataSource.getRepository(ApplicationStatus);
     this.notificationService = new NotificationService();
   }
 
@@ -89,12 +91,22 @@ export class JobApplicationService {
       throw new Error("Interpreter not found");
     }
 
+    // Get pending status from database
+    const pendingStatus = await this.applicationStatusRepository.findOne({
+      where: { name: ApplicationStatusEnum.PENDING },
+    });
+
+    if (!pendingStatus) {
+      throw new Error("System error: Pending application status not found in database");
+    }
+
     const application = await this.jobApplicationRepository.create({
       jobId: parseInt(jobId),
       interpreterId: parseInt(interpreterId),
       coverLetter: coverLetter || null,
-      status: ApplicationStatus.PENDING,
-      appliedAt: new Date(),
+      statusId: pendingStatus.id,
+      status: pendingStatus.name, // For backward compatibility
+      applicationDate: new Date(),
     });
 
     return application;

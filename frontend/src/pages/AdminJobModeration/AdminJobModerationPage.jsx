@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
@@ -32,13 +32,7 @@ const AdminJobModerationPage = () => {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role === "admin") {
-      fetchJobs();
-    }
-  }, [filter, pagination.page, isAuthenticated, user]);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
@@ -49,14 +43,20 @@ const AdminJobModerationPage = () => {
       const response = await jobService.getJobs(params);
       if (response.success && response.data?.jobs) {
         setJobs(response.data.jobs);
-        setPagination(response.data.pagination || pagination);
+        setPagination((prev) => response.data.pagination || prev);
       }
     } catch (error) {
       console.error("Error fetching jobs for moderation:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "admin") {
+      fetchJobs();
+    }
+  }, [filter, pagination.page, isAuthenticated, user, fetchJobs]);
 
   const handleApprove = async (jobId) => {
     setProcessing(jobId);
@@ -301,7 +301,7 @@ const AdminJobModerationPage = () => {
                       </span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.status") || "Status"}:</strong>
+                      <strong>{t("adminModeration.statusLabel") || "Status"}:</strong>
                       {getReviewStatusBadge(selectedJob.reviewStatus)}
                     </div>
                     <div className={styles.detailItem}>

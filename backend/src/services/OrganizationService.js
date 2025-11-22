@@ -1,8 +1,10 @@
 import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
+import { UserRepository } from "../repositories/UserRepository.js";
 
 export class OrganizationService {
   constructor() {
     this.organizationRepository = new OrganizationRepository();
+    this.userRepository = new UserRepository();
   }
 
   async getAllOrganizations(query) {
@@ -48,9 +50,29 @@ export class OrganizationService {
 
   async createOrganization(data) {
     const payload = { ...data };
+    
+    // Validate and verify ownerUserId
     if (payload.ownerUserId) {
-      payload.ownerUserId = parseInt(payload.ownerUserId);
+      const ownerUserId = parseInt(payload.ownerUserId);
+      
+      // Check if ownerUserId is a valid integer
+      if (!Number.isInteger(ownerUserId) || isNaN(ownerUserId) || ownerUserId <= 0) {
+        console.warn(`Invalid ownerUserId: ${payload.ownerUserId}, setting to null`);
+        payload.ownerUserId = null;
+      } else {
+        // Verify user exists in database
+        const user = await this.userRepository.findById(ownerUserId);
+        if (!user) {
+          console.warn(`User with ID ${ownerUserId} not found, setting ownerUserId to null`);
+          payload.ownerUserId = null;
+        } else {
+          payload.ownerUserId = ownerUserId;
+        }
+      }
+    } else {
+      payload.ownerUserId = null;
     }
+    
     const organization = await this.organizationRepository.create(payload);
     return organization;
   }
@@ -63,7 +85,33 @@ export class OrganizationService {
       throw new Error("Organization not found");
     }
 
-    await this.organizationRepository.update(parseInt(id), data);
+    const payload = { ...data };
+    
+    // Validate and verify ownerUserId if provided
+    if (payload.ownerUserId !== undefined) {
+      if (payload.ownerUserId === null || payload.ownerUserId === "") {
+        payload.ownerUserId = null;
+      } else {
+        const ownerUserId = parseInt(payload.ownerUserId);
+        
+        // Check if ownerUserId is a valid integer
+        if (!Number.isInteger(ownerUserId) || isNaN(ownerUserId) || ownerUserId <= 0) {
+          console.warn(`Invalid ownerUserId: ${payload.ownerUserId}, setting to null`);
+          payload.ownerUserId = null;
+        } else {
+          // Verify user exists in database
+          const user = await this.userRepository.findById(ownerUserId);
+          if (!user) {
+            console.warn(`User with ID ${ownerUserId} not found, setting ownerUserId to null`);
+            payload.ownerUserId = null;
+          } else {
+            payload.ownerUserId = ownerUserId;
+          }
+        }
+      }
+    }
+
+    await this.organizationRepository.update(parseInt(id), payload);
     return await this.organizationRepository.findById(parseInt(id));
   }
 

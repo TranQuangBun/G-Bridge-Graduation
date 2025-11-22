@@ -9,7 +9,7 @@ const bookingService = {
       return response.data;
     } catch (error) {
       console.error("Error creating booking request:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -20,7 +20,7 @@ const bookingService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching interpreter bookings:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -31,7 +31,7 @@ const bookingService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching client bookings:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -42,7 +42,7 @@ const bookingService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching booking detail:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -53,7 +53,7 @@ const bookingService = {
       return response.data;
     } catch (error) {
       console.error("Error updating booking status:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 };

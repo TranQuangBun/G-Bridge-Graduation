@@ -31,7 +31,10 @@ export const AppDataSource = new DataSource({
   },
 });
 
-export async function initDatabase(retries = 10, delay = 3000) {
+export async function initDatabase(retries = 15, delay = 3000) {
+  // Add initial delay to give MySQL more time to fully initialize
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  
   for (let i = 0; i < retries; i++) {
     try {
       await AppDataSource.initialize();

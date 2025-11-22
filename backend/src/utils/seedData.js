@@ -1,6 +1,9 @@
 import { AppDataSource } from "../config/DataSource.js";
 import { WorkingMode } from "../entities/WorkingMode.js";
 import { Level } from "../entities/Level.js";
+import { ApplicationStatus } from "../entities/ApplicationStatus.js";
+import { JobApplication } from "../entities/JobApplication.js";
+import { ApplicationStatusEnum } from "../entities/JobApplication.js";
 import { logger } from "./Logger.js";
 
 const DEFAULT_WORKING_MODES = [
@@ -19,6 +22,13 @@ const DEFAULT_LEVELS = [
   { name: "Upper Intermediate", description: "Upper intermediate level proficiency", order: 4 },
   { name: "Advanced", description: "Advanced level proficiency", order: 5 },
   { name: "Native", description: "Native speaker level", order: 6 },
+];
+
+const DEFAULT_APPLICATION_STATUSES = [
+  { name: "pending", nameVi: "Đang chờ", description: "Application is pending review" },
+  { name: "approved", nameVi: "Đã chấp nhận", description: "Application has been approved" },
+  { name: "rejected", nameVi: "Đã từ chối", description: "Application has been rejected" },
+  { name: "withdrawn", nameVi: "Đã rút lại", description: "Application has been withdrawn by applicant" },
 ];
 
 /**
@@ -70,8 +80,80 @@ async function seedLevels() {
 }
 
 /**
+ * Seed application statuses if they don't exist
+ */
+async function seedApplicationStatuses() {
+  try {
+    const applicationStatusRepository = AppDataSource.getRepository(ApplicationStatus);
+    
+    for (const statusData of DEFAULT_APPLICATION_STATUSES) {
+      const existing = await applicationStatusRepository.findOne({
+        where: { name: statusData.name },
+      });
+      
+      if (!existing) {
+        await applicationStatusRepository.save(statusData);
+        logger.info(`Seeded application status: ${statusData.name}`);
+      }
+    }
+    
+    logger.info("Application statuses seeding completed");
+  } catch (error) {
+    logger.error("Error seeding application statuses", error);
+  }
+}
+
+/**
+ * Update existing job applications to set statusId from status field
+ * This handles migration from enum to foreign key
+ */
+async function updateApplicationStatusIds() {
+  try {
+    const applicationStatusRepository = AppDataSource.getRepository(ApplicationStatus);
+    const jobApplicationRepository = AppDataSource.getRepository(JobApplication);
+    
+    // Get all status mappings
+    const statusMap = {};
+    for (const statusName of Object.values(ApplicationStatusEnum)) {
+      const statusEntity = await applicationStatusRepository.findOne({
+        where: { name: statusName },
+      });
+      if (statusEntity) {
+        statusMap[statusName] = statusEntity.id;
+      }
+    }
+    
+    // Find all applications without statusId
+    const applicationsWithoutStatusId = await jobApplicationRepository.find({
+      where: { statusId: null },
+    });
+    
+    if (applicationsWithoutStatusId.length > 0) {
+      logger.info(`Updating ${applicationsWithoutStatusId.length} job applications with statusId...`);
+      
+      for (const application of applicationsWithoutStatusId) {
+        const statusName = application.status || ApplicationStatusEnum.PENDING;
+        const statusId = statusMap[statusName] || statusMap[ApplicationStatusEnum.PENDING];
+        
+        if (statusId) {
+          await jobApplicationRepository.update(application.id, {
+            statusId: statusId,
+            status: statusName, // Keep status field for backward compatibility
+          });
+        }
+      }
+      
+      logger.info("Application statusId update completed");
+    }
+  } catch (error) {
+    logger.error("Error updating application statusIds", error);
+  }
+}
+
+/**
  * Seed all default data
  * This function should be called after database initialization
+ * IMPORTANT: ApplicationStatuses must be seeded before any JobApplication operations
  */
 export async function seedDefaultData() {
   try {
@@ -81,6 +163,10 @@ export async function seedDefaultData() {
     }
 
     logger.info("Starting data seeding...");
+    // Seed ApplicationStatuses first (required for JobApplication foreign key)
+    await seedApplicationStatuses();
+    // Update existing applications to set statusId
+    await updateApplicationStatusIds();
     await seedWorkingModes();
     await seedLevels();
     logger.info("Data seeding completed successfully");

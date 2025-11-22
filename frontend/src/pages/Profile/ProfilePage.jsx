@@ -12,10 +12,6 @@ import { toast } from "react-toastify";
 import { 
   FaChartBar, 
   FaClipboardList, 
-  FaEdit, 
-  FaClock, 
-  FaCheckCircle, 
-  FaTimesCircle, 
   FaStar,
   FaHeart,
   FaBell,

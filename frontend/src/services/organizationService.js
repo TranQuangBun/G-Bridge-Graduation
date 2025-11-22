@@ -10,7 +10,7 @@ const organizationService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching organizations:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -20,7 +20,7 @@ const organizationService = {
       return response.data;
     } catch (error) {
       console.error("Error creating organization:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 };

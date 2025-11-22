@@ -1,8 +1,10 @@
 import { EntitySchema } from "typeorm";
 import { Job } from "./Job.js";
 import { User } from "./User.js";
+import { ApplicationStatus } from "./ApplicationStatus.js";
 
-export const ApplicationStatus = {
+// Keep enum for backward compatibility and easy reference
+export const ApplicationStatusEnum = {
   PENDING: "pending",
   APPROVED: "approved",
   REJECTED: "rejected",
@@ -13,7 +15,8 @@ export class JobApplication {
   id;
   jobId;
   interpreterId;
-  status;
+  statusId;
+  status; // Keep for backward compatibility - will be populated from statusEntity
   coverLetter;
   resumeUrl;
   resumeType;
@@ -24,6 +27,7 @@ export class JobApplication {
   updatedAt;
   job;
   interpreter;
+  statusEntity;
 }
 
 export const JobApplicationSchema = new EntitySchema({
@@ -45,10 +49,16 @@ export const JobApplicationSchema = new EntitySchema({
       type: "int",
       unsigned: true,
     },
+    statusId: {
+      type: "int",
+      unsigned: true,
+      nullable: true, // Allow nullable during sync, will be populated by seed data
+    },
     status: {
-      type: "enum",
-      enum: Object.values(ApplicationStatus),
-      default: ApplicationStatus.PENDING,
+      type: "varchar",
+      length: 50,
+      nullable: true,
+      // This will be populated from statusEntity.name for backward compatibility
     },
     coverLetter: {
       type: "text",
@@ -126,6 +136,15 @@ export const JobApplicationSchema = new EntitySchema({
         name: "interpreterId",
       },
       onDelete: "CASCADE",
+    },
+    statusEntity: {
+      type: "many-to-one",
+      target: () => ApplicationStatus,
+      inverseSide: "applications",
+      joinColumn: {
+        name: "statusId",
+      },
+      onDelete: "RESTRICT",
     },
   },
 });

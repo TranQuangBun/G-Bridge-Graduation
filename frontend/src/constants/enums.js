@@ -12,6 +12,7 @@ export const ROUTES = {
   NOTIFICATIONS: "/dashboard/notifications",
   ADMIN_JOB_MODERATION: "/admin/jobs/moderation",
   POST_JOB: "/post-job",
+  MY_JOBS: "/dashboard/my-jobs",
   PROFILE: "/profile",
   PRICING: "/pricing",
   LOGIN: "/login",

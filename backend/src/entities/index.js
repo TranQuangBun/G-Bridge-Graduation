@@ -19,7 +19,8 @@ export { Job, SalaryType, JobStatus, JobSchema } from "./Job.js";
 export { JobDomain, JobDomainSchema } from "./JobDomain.js";
 export { JobRequiredLanguage, JobRequiredLanguageSchema } from "./JobRequiredLanguage.js";
 export { JobRequiredCertificate, JobRequiredCertificateSchema } from "./JobRequiredCertificate.js";
-export { JobApplication, ApplicationStatus, JobApplicationSchema } from "./JobApplication.js";
+export { JobApplication, ApplicationStatusEnum, JobApplicationSchema } from "./JobApplication.js";
+export { ApplicationStatus, ApplicationStatusSchema } from "./ApplicationStatus.js";
 export { SavedJob, SavedJobSchema } from "./SavedJob.js";
 export { SavedInterpreter, SavedInterpreterSchema } from "./SavedInterpreter.js";
 export {

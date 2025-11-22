@@ -36,3 +36,15 @@ ON DUPLICATE KEY UPDATE
   `order` = VALUES(`order`), 
   updatedAt = NOW();
 
+-- Seed Application Statuses
+-- Insert application statuses if they don't exist
+INSERT INTO application_statuses (name, nameVi, description, createdAt, updatedAt) VALUES
+('pending', 'Đang chờ', 'Application is pending review', NOW(), NOW()),
+('approved', 'Đã chấp nhận', 'Application has been approved', NOW(), NOW()),
+('rejected', 'Đã từ chối', 'Application has been rejected', NOW(), NOW()),
+('withdrawn', 'Đã rút lại', 'Application has been withdrawn by applicant', NOW(), NOW())
+ON DUPLICATE KEY UPDATE 
+  nameVi = VALUES(nameVi), 
+  description = VALUES(description), 
+  updatedAt = NOW();
+

@@ -10,6 +10,7 @@ import {
   FindJobPage,
   DashboardPage,
   MyApplicationsPage,
+  MyJobsPage,
   ProfilePage,
   NotificationsPage,
   AdminJobModerationPage,
@@ -62,6 +63,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <MyApplicationsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.MY_JOBS,
+    element: (
+      <ProtectedRoute allowedRoles={["client", "admin"]}>
+        <MyJobsPage />
       </ProtectedRoute>
     ),
   },

@@ -8,20 +8,18 @@ import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
 import { 
   FaBuilding, 
-  FaHospital, 
-  FaGraduationCap, 
-  FaLaptop, 
-  FaBalanceScale,
   FaChartBar,
   FaClipboardList,
   FaHeart,
   FaBell,
   FaUser,
   FaCog,
-  FaBriefcase
+  FaBriefcase,
+  FaFileAlt
 } from "react-icons/fa";
 
-const MOCK_APPLICATIONS = [
+// Unused mock data - kept for reference
+/* const MOCK_APPLICATIONS = [
   {
     id: 1,
     company: "GlobalSpeak",
@@ -117,7 +115,7 @@ const MOCK_APPLICATIONS = [
       "Confidentiality protocols knowledge",
     ],
   },
-];
+]; */
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -150,14 +148,16 @@ function MyApplicationsPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true); // Reserved for future use
   const [processingApplication, setProcessingApplication] = useState(null);
+  const [resumeModalOpen, setResumeModalOpen] = useState(false);
+  const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
 
   // Fetch applications from API
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        setLoading(true);
+        // setLoading(true); // Reserved for future use
         const response = await jobService.getMyApplications();
         
         // Handle response from sendPaginated (data is array directly)
@@ -210,7 +210,7 @@ function MyApplicationsPage() {
         console.error("Error fetching applications:", error);
         setApplications([]);
       } finally {
-        setLoading(false);
+        // setLoading(false); // Reserved for future use
       }
     };
 
@@ -356,6 +356,16 @@ function MyApplicationsPage() {
     setSelectedApplication(null);
   };
 
+  const openResumeModal = (resumeUrl) => {
+    setSelectedResumeUrl(resumeUrl);
+    setResumeModalOpen(true);
+  };
+
+  const closeResumeModal = () => {
+    setResumeModalOpen(false);
+    setSelectedResumeUrl(null);
+  };
+
   return (
     <MainLayout>
       <div className={styles.dashboardRoot}>
@@ -382,7 +392,7 @@ function MyApplicationsPage() {
                     } else if (item.id === "favorites") {
                       navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
-                      navigate(ROUTES.POST_JOB);
+                      navigate(ROUTES.MY_JOBS);
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
                     } else if (item.id === "alerts") {
@@ -571,15 +581,17 @@ function MyApplicationsPage() {
                       </button>
                       {isClient ? (
                         <>
-                          {application.resumeUrl && (
-                            <a
-                              href={application.resumeUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          {application.resumeUrl ? (
+                            <button
+                              onClick={() => openResumeModal(application.resumeUrl)}
                               className={styles.viewResumeBtn}
                             >
-                              {t("applications.modal.viewResume")}
-                            </a>
+                              <FaFileAlt /> {t("applications.modal.viewResume") || "Xem CV"}
+                            </button>
+                          ) : (
+                            <span className={styles.noResumeText}>
+                              <FaFileAlt /> {t("applications.noResume") || "Chưa có CV"}
+                            </span>
                           )}
                         </>
                       ) : (
@@ -705,14 +717,12 @@ function MyApplicationsPage() {
                     {selectedApplication.resumeUrl && (
                       <div className={styles.resumeSection}>
                         <h4>{t("applications.modal.resume")}</h4>
-                        <a
-                          href={selectedApplication.resumeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => openResumeModal(selectedApplication.resumeUrl)}
                           className={styles.resumeLink}
                         >
                           {t("applications.modal.viewResume")}
-                        </a>
+                        </button>
                       </div>
                     )}
                   </>
@@ -787,14 +797,12 @@ function MyApplicationsPage() {
                 {user?.role === "client" ? (
                   <>
                     {selectedApplication.resumeUrl && (
-                      <a
-                        href={selectedApplication.resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => openResumeModal(selectedApplication.resumeUrl)}
                         className={styles.viewResumeModalBtn}
                       >
                         {t("applications.modal.viewResume")}
-                      </a>
+                      </button>
                     )}
                     <button
                       className={styles.acceptBtn}
@@ -840,6 +848,40 @@ function MyApplicationsPage() {
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Resume View Modal */}
+        {resumeModalOpen && selectedResumeUrl && (
+          <div className={styles.modalOverlay} onClick={closeResumeModal}>
+            <div className={styles.resumeModalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.resumeModalHeader}>
+                <h2>{t("applications.modal.viewResume") || "Xem CV"}</h2>
+                <button className={styles.closeBtn} onClick={closeResumeModal}>
+                  ×
+                </button>
+              </div>
+              <div className={styles.resumeModalBody}>
+                <iframe
+                  src={selectedResumeUrl}
+                  className={styles.resumeIframe}
+                  title="Resume"
+                />
+                <div className={styles.resumeModalActions}>
+                  <a
+                    href={selectedResumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.downloadResumeBtn}
+                  >
+                    <FaFileAlt /> {t("applications.downloadResume") || "Tải xuống"}
+                  </a>
+                  <button className={styles.closeResumeBtn} onClick={closeResumeModal}>
+                    {t("common.close") || "Đóng"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
