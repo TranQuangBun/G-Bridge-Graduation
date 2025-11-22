@@ -9,7 +9,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching subscription plans:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -20,7 +20,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error creating VNPay payment:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -31,7 +31,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error creating PayPal payment:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -43,7 +43,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error verifying VNPay payment:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -54,7 +54,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error verifying PayPal payment:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -65,7 +65,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching payment history:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -76,7 +76,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching subscription status:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -87,7 +87,7 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error cancelling subscription:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 };

@@ -23,7 +23,7 @@ const interpreterService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching interpreters:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -34,7 +34,7 @@ const interpreterService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching interpreter:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -45,7 +45,7 @@ const interpreterService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching languages:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -56,7 +56,7 @@ const interpreterService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching specializations:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 };

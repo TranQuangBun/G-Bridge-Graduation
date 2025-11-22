@@ -8,6 +8,7 @@ export { default as PricingPage } from "./Pricing";
 export { default as FindJobPage } from "./FindJob/FindJobPage";
 export { default as DashboardPage } from "./Dashboard/DashboardPage";
 export { default as MyApplicationsPage } from "./MyApplications";
+export { default as MyJobsPage } from "./MyJobs/MyJobsPage";
 export { default as ProfilePage } from "./Profile";
 export { default as JobAlertsPage } from "./JobAlerts";
 export { default as NotificationsPage } from "./Notifications";

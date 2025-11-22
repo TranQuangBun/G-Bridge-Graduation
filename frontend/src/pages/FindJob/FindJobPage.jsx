@@ -18,12 +18,11 @@ import {
   FaCheckCircle,
   FaBell,
   FaInfoCircle,
-  FaBookmark,
-  FaBookmarkSolid
+  FaBookmark
 } from "react-icons/fa";
 
-// Mock interpreter job dataset - fallback when API fails
-const INTERPRETER_JOBS = [
+// Mock interpreter job dataset - fallback when API fails (currently unused)
+/* const INTERPRETER_JOBS = [
   {
     id: 1,
     title: "Senior English-Vietnamese Conference Interpreter",
@@ -344,7 +343,7 @@ const INTERPRETER_JOBS = [
       address: "Remote Position - Global Operations",
     },
   },
-];
+]; */
 
 const unique = (arr) => Array.from(new Set(arr));
 
@@ -388,11 +387,10 @@ export default function FindJobPage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalJobs, setTotalJobs] = useState(0);
+  // const [totalJobs, setTotalJobs] = useState(0); // Reserved for future use
 
   // Lookup data from API
   const [domains, setDomains] = useState([]);
-  const [workingModes, setWorkingModes] = useState([]);
   const [levels, setLevels] = useState([]);
 
   // Auth state
@@ -427,13 +425,11 @@ export default function FindJobPage() {
   useEffect(() => {
     const fetchLookupData = async () => {
       try {
-        const [domainsRes, workingModesRes, levelsRes] = await Promise.all([
+        const [domainsRes, levelsRes] = await Promise.all([
           jobService.getDomains(),
-          jobService.getWorkingModes(),
           jobService.getLevels(),
         ]);
         if (domainsRes?.success) setDomains(domainsRes.data || []);
-        if (workingModesRes?.success) setWorkingModes(workingModesRes.data || []);
         if (levelsRes?.success) setLevels(levelsRes.data || []);
       } catch (error) {
         console.error("Error fetching lookup data:", error);
@@ -548,7 +544,7 @@ export default function FindJobPage() {
           // Handle different response formats
           const jobsData = response.data?.jobs || response.data?.data?.jobs || response.data || [];
           const totalPages = response.data?.totalPages || response.data?.pagination?.totalPages || 1;
-          const total = response.data?.total || response.data?.pagination?.total || jobsData.length;
+          // const total = response.data?.total || response.data?.pagination?.total || jobsData.length; // Reserved for future use
 
           // Transform API data to match UI format
           const transformedJobs = (Array.isArray(jobsData) ? jobsData : []).map((job) => ({
@@ -586,19 +582,19 @@ export default function FindJobPage() {
           if (transformedJobs.length > 0) {
             setJobs(transformedJobs);
             setTotalPages(totalPages);
-            setTotalJobs(total);
+            // setTotalJobs(total); // Reserved for future use
           } else {
             // No jobs found, but API call was successful
             setJobs([]);
             setTotalPages(1);
-            setTotalJobs(0);
+            // setTotalJobs(0); // Reserved for future use
           }
         } else {
           // API call failed or returned unexpected format
           console.warn("API response format unexpected:", response);
           setJobs([]);
           setTotalPages(1);
-          setTotalJobs(0);
+          // setTotalJobs(0); // Reserved for future use
         }
         
         // Refresh saved jobs after fetching jobs to ensure sync
@@ -621,7 +617,7 @@ export default function FindJobPage() {
         // Show empty state on error
         setJobs([]);
         setTotalPages(1);
-        setTotalJobs(0);
+        // setTotalJobs(0); // Reserved for future use
         // Show error notification to user
         showNotification(
           t("findJob.errors.fetchFailed") || "Không thể tải danh sách việc làm. Vui lòng thử lại sau.",
@@ -633,7 +629,7 @@ export default function FindJobPage() {
     };
 
     fetchJobs();
-  }, [page, keyword, location, category, level, salaryRange, domains, levels]);
+  }, [page, keyword, location, category, level, salaryRange, domains, levels, isAuthenticated, t, user]);
 
   // Get categories and locations from API data only
   const categories = useMemo(() => {
@@ -662,10 +658,6 @@ export default function FindJobPage() {
     setPage(1);
   }
 
-  function openJobModal(job) {
-    setSelectedJob(job);
-    setIsModalOpen(true);
-  }
 
   function closeJobModal() {
     setIsModalOpen(false);

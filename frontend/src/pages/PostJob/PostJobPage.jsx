@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -89,14 +89,20 @@ const defaultJobData = {
   contactEmail: "",
   contactPhone: "",
   domainIds: [],
+  statusOpenStop: "open",
 };
 
 const PostJobPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
+  const editJobId = searchParams.get("edit");
+  const isEditMode = !!editJobId;
+
   const [lookupsLoading, setLookupsLoading] = useState(true);
+  const [loadingJobData, setLoadingJobData] = useState(false);
   const [submittingJob, setSubmittingJob] = useState(false);
   const [savingOrganization, setSavingOrganization] = useState(false);
   const [organizations, setOrganizations] = useState([]);
@@ -244,6 +250,105 @@ const PostJobPage = () => {
     fetchLookups();
   }, [isAuthenticated, isClientOrAdmin, t, user, jobData.organizationId]);
 
+  // Fetch job data for edit mode
+  useEffect(() => {
+    if (!isEditMode || !editJobId || !isAuthenticated || !isClientOrAdmin || lookupsLoading) return;
+
+    const fetchJobForEdit = async () => {
+      try {
+        setLoadingJobData(true);
+        const response = await jobService.getJobById(editJobId);
+        
+        if (response && (response.success || response.data)) {
+          const job = response.data?.job || response.data || {};
+          
+          // Check if user owns this job (via organization)
+          const isOwner = job.organization?.ownerUserId === user?.id || user?.role === "admin";
+          if (!isOwner) {
+            toast.error("You don't have permission to edit this job");
+            navigate(ROUTES.MY_JOBS);
+            return;
+          }
+
+          // Populate job data
+          setJobData({
+            organizationId: String(job.organizationId || ""),
+            workingModeId: String(job.workingModeId || ""),
+            title: job.title || "",
+            province: job.province || "",
+            commune: job.commune || "",
+            address: job.address || "",
+            expirationDate: job.expirationDate ? new Date(job.expirationDate).toISOString().split('T')[0] : "",
+            quantity: job.quantity || 1,
+            descriptions: job.descriptions || "",
+            responsibility: job.responsibility || "",
+            benefits: job.benefits || "",
+            salaryType: job.salaryType || "NEGOTIABLE",
+            minSalary: job.minSalary ? String(job.minSalary) : "",
+            maxSalary: job.maxSalary ? String(job.maxSalary) : "",
+            contactEmail: job.contactEmail || job.organization?.email || user?.email || "",
+            contactPhone: job.contactPhone || job.organization?.phone || user?.phone || "",
+            domainIds: job.domains?.map(d => String(d.domainId || d.id)) || [],
+            statusOpenStop: job.statusOpenStop || "open",
+          });
+
+          // Store job data temporarily for later processing
+          // We'll populate language requirements after languageOptions are loaded
+          if (job.requiredLanguages && job.requiredLanguages.length > 0) {
+            const langReqs = job.requiredLanguages.map((rl) => ({
+              languageId: "",
+              levelId: String(rl.levelId || ""),
+              isSourceLanguage: rl.isSourceLanguage || false,
+              languageName: rl.language?.name || "",
+            }));
+            setLanguageRequirements(langReqs);
+          }
+        } else {
+          toast.error("Job not found");
+          navigate(ROUTES.MY_JOBS);
+        }
+      } catch (error) {
+        console.error("Error fetching job for edit:", error);
+        toast.error(error.message || "Error loading job data");
+        navigate(ROUTES.MY_JOBS);
+      } finally {
+        setLoadingJobData(false);
+      }
+    };
+
+    fetchJobForEdit();
+  }, [isEditMode, editJobId, isAuthenticated, isClientOrAdmin, lookupsLoading, user, navigate]);
+
+  // Update language requirements with proper languageId after languageOptions are loaded
+  useEffect(() => {
+    if (!isEditMode || !languageOptions.length || !languageRequirements.length) return;
+    
+    // Only update if languageId is empty (meaning it was set from edit mode)
+    const needsUpdate = languageRequirements.some(req => req.languageName && !req.languageId);
+    if (needsUpdate) {
+      const updatedReqs = languageRequirements.map((req) => {
+        if (req.languageName && !req.languageId) {
+          // Find language option by name
+          let langOption = languageOptions.find((lang) => lang.name === req.languageName);
+          // If not found, create a temporary one
+          if (!langOption && req.languageName) {
+            const newId = languageOptions.length > 0 
+              ? Math.max(...languageOptions.map(l => l.id)) + 1 
+              : 1000;
+            langOption = { id: newId, name: req.languageName };
+            setLanguageOptions((prev) => [...prev, langOption]);
+          }
+          return {
+            ...req,
+            languageId: langOption ? String(langOption.id) : "",
+          };
+        }
+        return req;
+      });
+      setLanguageRequirements(updatedReqs);
+    }
+  }, [isEditMode, languageOptions, languageRequirements]);
+
   const handleJobInputChange = (field) => (event) => {
     const value = event.target.value;
     setJobData((prev) => ({
@@ -285,7 +390,7 @@ const PostJobPage = () => {
   const handleLanguageNameChange = (index, languageName) => {
     // Find or create language option
     let langOption = languageOptions.find((lang) => lang.name === languageName);
-    if (!langOption) {
+    if (!langOption && languageName) {
       // Create new language option
       const newId = languageOptions.length > 0 
         ? Math.max(...languageOptions.map(l => l.id)) + 1 
@@ -293,7 +398,18 @@ const PostJobPage = () => {
       langOption = { id: newId, name: languageName };
       setLanguageOptions((prev) => [...prev, langOption]);
     }
-    handleLanguageRequirementChange(index, "languageId", String(langOption.id));
+    // Update both languageId and languageName
+    setLanguageRequirements((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              languageId: langOption ? String(langOption.id) : "",
+              languageName: languageName,
+            }
+          : item
+      )
+    );
   };
 
   const addLanguageRequirement = () => {
@@ -433,14 +549,32 @@ const PostJobPage = () => {
         }),
     };
 
+    // Include statusOpenStop only in edit mode
+    if (isEditMode) {
+      payload.statusOpenStop = jobData.statusOpenStop || "open";
+    }
+
     setSubmittingJob(true);
     try {
-      const response = await jobService.createJob(payload);
-      if (response?.success) {
-        toast.success(t("postJob.messages.success"));
-        navigate(ROUTES.DASHBOARD);
+      let response;
+      if (isEditMode && editJobId) {
+        // Update existing job
+        response = await jobService.updateJob(editJobId, payload);
+        if (response?.success) {
+          toast.success("Job updated successfully");
+          navigate(ROUTES.MY_JOBS);
+        } else {
+          throw new Error(response?.message || "Unable to update job");
+        }
       } else {
-        throw new Error(response?.message || "Unable to submit job");
+        // Create new job
+        response = await jobService.createJob(payload);
+        if (response?.success) {
+          toast.success(t("postJob.messages.success"));
+          navigate(ROUTES.DASHBOARD);
+        } else {
+          throw new Error(response?.message || "Unable to submit job");
+        }
       }
     } catch (error) {
       toast.error(error.message || t("postJob.messages.error"));
@@ -468,14 +602,31 @@ const PostJobPage = () => {
     return tomorrow.toISOString().split("T")[0];
   }, []);
 
+  // Show loading state while fetching job data for edit
+  if (isEditMode && loadingJobData) {
+    return (
+      <MainLayout>
+        <div className={styles.postJobPage}>
+          <div style={{ padding: "60px 20px", textAlign: "center" }}>
+            <p style={{ fontSize: "1.1rem", color: "#64748b" }}>Loading job data...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className={styles.postJobPage}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>{t("postJob.eyebrow")}</p>
-            <h1 className={styles.pageTitle}>{t("postJob.title")}</h1>
-            <p className={styles.pageSubtitle}>{t("postJob.subtitle")}</p>
+            <p className={styles.eyebrow}>{isEditMode ? "Edit Job" : t("postJob.eyebrow")}</p>
+            <h1 className={styles.pageTitle}>{isEditMode ? "Edit Job Posting" : t("postJob.title")}</h1>
+            <p className={styles.pageSubtitle}>
+              {isEditMode 
+                ? "Update your job posting information" 
+                : t("postJob.subtitle")}
+            </p>
           </div>
           <div className={styles.reviewNotice}>
             <span>⚠️</span>
@@ -715,6 +866,23 @@ const PostJobPage = () => {
                       onChange={handleJobInputChange("expirationDate")}
                     />
                   </div>
+                  {isEditMode && (
+                    <div className={styles.field}>
+                      <label>Job Status *</label>
+                      <select
+                        value={jobData.statusOpenStop}
+                        onChange={handleJobInputChange("statusOpenStop")}
+                        required
+                      >
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                        <option value="expired">Expired</option>
+                      </select>
+                      <p className={styles.helperText}>
+                        Change the status of this job posting. Closed jobs will not accept new applications.
+                      </p>
+                    </div>
+                  )}
                   <div className={styles.field}>
                     <label>{t("postJob.form.labels.salaryType")}</label>
                     <select
@@ -830,9 +998,12 @@ const PostJobPage = () => {
                   ) : (
                     <div className={styles.languageList}>
                       {languageRequirements.map((req, index) => {
+                        // Try to find language by ID first, then by name
                         const selectedLanguage = languageOptions.find(
-                          (lang) => String(lang.id) === req.languageId
+                          (lang) => String(lang.id) === req.languageId || lang.name === req.languageName
                         );
+                        // Use languageName if available, otherwise use selectedLanguage name
+                        const selectedLanguageName = req.languageName || selectedLanguage?.name || "";
                         return (
                           <div key={`lang-${index}`} className={styles.languageCard}>
                             <div className={styles.languageCardHeader}>
@@ -850,7 +1021,7 @@ const PostJobPage = () => {
                               <div className={styles.field}>
                                 <label>{t("postJob.form.labels.language") || "Language"}</label>
                                 <select
-                                  value={selectedLanguage?.name || ""}
+                                  value={selectedLanguageName}
                                   onChange={(e) => handleLanguageNameChange(index, e.target.value)}
                                   required
                                 >
@@ -936,16 +1107,18 @@ const PostJobPage = () => {
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                  onClick={() => navigate(ROUTES.DASHBOARD)}
+                  onClick={() => navigate(isEditMode ? ROUTES.MY_JOBS : ROUTES.DASHBOARD)}
                 >
                   {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   className={styles.primaryButton}
-                  disabled={submittingJob || lookupsLoading}
+                  disabled={submittingJob || lookupsLoading || loadingJobData}
                 >
-                  {submittingJob ? t("postJob.actions.saving") : t("postJob.actions.submit")}
+                  {submittingJob 
+                    ? (isEditMode ? "Updating..." : t("postJob.actions.saving"))
+                    : (isEditMode ? "Update Job" : t("postJob.actions.submit"))}
                 </button>
               </div>
             </form>
@@ -992,15 +1165,19 @@ const PostJobPage = () => {
                   <h4>{t("postJob.form.labels.languages")}</h4>
                   <ul>
                     {languageRequirements.map((req, idx) => {
+                      // Use languageName if available, otherwise find by ID
                       const languageName =
+                        req.languageName ||
                         languageOptions.find((lang) => String(lang.id) === req.languageId)?.name ||
                         t("postJob.form.placeholders.selectOption");
                       const levelName =
-                        levels.find((level) => String(level.id) === req.levelId)?.name ||
+                        (levels && levels.length > 0 ? levels : DEFAULT_LEVELS).find(
+                          (level) => String(level.id) === req.levelId
+                        )?.name ||
                         t("postJob.form.placeholders.selectLevel");
                       return (
                         <li key={`prev-lang-${idx}`}>
-                          {languageName} · {levelName}
+                          {languageName} - {levelName}
                           {req.isSourceLanguage ? ` (${t("postJob.form.labels.sourceLanguage")})` : ""}
                         </li>
                       );
@@ -1009,9 +1186,17 @@ const PostJobPage = () => {
                 </div>
               )}
               <div className={styles.previewSection}>
-                <h4>{t("postJob.preview.contact")}</h4>
-                <p>{jobData.contactEmail || t("postJob.form.placeholders.contactEmail")}</p>
-                {jobData.contactPhone && <p>{jobData.contactPhone}</p>}
+                <h4>{t("postJob.preview.contact") || "Contact"}</h4>
+                {jobData.contactEmail ? (
+                  <p><strong>Email:</strong> {jobData.contactEmail}</p>
+                ) : (
+                  <p className={styles.previewPlaceholder}>{t("postJob.form.placeholders.contactEmail") || "No email provided"}</p>
+                )}
+                {jobData.contactPhone ? (
+                  <p><strong>Phone:</strong> {jobData.contactPhone}</p>
+                ) : (
+                  <p className={styles.previewPlaceholder}>{t("postJob.form.placeholders.contactPhone") || "No phone provided"}</p>
+                )}
               </div>
             </div>
           </aside>

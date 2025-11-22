@@ -36,8 +36,21 @@ export async function createOrganization(req, res) {
     const ownerUserId = req.user?.sub || req.user?.id || req.body.ownerUserId;
     const data = {
       ...req.body,
-      ownerUserId: ownerUserId ? parseInt(ownerUserId) : null,
+      ownerUserId: ownerUserId || null,
     };
+    
+    // Validate ownerUserId before passing to service
+    // Service will handle further validation and user existence check
+    if (data.ownerUserId) {
+      const parsedId = parseInt(data.ownerUserId);
+      if (!Number.isInteger(parsedId) || isNaN(parsedId) || parsedId <= 0) {
+        console.warn(`Invalid ownerUserId in request: ${data.ownerUserId}, setting to null`);
+        data.ownerUserId = null;
+      } else {
+        data.ownerUserId = parsedId;
+      }
+    }
+    
     const organization = await organizationService.createOrganization(data);
     return sendSuccess(res, organization, "Organization created successfully", 201);
   } catch (error) {

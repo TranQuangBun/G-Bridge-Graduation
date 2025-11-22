@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styles from "./NotificationsPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
@@ -29,12 +29,7 @@ const NotificationsPage = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  useEffect(() => {
-    if (!isAuthenticated || loading) return;
-    void fetchNotifications({ page: 1, append: false });
-  }, [isAuthenticated, loading, showUnreadOnly]);
-
-  const fetchNotifications = async ({ page, append }) => {
+  const fetchNotifications = useCallback(async ({ page, append }) => {
     try {
       if (!append) {
         setPageLoading(true);
@@ -58,7 +53,12 @@ const NotificationsPage = () => {
     } finally {
       setPageLoading(false);
     }
-  };
+  }, [showUnreadOnly]);
+
+  useEffect(() => {
+    if (!isAuthenticated || loading) return;
+    void fetchNotifications({ page: 1, append: false });
+  }, [isAuthenticated, loading, showUnreadOnly, fetchNotifications]);
 
   const handleLoadMore = () => {
     if (pagination.page >= pagination.totalPages) return;

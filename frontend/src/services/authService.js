@@ -57,7 +57,7 @@ const authService = {
           });
         } catch (storageError) {
           console.error("Error saving registration to localStorage:", storageError);
-          throw { message: "Không thể lưu thông tin đăng ký. Vui lòng kiểm tra cài đặt trình duyệt." };
+          throw new Error("Không thể lưu thông tin đăng ký. Vui lòng kiểm tra cài đặt trình duyệt.");
         }
       } else {
         console.warn("No token in registration response:", response.data);
@@ -73,7 +73,7 @@ const authService = {
       };
     } catch (error) {
       console.error("Registration error:", error);
-      throw { message: getErrorMessage(error) || "Đăng ký thất bại" };
+      throw new Error(getErrorMessage(error) || "Đăng ký thất bại");
     }
   },
 
@@ -129,7 +129,7 @@ const authService = {
           });
         } catch (storageError) {
           console.error("Error saving to localStorage:", storageError);
-          throw { message: "Không thể lưu thông tin đăng nhập. Vui lòng kiểm tra cài đặt trình duyệt." };
+          throw new Error("Không thể lưu thông tin đăng nhập. Vui lòng kiểm tra cài đặt trình duyệt.");
         }
       } else {
         console.warn("No token in response:", response.data);
@@ -145,7 +145,7 @@ const authService = {
       };
     } catch (error) {
       console.error("Login error:", error);
-      throw { message: getErrorMessage(error) || "Đăng nhập thất bại" };
+      throw new Error(getErrorMessage(error) || "Đăng nhập thất bại");
     }
   },
 
@@ -215,10 +215,10 @@ const authService = {
       if (error.response) {
         throw error; // Keep original axios error with response.status
       }
-      throw { 
-        message: getErrorMessage(error) || "Không thể lấy thông tin user",
-        originalError: error 
-      };
+      const errorMessage = getErrorMessage(error) || "Không thể lấy thông tin user";
+      const err = new Error(errorMessage);
+      err.originalError = error;
+      throw err;
     }
   },
 
@@ -231,7 +231,7 @@ const authService = {
       const response = await apiClient.put("/auth/toggle-active-status");
       return response.data;
     } catch (error) {
-      throw { message: getErrorMessage(error) || "Không thể thay đổi trạng thái hoạt động" };
+      throw new Error(getErrorMessage(error) || "Không thể thay đổi trạng thái hoạt động");
     }
   },
 
@@ -299,7 +299,7 @@ const authService = {
 
       return response.data;
     } catch (error) {
-      throw { message: getErrorMessage(error) || "Cập nhật thất bại" };
+      throw new Error(getErrorMessage(error) || "Cập nhật thất bại");
     }
   },
 
@@ -322,7 +322,7 @@ const authService = {
 
       return response.data;
     } catch (error) {
-      throw { message: getErrorMessage(error) || "Cập nhật thất bại" };
+      throw new Error(getErrorMessage(error) || "Cập nhật thất bại");
     }
   },
 
@@ -349,7 +349,7 @@ const authService = {
 
       return response.data;
     } catch (error) {
-      throw { message: getErrorMessage(error) || "Upload thất bại" };
+      throw new Error(getErrorMessage(error) || "Upload thất bại");
     }
   },
 };

@@ -23,6 +23,11 @@ import {
   FaCertificate,
   FaLanguage,
   FaCheckCircle,
+  FaEdit,
+  FaUser,
+  FaCheck,
+  FaTimes,
+  FaFileAlt,
 } from "react-icons/fa";
 
 export default function JobDetailPage() {
@@ -39,6 +44,10 @@ export default function JobDetailPage() {
     message: "",
     type: "error",
   });
+  const [applications, setApplications] = useState([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [resumeModalOpen, setResumeModalOpen] = useState(false);
+  const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
 
   const hasPremium = user?.isPremium || false;
 
@@ -114,6 +123,7 @@ export default function JobDetailPage() {
             reviewStatus: jobData.reviewStatus || "pending",
             reviewNotes: jobData.reviewNotes || "",
             organization: jobData.organization || null,
+            ownerUserId: jobData.organization?.ownerUserId || null,
           };
           
           setJob(transformedJob);
@@ -225,6 +235,78 @@ export default function JobDetailPage() {
     navigate(ROUTES.PRICING);
   }
 
+  function handleEditJob() {
+    navigate(`${ROUTES.POST_JOB}?edit=${id}`);
+  }
+
+  function handleBackToMyJobs() {
+    navigate(ROUTES.MY_JOBS);
+  }
+
+  async function handleAcceptApplication(applicationId) {
+    try {
+      const response = await jobService.acceptApplication(applicationId);
+      if (response?.success) {
+        showNotification("Application accepted successfully", "success");
+        // Refresh applications
+        const appsResponse = await jobService.getJobApplications(job.id);
+        const applicationsData = Array.isArray(appsResponse.data) 
+          ? appsResponse.data 
+          : appsResponse.data?.applications || [];
+        setApplications(applicationsData);
+      }
+    } catch (error) {
+      showNotification(error.message || "Error accepting application", "error");
+    }
+  }
+
+  async function handleRejectApplication(applicationId) {
+    try {
+      const response = await jobService.rejectApplication(applicationId);
+      if (response?.success) {
+        showNotification("Application rejected successfully", "success");
+        // Refresh applications
+        const appsResponse = await jobService.getJobApplications(job.id);
+        const applicationsData = Array.isArray(appsResponse.data) 
+          ? appsResponse.data 
+          : appsResponse.data?.applications || [];
+        setApplications(applicationsData);
+      }
+    } catch (error) {
+      showNotification(error.message || "Error rejecting application", "error");
+    }
+  }
+
+  // Check if current user is the owner of this job
+  const isJobOwner = user?.role === "client" && job?.ownerUserId === user?.id;
+
+  // Fetch applications for this job if user is owner
+  useEffect(() => {
+    const fetchApplications = async () => {
+      if (!isJobOwner || !job?.id) {
+        return;
+      }
+
+      try {
+        setLoadingApplications(true);
+        const response = await jobService.getJobApplications(job.id);
+        const applicationsData = Array.isArray(response.data) 
+          ? response.data 
+          : response.data?.applications || [];
+        
+        if (response && (response.success !== false)) {
+          setApplications(applicationsData);
+        }
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+      } finally {
+        setLoadingApplications(false);
+      }
+    };
+
+    fetchApplications();
+  }, [isJobOwner, job?.id]);
+
   if (loading) {
     return (
       <MainLayout>
@@ -269,7 +351,16 @@ export default function JobDetailPage() {
 
       <div className={styles.jobDetailRoot}>
         {/* Back Button */}
-        <button className={styles.backBtn} onClick={() => navigate(ROUTES.FIND_JOB)}>
+        <button 
+          className={styles.backBtn} 
+          onClick={() => {
+            if (isJobOwner) {
+              navigate(ROUTES.MY_JOBS);
+            } else {
+              navigate(ROUTES.FIND_JOB);
+            }
+          }}
+        >
           <FaArrowLeft /> {t("common.back") || "Quay lại"}
         </button>
 
@@ -312,42 +403,161 @@ export default function JobDetailPage() {
             )}
           </div>
           <div className={styles.headerActions}>
-            <button
-              className={styles.applyBtn}
-              onClick={handleApply}
-            >
-              {t("common.applyNow") || "Ứng tuyển ngay"}
-            </button>
-            <button 
-              className={`${styles.saveBtn} ${savedJobIds.has(job.id) ? styles.savedBtn : ""}`}
-              onClick={handleSaveJob}
-              disabled={savingJobId === job.id}
-              title={savedJobIds.has(job.id) ? (t("findJob.saveJob.unsave") || "Bỏ lưu") : (t("findJob.saveJob.save") || "Lưu")}
-            >
-              {savingJobId === job.id ? (
-                <><FaClock /> {t("common.loading") || "Đang xử lý..."}</>
-              ) : savedJobIds.has(job.id) ? (
-                <>
-                  <FaBookmark /> {t("findJob.saveJob.saved") || "Đã lưu"}
-                </>
-              ) : (
-                <>
-                  <FaBookmark /> {t("common.save")}
-                </>
-              )}
-            </button>
+            {isJobOwner ? (
+              <>
+                <button
+                  className={styles.editBtn}
+                  onClick={handleEditJob}
+                >
+                  <FaEdit /> Edit Job
+                </button>
+                <button
+                  className={styles.backBtn}
+                  onClick={handleBackToMyJobs}
+                >
+                  <FaArrowLeft /> Back to My Jobs
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className={styles.applyBtn}
+                  onClick={handleApply}
+                >
+                  {t("common.applyNow") || "Ứng tuyển ngay"}
+                </button>
+                <button 
+                  className={`${styles.saveBtn} ${savedJobIds.has(job.id) ? styles.savedBtn : ""}`}
+                  onClick={handleSaveJob}
+                  disabled={savingJobId === job.id}
+                  title={savedJobIds.has(job.id) ? (t("findJob.saveJob.unsave") || "Bỏ lưu") : (t("findJob.saveJob.save") || "Lưu")}
+                >
+                  {savingJobId === job.id ? (
+                    <><FaClock /> {t("common.loading") || "Đang xử lý..."}</>
+                  ) : savedJobIds.has(job.id) ? (
+                    <>
+                      <FaBookmark /> {t("findJob.saveJob.saved") || "Đã lưu"}
+                    </>
+                  ) : (
+                    <>
+                      <FaBookmark /> {t("common.save")}
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
         {/* Job Content */}
         <div className={styles.jobContent}>
           <div className={styles.leftColumn}>
+            {isJobOwner && (
+              <>
+                <div className={styles.section}>
+                  <h2 className={styles.sectionTitle}>Job Management</h2>
+                  <div className={styles.ownerInfo}>
+                    <p><strong>Status:</strong> {job.statusOpenStop || "open"}</p>
+                    <p><strong>Review Status:</strong> {job.reviewStatus || "pending"}</p>
+                    {job.reviewNotes && (
+                      <div className={styles.reviewNotesBox}>
+                        <strong>Review Notes:</strong>
+                        <p>{job.reviewNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.section}>
+                  <h2 className={styles.sectionTitle}>
+                    Applications ({applications.length})
+                  </h2>
+                  {loadingApplications ? (
+                    <div className={styles.loading}>Loading applications...</div>
+                  ) : applications.length > 0 ? (
+                    <div className={styles.applicationsList}>
+                      {applications.map((app) => (
+                        <div key={app.id} className={styles.applicationCard}>
+                          <div className={styles.applicationHeader}>
+                            <div className={styles.applicationInfo}>
+                              <div className={styles.applicationName}>
+                                <FaUser /> {app.interpreter?.fullName || app.interpreter?.email || "Interpreter"}
+                              </div>
+                              <div className={styles.applicationDate}>
+                                Applied: {new Date(app.applicationDate || app.appliedAt || app.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className={`${styles.applicationStatus} ${
+                              app.status === "accepted" ? styles.statusAccepted :
+                              app.status === "rejected" ? styles.statusRejected :
+                              styles.statusPending
+                            }`}>
+                              {app.status === "accepted" ? (
+                                <><FaCheckCircle /> Accepted</>
+                              ) : app.status === "rejected" ? (
+                                <><FaTimesCircle /> Rejected</>
+                              ) : (
+                                <><FaClock /> Pending</>
+                              )}
+                            </div>
+                          </div>
+                          {app.coverLetter && (
+                            <div className={styles.applicationCoverLetter}>
+                              <strong>Cover Letter:</strong>
+                              <p>{app.coverLetter}</p>
+                            </div>
+                          )}
+                          <div className={styles.applicationResume}>
+                            <FaFileAlt /> 
+                            {app.resumeUrl ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedResumeUrl(app.resumeUrl);
+                                  setResumeModalOpen(true);
+                                }}
+                                className={styles.resumeLink}
+                              >
+                                {t("applications.modal.viewResume") || "Xem CV"}
+                              </button>
+                            ) : (
+                              <span className={styles.noResumeText}>
+                                {t("applications.noResume") || "Chưa có CV"}
+                              </span>
+                            )}
+                          </div>
+                          {app.status === "pending" && (
+                            <div className={styles.applicationActions}>
+                              <button
+                                className={styles.acceptBtn}
+                                onClick={() => handleAcceptApplication(app.id)}
+                              >
+                                <FaCheck /> Accept
+                              </button>
+                              <button
+                                className={styles.rejectBtn}
+                                onClick={() => handleRejectApplication(app.id)}
+                              >
+                                <FaTimes /> Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyApplications}>
+                      <p>No applications yet</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Contact Information</h2>
               <div className={styles.contactInfo}>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || !hasPremium ? styles.blurred : ""
+                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}><FaEnvelope /> Email:</span>
@@ -357,7 +567,7 @@ export default function JobDetailPage() {
                 </div>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || !hasPremium ? styles.blurred : ""
+                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}><FaPhone /> Phone:</span>
@@ -367,7 +577,7 @@ export default function JobDetailPage() {
                 </div>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || !hasPremium ? styles.blurred : ""
+                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}><FaMapMarkerAlt /> Address:</span>
@@ -377,7 +587,7 @@ export default function JobDetailPage() {
                 </div>
               </div>
 
-              {(!user || !hasPremium) && (
+              {(!user || (!hasPremium && !isJobOwner)) && (
                 <div className={styles.premiumNotice}>
                   <p>
                     🔒 Contact information is only available for premium members.
@@ -513,6 +723,49 @@ export default function JobDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Resume View Modal */}
+      {resumeModalOpen && selectedResumeUrl && (
+        <div className={styles.modalOverlay} onClick={() => {
+          setResumeModalOpen(false);
+          setSelectedResumeUrl(null);
+        }}>
+          <div className={styles.resumeModalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.resumeModalHeader}>
+              <h2>{t("applications.modal.viewResume") || "Xem CV"}</h2>
+              <button className={styles.closeBtn} onClick={() => {
+                setResumeModalOpen(false);
+                setSelectedResumeUrl(null);
+              }}>
+                ×
+              </button>
+            </div>
+            <div className={styles.resumeModalBody}>
+              <iframe
+                src={selectedResumeUrl}
+                className={styles.resumeIframe}
+                title="Resume"
+              />
+              <div className={styles.resumeModalActions}>
+                <a
+                  href={selectedResumeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.downloadResumeBtn}
+                >
+                  <FaFileAlt /> {t("applications.downloadResume") || "Tải xuống"}
+                </a>
+                <button className={styles.closeResumeBtn} onClick={() => {
+                  setResumeModalOpen(false);
+                  setSelectedResumeUrl(null);
+                }}>
+                  {t("common.close") || "Đóng"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

@@ -59,6 +59,9 @@ services:
       
       # CORS Configuration (Frontend URL for CORS)
       - FRONTEND_URL=http://localhost:3000
+      
+      # ImgBB API Configuration (for file uploads)
+      - IMGBB_API_KEY=608d854aebb411657d9684305ae89fa6
     ports:
       - "4000:4000"
     volumes:

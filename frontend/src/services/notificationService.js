@@ -10,7 +10,7 @@ const notificationService = {
       return response.data;
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -22,7 +22,7 @@ const notificationService = {
       return response.data;
     } catch (error) {
       console.error("Error marking notification read:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 
@@ -32,7 +32,7 @@ const notificationService = {
       return response.data;
     } catch (error) {
       console.error("Error marking all notifications read:", error);
-      throw { message: getErrorMessage(error) };
+      throw new Error(getErrorMessage(error));
     }
   },
 };

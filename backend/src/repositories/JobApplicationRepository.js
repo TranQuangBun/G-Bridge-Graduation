@@ -13,7 +13,7 @@ export class JobApplicationRepository extends BaseRepository {
       relations: ["job", "interpreter", "interpreter.interpreterProfile"],
       take: limit,
       skip: offset,
-      order: { appliedAt: "DESC" },
+      order: { applicationDate: "DESC" },
     });
   }
 
@@ -24,7 +24,7 @@ export class JobApplicationRepository extends BaseRepository {
       relations: ["job", "interpreter", "job.organization"],
       take: limit,
       skip: offset,
-      order: { appliedAt: "DESC" },
+      order: { applicationDate: "DESC" },
     });
   }
 
@@ -35,7 +35,7 @@ export class JobApplicationRepository extends BaseRepository {
       relations: ["job", "interpreter"],
       take: limit,
       skip: offset,
-      order: { appliedAt: "DESC" },
+      order: { applicationDate: "DESC" },
     });
   }
 
@@ -70,7 +70,7 @@ export class JobApplicationRepository extends BaseRepository {
       relations: ["job", "interpreter", "job.organization"],
       take: limit,
       skip: offset,
-      order: { appliedAt: "DESC" },
+      order: { applicationDate: "DESC" },
     });
   }
 }

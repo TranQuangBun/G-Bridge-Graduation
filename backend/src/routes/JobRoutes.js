@@ -16,7 +16,9 @@ import {
   getLevels,
   approveJob,
   rejectJob,
+  getMyJobs,
 } from "../controllers/JobController.js";
+import { uploadResume } from "../middleware/Upload.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -151,6 +153,45 @@ router.get("/", getJobs);
 
 /**
  * @swagger
+ * /api/jobs/my:
+ *   get:
+ *     summary: Get my posted jobs (client only)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [open, closed, expired]
+ *       - in: query
+ *         name: reviewStatus
+ *         schema:
+ *           type: string
+ *           enum: [pending, approved, rejected]
+ *     responses:
+ *       200:
+ *         description: My jobs retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Permission denied
+ */
+router.get("/my", authRequired, getMyJobs);
+
+/**
+ * @swagger
  * /api/jobs/{id}:
  *   get:
  *     summary: Get job by ID
@@ -213,7 +254,7 @@ router.get("/:id", getJobById);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.post("/:jobId/apply", authRequired, applyForJob);
+router.post("/:jobId/apply", authRequired, uploadResume.single("resume"), applyForJob);
 
 /**
  * @swagger

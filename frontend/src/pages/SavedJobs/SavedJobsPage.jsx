@@ -8,10 +8,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
 import { 
   FaBuilding, 
-  FaHospital, 
-  FaLaptop, 
-  FaBalanceScale, 
-  FaGraduationCap, 
   FaBriefcase,
   FaChartBar,
   FaClipboardList,
@@ -24,7 +20,8 @@ import {
   FaInfoCircle
 } from "react-icons/fa";
 
-const MOCK_SAVED_JOBS = [
+// Unused mock data - kept for reference
+/* const MOCK_SAVED_JOBS = [
   {
     id: 1,
     company: "GlobalSpeak",
@@ -133,7 +130,7 @@ const MOCK_SAVED_JOBS = [
       "Flexible schedule",
     ],
   },
-];
+]; */
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -172,7 +169,7 @@ function SavedJobsPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedJob, setSelectedJob] = useState(null);
   const [savedJobs, setSavedJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true); // Reserved for future use
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -199,7 +196,7 @@ function SavedJobsPage() {
   useEffect(() => {
     const fetchSavedJobs = async () => {
       try {
-        setLoading(true);
+        // setLoading(true); // Reserved for future use
         const response = await jobService.getSavedJobs();
         
         console.log("Saved jobs response:", response);
@@ -243,12 +240,12 @@ function SavedJobsPage() {
           "error"
         );
       } finally {
-        setLoading(false);
+        // setLoading(false); // Reserved for future use
       }
     };
 
     fetchSavedJobs();
-  }, []);
+  }, [t]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -333,7 +330,7 @@ function SavedJobsPage() {
                     } else if (item.id === "favorites") {
                       navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
-                      navigate(ROUTES.POST_JOB);
+                      navigate(ROUTES.MY_JOBS);
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
                     } else if (item.id === "alerts") {

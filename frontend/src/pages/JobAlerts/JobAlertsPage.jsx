@@ -175,14 +175,14 @@ function JobAlertsPage() {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true); // Reserved for future use
 
   // TODO: Fetch job alerts from API when backend implements it
   useEffect(() => {
     // Simulate API call - replace with actual API when available
     const fetchAlerts = async () => {
       try {
-        setLoading(true);
+        // setLoading(true); // Reserved for future use
         // const response = await jobAlertsService.getAlerts();
         // if (response.success) {
         //   setAlerts(response.data.alerts);
@@ -195,7 +195,7 @@ function JobAlertsPage() {
         console.error("Error fetching job alerts:", error);
         setAlerts(MOCK_JOB_ALERTS);
       } finally {
-        setLoading(false);
+        // setLoading(false); // Reserved for future use
       }
     };
 
@@ -323,7 +323,7 @@ function JobAlertsPage() {
                     } else if (item.id === "favorites") {
                       navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
-                      navigate(ROUTES.POST_JOB);
+                      navigate(ROUTES.MY_JOBS);
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
                     } else if (item.id === "alerts") {

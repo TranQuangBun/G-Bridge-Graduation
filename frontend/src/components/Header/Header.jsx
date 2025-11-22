@@ -7,7 +7,6 @@ import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
 import { useLanguage } from "../../translet/LanguageContext";
-import { FaUser } from "react-icons/fa";
 
 const Header = () => {
   const { lang, setLang, t } = useLanguage();

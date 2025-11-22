@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./DashboardPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
@@ -17,56 +17,16 @@ import {
   FaCog, 
   FaFileAlt, 
   FaMagic, 
-  FaBolt, 
   FaGem, 
   FaStar, 
   FaRocket, 
   FaMapMarkerAlt, 
   FaDollarSign,
   FaBuilding,
-  FaDesktop,
   FaChartLine,
-  FaBriefcase
+  FaBriefcase,
+  FaEnvelope
 } from "react-icons/fa";
-
-const MOCK_RECENT_JOBS = [
-  {
-    id: 1,
-    company: "GlobalSpeak",
-    logo: FaBuilding,
-    position: "Senior English-Vietnamese Conference Interpreter",
-    jobType: "Full-time",
-    workType: "Remote",
-    location: "Ho Chi Minh City",
-    salary: "$2,500-3,500",
-    dateApplied: "2025-09-10",
-    status: "Active",
-  },
-  {
-    id: 2,
-    company: "MedLingua",
-    logo: FaBuilding,
-    position: "Medical Interpreter (Japanese-Vietnamese)",
-    jobType: "Contract",
-    workType: "On-site",
-    location: "Hanoi",
-    salary: "$1,800-2,200",
-    dateApplied: "2025-09-08",
-    status: "Under Review",
-  },
-  {
-    id: 3,
-    company: "TechTranslate",
-    logo: FaDesktop,
-    position: "Technical Translator & Interpreter",
-    jobType: "Part-time",
-    workType: "Hybrid",
-    location: "Da Nang",
-    salary: "$1,500-2,000",
-    dateApplied: "2025-09-05",
-    status: "Shortlisted",
-  },
-];
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -74,6 +34,7 @@ const INTERPRETER_SIDEBAR_MENU = [
   { id: "applications", icon: FaClipboardList, labelKey: "applications", active: false },
   { id: "favorites", icon: FaHeart, labelKey: "favorites", active: false },
   { id: "alerts", icon: FaBell, labelKey: "alerts", active: false },
+  { id: "notifications", icon: FaEnvelope, labelKey: "notifications", active: false },
   { id: "profile", icon: FaUser, labelKey: "profile", active: false },
   { id: "settings", icon: FaCog, labelKey: "settings", active: false },
 ];
@@ -83,6 +44,7 @@ const CLIENT_SIDEBAR_MENU = [
   { id: "overview", icon: FaChartBar, labelKey: "overview", active: true },
   { id: "myJobs", icon: FaBriefcase, labelKey: "myJobs", active: false },
   { id: "jobApplications", icon: FaClipboardList, labelKey: "jobApplications", active: false },
+  { id: "notifications", icon: FaEnvelope, labelKey: "notifications", active: false },
   { id: "profile", icon: FaUser, labelKey: "profile", active: false },
   { id: "settings", icon: FaCog, labelKey: "settings", active: false },
 ];
@@ -91,6 +53,7 @@ function DashboardPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeMenu, setActiveMenu] = useState("overview");
   
   // Get sidebar menu based on user role
@@ -117,6 +80,12 @@ function DashboardPage() {
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [markingAllNotifications, setMarkingAllNotifications] = useState(false);
   const [updatingNotificationId, setUpdatingNotificationId] = useState(null);
+  const [notificationsPagination, setNotificationsPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -128,6 +97,16 @@ function DashboardPage() {
       navigate(ROUTES.LOGIN);
     }
   }, [isAuthenticated, loading, navigate]);
+
+  // Check for tab query parameter and set active menu
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "notifications") {
+      setActiveMenu("notifications");
+      // Remove the query parameter after setting the menu
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Fetch subscription status and update countdown
   useEffect(() => {
@@ -192,11 +171,17 @@ function DashboardPage() {
       try {
         setDataLoading(true);
         setNotificationsLoading(true);
+        const notificationsLimit = activeMenu === "notifications" ? 10 : 5;
+        const notificationsFilter = activeMenu === "notifications" && showUnreadOnly ? false : undefined;
+        
         const [applicationsResponse, savedJobsResponse, notificationsResponse] =
           await Promise.all([
             jobService.getMyApplications(),
             jobService.getSavedJobs(),
-            notificationService.getMyNotifications({ limit: 5 }),
+            notificationService.getMyNotifications({ 
+              limit: notificationsLimit,
+              isRead: notificationsFilter,
+            }),
           ]);
 
         // Calculate stats
@@ -246,8 +231,11 @@ function DashboardPage() {
           setRecentJobs([]);
         }
 
-        if (notificationsResponse?.data?.notifications) {
-          setNotifications(notificationsResponse.data.notifications);
+        if (notificationsResponse?.data) {
+          setNotifications(notificationsResponse.data.notifications || []);
+          if (notificationsResponse.data.pagination) {
+            setNotificationsPagination(notificationsResponse.data.pagination);
+          }
         } else {
           setNotifications([]);
         }
@@ -261,7 +249,7 @@ function DashboardPage() {
     };
 
     fetchDashboardData();
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, user?.role, activeMenu, showUnreadOnly]);
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
 
@@ -377,6 +365,27 @@ function DashboardPage() {
     }
   };
 
+  const handleLoadMoreNotifications = async () => {
+    if (notificationsPagination.page >= notificationsPagination.totalPages) return;
+    const nextPage = notificationsPagination.page + 1;
+    try {
+      const response = await notificationService.getMyNotifications({
+        page: nextPage,
+        limit: 10,
+        isRead: showUnreadOnly ? false : undefined,
+      });
+      const data = response?.data;
+      if (data) {
+        setNotifications((prev) => [...prev, ...(data.notifications || [])]);
+        if (data.pagination) {
+          setNotificationsPagination(data.pagination);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load more notifications:", error);
+    }
+  };
+
   const getStatusText = (status) => {
     switch (status.toLowerCase()) {
       case "active":
@@ -423,7 +432,7 @@ function DashboardPage() {
                     } else if (item.id === "favorites") {
                       navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
-                      navigate(ROUTES.POST_JOB); // For client: navigate to post job or my jobs list
+                      navigate(ROUTES.MY_JOBS); // For client: navigate to job management page
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS); // For client: shows applications to their posted jobs
                     } else if (item.id === "alerts") {
@@ -452,12 +461,136 @@ function DashboardPage() {
           {/* Header */}
           <header className={styles.contentHeader}>
             <h1 className={styles.greeting}>
-              {t("dashboard.welcomeBack")}, {userName}!
+              {activeMenu === "notifications"
+                ? t("notificationsPage.title") || "Notifications"
+                : `${t("dashboard.welcomeBack")}, ${userName}!`}
             </h1>
-            <p className={styles.subGreeting}>{t("dashboard.todayActivity")}</p>
+            <p className={styles.subGreeting}>
+              {activeMenu === "notifications"
+                ? t("notificationsPage.subtitle") ||
+                  "Stay on top of applications, bookings and payments."
+                : t("dashboard.todayActivity")}
+            </p>
           </header>
 
-          {/* Summary Stats */}
+          {/* Notifications Center - Full View */}
+          {activeMenu === "notifications" ? (
+            <section className={styles.notificationsCenterSection}>
+              <div className={styles.notificationsCenterHeader}>
+                <div className={styles.notificationsCenterActions}>
+                  <button
+                    className={`${styles.filterBtn} ${
+                      showUnreadOnly ? styles.filterBtnActive : ""
+                    }`}
+                    onClick={() => setShowUnreadOnly((prev) => !prev)}
+                  >
+                    {showUnreadOnly
+                      ? t("notificationsPage.showAll") || "Show all"
+                      : t("notificationsPage.showUnread") || "Unread only"}
+                    {showUnreadOnly && unreadNotifications.length > 0 && (
+                      <span className={styles.unreadCount}>
+                        ({unreadNotifications.length})
+                      </span>
+                    )}
+                  </button>
+                  {notifications.length > 0 && unreadNotifications.length > 0 && (
+                    <button
+                      className={styles.markAllBtn}
+                      onClick={handleMarkAllNotifications}
+                      disabled={markingAllNotifications}
+                    >
+                      {markingAllNotifications
+                        ? t("common.loading") || "Loading..."
+                        : t("notificationsPage.markAll") || "Mark all as read"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.notificationsCenterPanel}>
+                {notificationsLoading ? (
+                  <div className={styles.notificationsEmpty}>
+                    {t("common.loading") || "Loading..."}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className={styles.notificationsEmpty}>
+                    <span className={styles.emptyIcon}>🎉</span>
+                    <h3>
+                      {t("notificationsPage.emptyTitle") ||
+                        "You're all caught up!"}
+                    </h3>
+                    <p>
+                      {t("notificationsPage.emptyMessage") ||
+                        "Check back later for updates on your jobs, bookings and payments."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.notificationsCenterList}>
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`${styles.notificationCenterItem} ${
+                          !notification.isRead ? styles.notificationUnread : ""
+                        }`}
+                      >
+                        <div className={styles.notificationCenterBody}>
+                          <div className={styles.notificationCenterHeading}>
+                            <span className={styles.notificationCenterType}>
+                              {notification.type?.replace(/_/g, " ")}
+                            </span>
+                            <time>
+                              {new Date(notification.createdAt).toLocaleString(
+                                undefined,
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </time>
+                          </div>
+                          <h3 className={styles.notificationCenterTitle}>
+                            {notification.title}
+                          </h3>
+                          {notification.message && (
+                            <p className={styles.notificationCenterMessage}>
+                              {notification.message}
+                            </p>
+                          )}
+                        </div>
+                        {!notification.isRead && (
+                          <button
+                            className={styles.markReadBtn}
+                            onClick={() =>
+                              handleMarkNotificationRead(notification.id)
+                            }
+                            disabled={updatingNotificationId === notification.id}
+                          >
+                            {updatingNotificationId === notification.id
+                              ? t("common.loading") || "Loading..."
+                              : t("notificationsPage.markRead") ||
+                                "Mark as read"}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {notificationsPagination.page <
+                      notificationsPagination.totalPages && (
+                      <button
+                        className={styles.loadMoreBtn}
+                        onClick={handleLoadMoreNotifications}
+                      >
+                        {t("notificationsPage.loadMore") || "Load more"}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          ) : (
+            <>
+              {/* Summary Stats */}
           <section className={styles.summarySection}>
             <div className={styles.statsGrid}>
               {user?.role === "client" ? (
@@ -843,6 +976,8 @@ function DashboardPage() {
               )}
             </div>
           </section>
+            </>
+          )}
         </main>
       </div>
     </MainLayout>

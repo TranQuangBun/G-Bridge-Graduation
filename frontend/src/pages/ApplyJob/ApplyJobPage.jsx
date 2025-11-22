@@ -142,12 +142,11 @@ export default function ApplyJobPage() {
     try {
       setSubmitting(true);
 
-      // For now, we'll send the application data as JSON
-      // Backend expects: coverLetter, resumeUrl, resumeType
-      // TODO: Implement file upload endpoint to get resumeUrl
+      // Prepare application payload with file
       const applicationPayload = {
         coverLetter: applicationData.introduction,
-        resumeUrl: applicationData.profileLink || null, // Temporary: using profileLink as resumeUrl
+        pdfFile: applicationData.pdfFile, // File will be sent as FormData
+        resumeUrl: applicationData.profileLink || null, // Fallback if no file
         resumeType: applicationData.pdfFile ? "pdf" : null,
       };
 

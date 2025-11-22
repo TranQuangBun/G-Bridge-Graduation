@@ -46,7 +46,18 @@ const createApp = async () => {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+  
+  // Ensure uploads directories exist
+  const uploadsDir = path.join(__dirname, "../uploads");
+  const uploadsSubdirs = ["avatars", "certifications", "resumes", "job-documents"];
+  uploadsSubdirs.forEach((subdir) => {
+    const dirPath = path.join(uploadsDir, subdir);
+    if (!existsSync(dirPath)) {
+      mkdirSync(dirPath, { recursive: true });
+    }
+  });
+  
+  app.use("/uploads", express.static(uploadsDir));
 
   // Register routes
   app.use("/api/auth", authRoutes);

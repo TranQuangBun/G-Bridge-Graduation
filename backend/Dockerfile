@@ -26,10 +26,10 @@ RUN npm ci && npm cache clean --force
 COPY . .
 
 # Create uploads directory
-RUN mkdir -p uploads/avatars uploads/certifications
+RUN mkdir -p uploads/avatars uploads/certifications uploads/resumes uploads/job-documents
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Install wget for healthcheck and poppler-utils for PDF to image conversion
+RUN apk add --no-cache wget poppler-utils
 
 # Generate API documentation during build
 RUN npm run docs:generate || echo "Warning: Failed to generate docs during build"
@@ -55,15 +55,15 @@ CMD ["npm", "start"]
 FROM dependencies AS development
 WORKDIR /app
 
-# Install nodemon globally and wget for healthcheck
+# Install nodemon globally, wget for healthcheck, and poppler-utils for PDF conversion
 RUN npm install -g nodemon && \
-    apk add --no-cache wget bash
+    apk add --no-cache wget bash poppler-utils
 
 # Copy source code
 COPY . .
 
 # Create uploads directory
-RUN mkdir -p uploads/avatars uploads/certifications
+RUN mkdir -p uploads/avatars uploads/certifications uploads/resumes uploads/job-documents
 
 # Expose port
 EXPOSE 4000

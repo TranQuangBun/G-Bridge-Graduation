@@ -178,6 +178,51 @@
   color: #92400e;
 }
 
+.editBtn {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  background: linear-gradient(135deg, #fbbf24, #fcd34d);
+}
+
+.backBtn {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backBtn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+
 .jobContent {
   display: grid;
   grid-template-columns: 1fr 2fr;
@@ -421,16 +466,19 @@
 
 .notificationContent {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   padding: 16px 20px;
   gap: 12px;
+  position: relative;
 }
 
 .notificationMessage {
-  flex: 1;
+  width: 100%;
   font-size: 0.9rem;
   color: #1e293b;
   line-height: 1.4;
+  padding-right: 30px; /* Space for close button */
 }
 
 .notificationClose {
@@ -448,6 +496,9 @@
   border-radius: 4px;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 
 .notificationClose:hover {
@@ -480,9 +531,52 @@
   }
 
   .applyBtn,
-  .saveBtn {
+  .saveBtn,
+  .editBtn,
+  .backBtn {
     flex: 1;
   }
+}
+
+.ownerInfo {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.ownerInfo p {
+  margin: 8px 0;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.ownerInfo strong {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.reviewNotesBox {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+}
+
+.reviewNotesBox strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+.reviewNotesBox p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 640px) {
@@ -501,6 +595,348 @@
   .leftColumn,
   .rightColumn {
     padding: 20px;
+  }
+}
+
+/* Applications Styles */
+.applicationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.applicationCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.applicationCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+.applicationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.applicationInfo {
+  flex: 1;
+}
+
+.applicationName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.applicationDate {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.applicationStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.statusPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusAccepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusRejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.applicationCoverLetter {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.applicationCoverLetter strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.applicationCoverLetter p {
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.applicationResume {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  padding: 10px;
+  background: #f3f4f6;
+  border-radius: 6px;
+}
+
+.applicationResume svg {
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+.applicationResume .resumeLink {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.applicationResume .resumeLink:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.applicationResume .noResumeText {
+  color: #6b7280;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.applicationActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.acceptBtn,
+.rejectBtn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.acceptBtn {
+  background: #10b981;
+  color: #fff;
+}
+
+.acceptBtn:hover {
+  background: #059669;
+}
+
+.rejectBtn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.rejectBtn:hover {
+  background: #dc2626;
+}
+
+.emptyApplications {
+  text-align: center;
+  padding: 32px 16px;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* Resume View Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.resumeModalContent {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 1000px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.resumeModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.resumeModalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.resumeModalHeader .closeBtn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.resumeModalHeader .closeBtn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.resumeModalBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 500px;
+}
+
+.resumeIframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+  min-height: 600px;
+  background: #f8fafc;
+}
+
+.resumeModalActions {
+  display: flex;
+  gap: 12px;
+  padding: 20px 32px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  justify-content: flex-end;
+}
+
+.downloadResumeBtn {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.downloadResumeBtn:hover {
+  background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.closeResumeBtn {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.closeResumeBtn:hover {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .resumeModalContent {
+    width: 95vw;
+    max-height: 95vh;
+  }
+
+  .resumeModalHeader {
+    padding: 20px 24px;
+  }
+
+  .resumeModalHeader h2 {
+    font-size: 1.25rem;
+  }
+
+  .resumeIframe {
+    min-height: 400px;
+  }
+
+  .resumeModalActions {
+    padding: 16px 24px;
+    flex-direction: column;
+  }
+
+  .downloadResumeBtn,
+  .closeResumeBtn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

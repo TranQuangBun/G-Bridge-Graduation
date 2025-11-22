@@ -70,7 +70,7 @@ const NotificationDropdown = () => {
 
   const handleViewAll = () => {
     setIsOpen(false);
-    navigate(ROUTES.NOTIFICATIONS);
+    navigate(`${ROUTES.DASHBOARD}?tab=notifications`);
   };
 
   return (

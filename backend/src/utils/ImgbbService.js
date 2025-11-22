@@ -1,10 +1,13 @@
 import FormData from "form-data";
 import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
+import { convertPdfFirstPageToImageBuffer } from "./PdfToImageConverter.js";
 
 dotenv.config();
 
 const IMGBB_API_KEY = process.env.IMGBB_API_KEY || "608d854aebb411657d9684305ae89fa6";
+console.log("ImgBB API Key loaded:", IMGBB_API_KEY ? IMGBB_API_KEY.substring(0, 10) + "..." : "NOT SET");
 const IMGBB_API_URL = "https://api.imgbb.com/1/upload";
 
 export async function uploadMulterFileToImgbb(file, namePrefix = null, expiration = null) {
@@ -19,20 +22,50 @@ export async function uploadMulterFileToImgbb(file, namePrefix = null, expiratio
   try {
     const formData = new FormData();
     
-    // Read file as stream for better memory efficiency
-    const fileStream = fs.createReadStream(file.path);
+    // Check if file is PDF
+    const isPdf = file.mimetype === "application/pdf" || 
+                 file.originalname?.toLowerCase().endsWith(".pdf");
     
-    // Upload file directly as binary (more efficient than base64)
-    formData.append("key", IMGBB_API_KEY);
-    formData.append("image", fileStream);
+    let tempImagePath = null;
+    let format = "jpeg";
+    
+    if (isPdf) {
+      // Convert PDF to image (first page) then upload as image
+      try {
+        const conversionResult = await convertPdfFirstPageToImageBuffer(file.path);
+        format = conversionResult.format;
+        
+        // Create a temporary file-like object for the image
+        const imageExt = format === "png" ? ".png" : ".jpg";
+        tempImagePath = file.path.replace(path.extname(file.path), imageExt);
+        fs.writeFileSync(tempImagePath, conversionResult.imageBuffer);
+        
+        // Upload image as stream
+        const imageStream = fs.createReadStream(tempImagePath);
+        formData.append("key", IMGBB_API_KEY);
+        formData.append("image", imageStream);
+      } catch (convertError) {
+        // If conversion fails, try uploading PDF as base64 (fallback)
+        console.warn("PDF to image conversion failed, trying base64 upload:", convertError.message);
+        const fileBuffer = fs.readFileSync(file.path);
+        const base64File = fileBuffer.toString("base64");
+        formData.append("key", IMGBB_API_KEY);
+        formData.append("image", base64File);
+      }
+    } else {
+      // For images, use stream
+      const fileStream = fs.createReadStream(file.path);
+      formData.append("key", IMGBB_API_KEY);
+      formData.append("image", fileStream);
+    }
     
     // Optional parameters
     // Generate a name with prefix if provided
     if (namePrefix) {
       const timestamp = Date.now();
       const randomSuffix = Math.round(Math.random() * 1e9);
-      const originalName = file.originalname || "image";
-      const ext = originalName.split(".").pop() || "jpg";
+      const originalName = file.originalname || (isPdf ? "file.pdf" : "image");
+      const ext = originalName.split(".").pop() || (isPdf ? "pdf" : "jpg");
       const name = `${namePrefix}-${timestamp}-${randomSuffix}.${ext}`;
       formData.append("name", name);
     }
@@ -49,12 +82,19 @@ export async function uploadMulterFileToImgbb(file, namePrefix = null, expiratio
     const data = await response.json();
 
     if (!data.success) {
+      // Don't delete file if upload failed - it will be used for local fallback
       throw new Error(data.error?.message || data.error?.code || "Failed to upload image to imgbb");
     }
 
-    // Delete local file after successful upload
+    // Delete local file after successful upload ONLY
     try {
-      fs.unlinkSync(file.path);
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      // Also delete temp image file if it exists
+      if (tempImagePath && fs.existsSync(tempImagePath)) {
+        fs.unlinkSync(tempImagePath);
+      }
     } catch (err) {
       // Ignore delete errors
     }
@@ -68,13 +108,14 @@ export async function uploadMulterFileToImgbb(file, namePrefix = null, expiratio
       displayUrl: data.data.display_url || data.data.url,
     };
   } catch (error) {
-    // Clean up local file on error
+    // Don't delete file on error - it will be used for local fallback
+    // Only clean up temp image file if it exists
     try {
-      if (file.path && fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
+      if (tempImagePath && fs.existsSync(tempImagePath)) {
+        fs.unlinkSync(tempImagePath);
       }
     } catch (err) {
-      // Ignore delete errors
+      // Ignore cleanup errors
     }
     throw new Error(`Imgbb upload error: ${error.message}`);
   }

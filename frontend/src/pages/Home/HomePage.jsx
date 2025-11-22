@@ -125,8 +125,8 @@ const HomePage = () => {
   const { lang, t } = useLanguage();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [jobsData, setJobsData] = useState([]);
-  const [jobsLoading, setJobsLoading] = useState(true);
-  const [jobsError, setJobsError] = useState(null);
+  // const [jobsLoading, setJobsLoading] = useState(true); // Reserved for future use
+  // const [jobsError, setJobsError] = useState(null); // Reserved for future use
 
   // Anim refs
   const heroRef = useScrollAnimation("animate-on-scroll");
@@ -146,8 +146,8 @@ const HomePage = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        setJobsLoading(true);
-        setJobsError(null);
+        // setJobsLoading(true); // Reserved for future use
+        // setJobsError(null); // Reserved for future use
         const response = await jobService.getJobs({ limit: 9, page: 1, status: "open" });
         if (response.success && response.data?.jobs) {
           // Transform API data to match UI format
@@ -175,11 +175,11 @@ const HomePage = () => {
         }
       } catch (error) {
         console.error("Error fetching jobs:", error);
-        setJobsError(error.message);
+        // setJobsError(error.message); // Reserved for future use
         // Fallback to mock data on error
         setJobsData(MOCK_JOBS_DATA);
       } finally {
-        setJobsLoading(false);
+        // setJobsLoading(false); // Reserved for future use
       }
     };
 
@@ -216,11 +216,11 @@ const HomePage = () => {
     handle();
     window.addEventListener("resize", handle);
     return () => window.removeEventListener("resize", handle);
-  }, []);
+  }, [jobsData.length]);
 
   const totalGroups = useMemo(
     () => Math.ceil(jobsData.length / visibleCount),
-    [visibleCount]
+    [visibleCount, jobsData.length]
   );
 
   useEffect(() => {
