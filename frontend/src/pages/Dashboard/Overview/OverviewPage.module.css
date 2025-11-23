@@ -1,0 +1,184 @@
+/* Overview Page Styles */
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stat Cards */
+.statCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 40px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+.statCard:hover::before {
+  height: 4px;
+}
+
+/* Color Variants */
+.statblue::before {
+  background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+}
+
+.statgreen::before {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.statpurple::before {
+  background: linear-gradient(90deg, #9333ea, #a855f7);
+}
+
+.statpink::before {
+  background: linear-gradient(90deg, #ec4899, #f472b6);
+}
+
+.statorange::before {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+/* Stat Icon */
+.statIcon {
+  font-size: 2rem;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.statCard:hover .statIcon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.statblue .statIcon {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e3a8a;
+}
+
+.statgreen .statIcon {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #16a34a;
+}
+
+.statpurple .statIcon {
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  color: #9333ea;
+}
+
+.statpink .statIcon {
+  background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+  color: #ec4899;
+}
+
+.statorange .statIcon {
+  background: linear-gradient(135deg, #ffedd5, #fed7aa);
+  color: #f97316;
+}
+
+/* Stat Info */
+.statInfo {
+  flex: 1;
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.statLabel {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Chart Section */
+.chartSection {
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+.sectionHeader {
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionTitle svg {
+  color: #3b82f6;
+}
+
+.chartCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 40px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chartPlaceholder {
+  font-size: 1.125rem;
+  color: #94a3b8;
+  text-align: center;
+  font-weight: 500;
+}

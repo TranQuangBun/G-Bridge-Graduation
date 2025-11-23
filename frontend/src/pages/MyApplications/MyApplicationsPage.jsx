@@ -6,16 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
-import { 
-  FaBuilding, 
+import {
+  FaBuilding,
   FaChartBar,
   FaClipboardList,
-  FaHeart,
-  FaBell,
   FaUser,
   FaCog,
   FaBriefcase,
-  FaFileAlt
+  FaFileAlt,
+  FaEnvelope,
 } from "react-icons/fa";
 
 // Unused mock data - kept for reference
@@ -120,9 +119,18 @@ import {
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
   { id: "overview", icon: FaChartBar, labelKey: "overview", active: false },
-  { id: "applications", icon: FaClipboardList, labelKey: "applications", active: true },
-  { id: "favorites", icon: FaHeart, labelKey: "favorites", active: false },
-  { id: "alerts", icon: FaBell, labelKey: "alerts", active: false },
+  {
+    id: "applications",
+    icon: FaClipboardList,
+    labelKey: "applications",
+    active: true,
+  },
+  {
+    id: "notifications",
+    icon: FaEnvelope,
+    labelKey: "notifications",
+    active: false,
+  },
   { id: "profile", icon: FaUser, labelKey: "profile", active: false },
   { id: "settings", icon: FaCog, labelKey: "settings", active: false },
 ];
@@ -131,7 +139,18 @@ const INTERPRETER_SIDEBAR_MENU = [
 const CLIENT_SIDEBAR_MENU = [
   { id: "overview", icon: FaChartBar, labelKey: "overview", active: false },
   { id: "myJobs", icon: FaBriefcase, labelKey: "myJobs", active: false },
-  { id: "jobApplications", icon: FaClipboardList, labelKey: "jobApplications", active: true },
+  {
+    id: "jobApplications",
+    icon: FaClipboardList,
+    labelKey: "jobApplications",
+    active: true,
+  },
+  {
+    id: "notifications",
+    icon: FaEnvelope,
+    labelKey: "notifications",
+    active: false,
+  },
   { id: "profile", icon: FaUser, labelKey: "profile", active: false },
   { id: "settings", icon: FaCog, labelKey: "settings", active: false },
 ];
@@ -140,10 +159,16 @@ function MyApplicationsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeMenu, setActiveMenu] = useState("applications");
-  
+
   // Get sidebar menu based on user role
-  const SIDEBAR_MENU = user?.role === "client" ? CLIENT_SIDEBAR_MENU : INTERPRETER_SIDEBAR_MENU;
+  const SIDEBAR_MENU =
+    user?.role === "client" ? CLIENT_SIDEBAR_MENU : INTERPRETER_SIDEBAR_MENU;
+
+  // Set activeMenu based on user role
+  const [activeMenu, setActiveMenu] = useState(
+    user?.role === "client" ? "jobApplications" : "applications"
+  );
+
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [selectedApplication, setSelectedApplication] = useState(null);
@@ -159,28 +184,33 @@ function MyApplicationsPage() {
       try {
         // setLoading(true); // Reserved for future use
         const response = await jobService.getMyApplications();
-        
+
         // Handle response from sendPaginated (data is array directly)
-        const applicationsData = Array.isArray(response.data) 
-          ? response.data 
+        const applicationsData = Array.isArray(response.data)
+          ? response.data
           : response.data?.applications || [];
-        
-        if (applicationsData.length > 0 || (response && response.success !== false)) {
+
+        if (
+          applicationsData.length > 0 ||
+          (response && response.success !== false)
+        ) {
           const transformedApps = applicationsData.map((app) => {
             // For client: show interpreter info, for interpreter: show job info
             const isClient = user?.role === "client";
-            
+
             return {
               id: app.id,
-              company: isClient 
-                ? (app.interpreter?.fullName || app.interpreter?.email || "Interpreter")
-                : (app.job?.organization?.name || "Company"),
-              logo: isClient 
-                ? FaUser 
-                : (app.job?.organization?.logo || FaBuilding),
+              company: isClient
+                ? app.interpreter?.fullName ||
+                  app.interpreter?.email ||
+                  "Interpreter"
+                : app.job?.organization?.name || "Company",
+              logo: isClient
+                ? FaUser
+                : app.job?.organization?.logo || FaBuilding,
               position: isClient
-                ? (app.job?.title || "Job Position")
-                : (app.job?.title || "Position"),
+                ? app.job?.title || "Job Position"
+                : app.job?.title || "Position",
               jobType: app.job?.workingMode?.name || "Full-time",
               workType: app.job?.workingMode?.name || "Remote",
               location: app.job?.province || app.job?.address || "Location TBD",
@@ -190,12 +220,21 @@ function MyApplicationsPage() {
                   : app.job?.minSalary
                   ? `$${app.job.minSalary}+`
                   : "Negotiable",
-              dateApplied: app.applicationDate || app.createdAt || new Date().toISOString(),
+              dateApplied:
+                app.applicationDate ||
+                app.createdAt ||
+                new Date().toISOString(),
               status: app.status || "pending",
               description: isClient
-                ? (app.coverLetter || app.job?.descriptions || "")
-                : (app.job?.descriptions || ""),
-              requirements: app.job?.requiredLanguages?.map((rl) => `${rl.language?.name || ""} - ${rl.level?.name || ""}`).filter(Boolean) || [],
+                ? app.coverLetter || app.job?.descriptions || ""
+                : app.job?.descriptions || "",
+              requirements:
+                app.job?.requiredLanguages
+                  ?.map(
+                    (rl) =>
+                      `${rl.language?.name || ""} - ${rl.level?.name || ""}`
+                  )
+                  .filter(Boolean) || [],
               // Additional fields for client view
               interpreter: app.interpreter || null,
               coverLetter: app.coverLetter || "",
@@ -219,20 +258,18 @@ function MyApplicationsPage() {
 
   const handleAcceptApplication = async (applicationId) => {
     if (!user || user.role !== "client") return;
-    
+
     try {
       setProcessingApplication(applicationId);
       await jobService.acceptApplication(applicationId);
-      
+
       // Update local state
       setApplications((prev) =>
         prev.map((app) =>
-          app.id === applicationId
-            ? { ...app, status: "approved" }
-            : app
+          app.id === applicationId ? { ...app, status: "approved" } : app
         )
       );
-      
+
       // Update selected application if it's the one being processed
       if (selectedApplication?.id === applicationId) {
         setSelectedApplication((prev) => ({
@@ -240,12 +277,15 @@ function MyApplicationsPage() {
           status: "approved",
         }));
       }
-      
+
       // Show success message (you can add a toast notification here)
-      alert(t("applications.modal.accept") + " thành công!");
+      alert(t("applications.modal.acceptSuccess"));
     } catch (error) {
       console.error("Error accepting application:", error);
-      alert("Lỗi: " + (error.message || "Không thể chấp nhận đơn ứng tuyển"));
+      alert(
+        t("applications.modal.errorPrefix") +
+          (error.message || t("applications.modal.acceptError"))
+      );
     } finally {
       setProcessingApplication(null);
     }
@@ -253,23 +293,21 @@ function MyApplicationsPage() {
 
   const handleRejectApplication = async (applicationId) => {
     if (!user || user.role !== "client") return;
-    
-    const reviewNotes = prompt("Nhập lý do từ chối (tùy chọn):");
+
+    const reviewNotes = prompt(t("applications.modal.rejectPrompt"));
     if (reviewNotes === null) return; // User cancelled
-    
+
     try {
       setProcessingApplication(applicationId);
       await jobService.rejectApplication(applicationId, reviewNotes);
-      
+
       // Update local state
       setApplications((prev) =>
         prev.map((app) =>
-          app.id === applicationId
-            ? { ...app, status: "rejected" }
-            : app
+          app.id === applicationId ? { ...app, status: "rejected" } : app
         )
       );
-      
+
       // Update selected application if it's the one being processed
       if (selectedApplication?.id === applicationId) {
         setSelectedApplication((prev) => ({
@@ -277,12 +315,15 @@ function MyApplicationsPage() {
           status: "rejected",
         }));
       }
-      
+
       // Show success message
-      alert(t("applications.modal.reject") + " thành công!");
+      alert(t("applications.modal.rejectSuccess"));
     } catch (error) {
       console.error("Error rejecting application:", error);
-      alert("Lỗi: " + (error.message || "Không thể từ chối đơn ứng tuyển"));
+      alert(
+        t("applications.modal.errorPrefix") +
+          (error.message || t("applications.modal.rejectError"))
+      );
     } finally {
       setProcessingApplication(null);
     }
@@ -334,19 +375,21 @@ function MyApplicationsPage() {
     }
   };
 
-  const filteredApplications = applications.filter(
-    (app) =>
-      selectedStatus === "all" || app.status.toLowerCase() === selectedStatus
-  ).sort((a, b) => {
-    if (sortBy === "newest") {
-      return new Date(b.dateApplied) - new Date(a.dateApplied);
-    } else if (sortBy === "oldest") {
-      return new Date(a.dateApplied) - new Date(b.dateApplied);
-    } else if (sortBy === "company") {
-      return a.company.localeCompare(b.company);
-    }
-    return 0;
-  });
+  const filteredApplications = applications
+    .filter(
+      (app) =>
+        selectedStatus === "all" || app.status.toLowerCase() === selectedStatus
+    )
+    .sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.dateApplied) - new Date(a.dateApplied);
+      } else if (sortBy === "oldest") {
+        return new Date(a.dateApplied) - new Date(b.dateApplied);
+      } else if (sortBy === "company") {
+        return a.company.localeCompare(b.company);
+      }
+      return 0;
+    });
 
   const handleViewDetails = (application) => {
     setSelectedApplication(application);
@@ -389,14 +432,12 @@ function MyApplicationsPage() {
                       navigate(ROUTES.DASHBOARD);
                     } else if (item.id === "applications") {
                       navigate(ROUTES.MY_APPLICATIONS);
-                    } else if (item.id === "favorites") {
-                      navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
                       navigate(ROUTES.MY_JOBS);
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
-                    } else if (item.id === "alerts") {
-                      navigate(ROUTES.JOB_ALERTS);
+                    } else if (item.id === "notifications") {
+                      navigate(ROUTES.DASHBOARD + "?section=notifications");
                     } else if (item.id === "profile") {
                       navigate(ROUTES.PROFILE);
                     } else if (item.id === "settings") {
@@ -421,13 +462,13 @@ function MyApplicationsPage() {
           {/* Header */}
           <header className={styles.contentHeader}>
             <h1 className={styles.pageTitle}>
-              {user?.role === "client" 
+              {user?.role === "client"
                 ? t("dashboard.navigation.jobApplications")
                 : t("applications.pageTitle")}
             </h1>
             <p className={styles.pageSubtitle}>
               {user?.role === "client"
-                ? "Xem và quản lý các đơn ứng tuyển cho công việc của bạn"
+                ? t("applications.clientSubtitle")
                 : t("applications.subtitle")}
             </p>
           </header>
@@ -506,11 +547,13 @@ function MyApplicationsPage() {
                         </span>
                         <div>
                           <h3 className={styles.companyName}>
-                            {isClient ? application.company : application.company}
+                            {isClient
+                              ? application.company
+                              : application.company}
                           </h3>
                           <h4 className={styles.position}>
-                            {isClient 
-                              ? application.position 
+                            {isClient
+                              ? application.position
                               : application.position}
                           </h4>
                           {isClient && application.interpreter?.email && (
@@ -545,8 +588,12 @@ function MyApplicationsPage() {
                           </div>
                           {application.coverLetter && (
                             <div className={styles.coverLetterPreview}>
-                              <strong>{t("applications.modal.coverLetter")}:</strong>
-                              <p>{application.coverLetter.substring(0, 100)}...</p>
+                              <strong>
+                                {t("applications.modal.coverLetter")}:
+                              </strong>
+                              <p>
+                                {application.coverLetter.substring(0, 100)}...
+                              </p>
                             </div>
                           )}
                         </>
@@ -563,7 +610,9 @@ function MyApplicationsPage() {
                               {application.location}
                             </span>
                           </div>
-                          <div className={styles.salary}>{application.salary}</div>
+                          <div className={styles.salary}>
+                            {application.salary}
+                          </div>
                         </>
                       )}
                       <div className={styles.dateApplied}>
@@ -583,14 +632,16 @@ function MyApplicationsPage() {
                         <>
                           {application.resumeUrl ? (
                             <button
-                              onClick={() => openResumeModal(application.resumeUrl)}
+                              onClick={() =>
+                                openResumeModal(application.resumeUrl)
+                              }
                               className={styles.viewResumeBtn}
                             >
-                              <FaFileAlt /> {t("applications.modal.viewResume") || "Xem CV"}
+                              <FaFileAlt /> {t("applications.modal.viewResume")}
                             </button>
                           ) : (
                             <span className={styles.noResumeText}>
-                              <FaFileAlt /> {t("applications.noResume") || "Chưa có CV"}
+                              <FaFileAlt /> {t("applications.noResume")}
                             </span>
                           )}
                         </>
@@ -611,7 +662,7 @@ function MyApplicationsPage() {
                 <h3>{t("applications.noApplications")}</h3>
                 <p>
                   {user?.role === "client"
-                    ? "Chưa có đơn ứng tuyển nào cho công việc của bạn."
+                    ? t("applications.clientNoApplicationsDesc")
                     : t("applications.noApplicationsDesc")}
                 </p>
                 {user?.role !== "client" && (
@@ -693,7 +744,9 @@ function MyApplicationsPage() {
                       </div>
                       <div className={styles.detailGroup}>
                         <strong>{t("applications.modal.appliedOn")}:</strong>
-                        <span>{formatDate(selectedApplication.dateApplied)}</span>
+                        <span>
+                          {formatDate(selectedApplication.dateApplied)}
+                        </span>
                       </div>
                       <div className={styles.detailGroup}>
                         <strong>{t("applications.modal.status")}:</strong>
@@ -718,7 +771,9 @@ function MyApplicationsPage() {
                       <div className={styles.resumeSection}>
                         <h4>{t("applications.modal.resume")}</h4>
                         <button
-                          onClick={() => openResumeModal(selectedApplication.resumeUrl)}
+                          onClick={() =>
+                            openResumeModal(selectedApplication.resumeUrl)
+                          }
                           className={styles.resumeLink}
                         >
                           {t("applications.modal.viewResume")}
@@ -762,7 +817,9 @@ function MyApplicationsPage() {
                       </div>
                       <div className={styles.detailGroup}>
                         <strong>{t("applications.modal.appliedOn")}:</strong>
-                        <span>{formatDate(selectedApplication.dateApplied)}</span>
+                        <span>
+                          {formatDate(selectedApplication.dateApplied)}
+                        </span>
                       </div>
                       <div className={styles.detailGroup}>
                         <strong>{t("applications.modal.status")}:</strong>
@@ -798,7 +855,9 @@ function MyApplicationsPage() {
                   <>
                     {selectedApplication.resumeUrl && (
                       <button
-                        onClick={() => openResumeModal(selectedApplication.resumeUrl)}
+                        onClick={() =>
+                          openResumeModal(selectedApplication.resumeUrl)
+                        }
                         className={styles.viewResumeModalBtn}
                       >
                         {t("applications.modal.viewResume")}
@@ -806,7 +865,9 @@ function MyApplicationsPage() {
                     )}
                     <button
                       className={styles.acceptBtn}
-                      onClick={() => handleAcceptApplication(selectedApplication.id)}
+                      onClick={() =>
+                        handleAcceptApplication(selectedApplication.id)
+                      }
                       disabled={
                         processingApplication === selectedApplication.id ||
                         selectedApplication.status === "approved" ||
@@ -814,14 +875,16 @@ function MyApplicationsPage() {
                       }
                     >
                       {processingApplication === selectedApplication.id
-                        ? "Đang xử lý..."
+                        ? t("applications.modal.processing")
                         : selectedApplication.status === "approved"
-                        ? "Đã chấp nhận"
+                        ? t("applications.modal.accepted")
                         : t("applications.modal.accept")}
                     </button>
                     <button
                       className={styles.rejectBtn}
-                      onClick={() => handleRejectApplication(selectedApplication.id)}
+                      onClick={() =>
+                        handleRejectApplication(selectedApplication.id)
+                      }
                       disabled={
                         processingApplication === selectedApplication.id ||
                         selectedApplication.status === "approved" ||
@@ -829,9 +892,9 @@ function MyApplicationsPage() {
                       }
                     >
                       {processingApplication === selectedApplication.id
-                        ? "Đang xử lý..."
+                        ? t("applications.modal.processing")
                         : selectedApplication.status === "rejected"
-                        ? "Đã từ chối"
+                        ? t("applications.modal.rejected")
                         : t("applications.modal.reject")}
                     </button>
                     <button className={styles.contactBtn}>
@@ -856,9 +919,12 @@ function MyApplicationsPage() {
         {/* Resume View Modal */}
         {resumeModalOpen && selectedResumeUrl && (
           <div className={styles.modalOverlay} onClick={closeResumeModal}>
-            <div className={styles.resumeModalContent} onClick={(e) => e.stopPropagation()}>
+            <div
+              className={styles.resumeModalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className={styles.resumeModalHeader}>
-                <h2>{t("applications.modal.viewResume") || "Xem CV"}</h2>
+                <h2>{t("applications.modal.viewResume")}</h2>
                 <button className={styles.closeBtn} onClick={closeResumeModal}>
                   ×
                 </button>
@@ -876,10 +942,13 @@ function MyApplicationsPage() {
                     rel="noopener noreferrer"
                     className={styles.downloadResumeBtn}
                   >
-                    <FaFileAlt /> {t("applications.downloadResume") || "Tải xuống"}
+                    <FaFileAlt /> {t("applications.downloadResume")}
                   </a>
-                  <button className={styles.closeResumeBtn} onClick={closeResumeModal}>
-                    {t("common.close") || "Đóng"}
+                  <button
+                    className={styles.closeResumeBtn}
+                    onClick={closeResumeModal}
+                  >
+                    {t("common.close")}
                   </button>
                 </div>
               </div>

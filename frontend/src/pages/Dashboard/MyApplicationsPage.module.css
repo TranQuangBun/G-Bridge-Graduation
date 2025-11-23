@@ -3,7 +3,7 @@
   display: flex;
   min-height: 100vh;
   background: #f8fafc;
-  padding-top: 80px; /* Account for fixed header */
+  /* padding-top removed - already handled by main-content 80px */
 }
 
 /* Sidebar */

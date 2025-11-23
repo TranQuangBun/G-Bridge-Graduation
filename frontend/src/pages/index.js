@@ -10,8 +10,6 @@ export { default as DashboardPage } from "./Dashboard/DashboardPage";
 export { default as MyApplicationsPage } from "./MyApplications";
 export { default as MyJobsPage } from "./MyJobs/MyJobsPage";
 export { default as ProfilePage } from "./Profile";
-export { default as JobAlertsPage } from "./JobAlerts";
-export { default as NotificationsPage } from "./Notifications";
 export { default as AdminJobModerationPage } from "./AdminJobModeration";
 export { default as PostJobPage } from "./PostJob";
 export { default as JobDetailPage } from "./JobDetail/JobDetailPage";

@@ -4,7 +4,7 @@ import {
   getInterpreterBookings,
   getClientBookings,
   updateBookingStatus,
-  getBookingDetail,
+  getBookingById,
 } from "../controllers/BookingController.js";
 import { authRequired } from "../middleware/auth.js";
 
@@ -14,7 +14,7 @@ router.use(authRequired);
 router.post("/", createBookingRequest);
 router.get("/interpreter", getInterpreterBookings);
 router.get("/client", getClientBookings);
-router.get("/:id", getBookingDetail);
+router.get("/:id", getBookingById);
 router.patch("/:id/status", updateBookingStatus);
 
 export default router;

@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
-import { 
+import {
   FaChartBar,
   FaClipboardList,
   FaBriefcase,
@@ -18,13 +18,25 @@ import {
   FaCalendar,
   FaEye,
   FaEdit,
+  FaEnvelope,
 } from "react-icons/fa";
 
 // Sidebar menu for Client/Company role
 const CLIENT_SIDEBAR_MENU = [
   { id: "overview", icon: FaChartBar, labelKey: "overview", active: false },
   { id: "myJobs", icon: FaBriefcase, labelKey: "myJobs", active: true },
-  { id: "jobApplications", icon: FaClipboardList, labelKey: "jobApplications", active: false },
+  {
+    id: "jobApplications",
+    icon: FaClipboardList,
+    labelKey: "jobApplications",
+    active: false,
+  },
+  {
+    id: "notifications",
+    icon: FaEnvelope,
+    labelKey: "notifications",
+    active: false,
+  },
   { id: "profile", icon: FaUser, labelKey: "profile", active: false },
   { id: "settings", icon: FaCog, labelKey: "settings", active: false },
 ];
@@ -64,22 +76,22 @@ function MyJobsPage() {
           page: pagination.page,
           limit: pagination.limit,
         };
-        
+
         if (selectedStatus !== "all") {
           filters.status = selectedStatus;
         }
-        
+
         if (selectedReviewStatus !== "all") {
           filters.reviewStatus = selectedReviewStatus;
         }
 
         const response = await jobService.getMyJobs(filters);
-        
-        const jobsData = Array.isArray(response.data) 
-          ? response.data 
+
+        const jobsData = Array.isArray(response.data)
+          ? response.data
           : response.data?.jobs || [];
-        
-        if (response && (response.success !== false)) {
+
+        if (response && response.success !== false) {
           const transformedJobs = jobsData.map((job) => ({
             id: job.id,
             title: job.title || "Untitled Job",
@@ -93,16 +105,17 @@ function MyJobsPage() {
                 : job.minSalary
                 ? `$${job.minSalary}+`
                 : "Negotiable",
-            createdAt: job.createdDate || job.createdAt || new Date().toISOString(),
+            createdAt:
+              job.createdDate || job.createdAt || new Date().toISOString(),
             status: job.statusOpenStop || "open",
             reviewStatus: job.reviewStatus || "pending",
             expirationDate: job.expirationDate || null,
             description: job.descriptions || "",
             quantity: job.quantity || 1,
           }));
-          
+
           setJobs(transformedJobs);
-          
+
           if (response.pagination) {
             setPagination({
               page: response.pagination.page || pagination.page,
@@ -123,7 +136,15 @@ function MyJobsPage() {
     };
 
     fetchJobs();
-  }, [isAuthenticated, user, authLoading, pagination.page, pagination.limit, selectedStatus, selectedReviewStatus]);
+  }, [
+    isAuthenticated,
+    user,
+    authLoading,
+    pagination.page,
+    pagination.limit,
+    selectedStatus,
+    selectedReviewStatus,
+  ]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -232,6 +253,8 @@ function MyJobsPage() {
                       navigate(ROUTES.MY_JOBS);
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
+                    } else if (item.id === "notifications") {
+                      navigate(ROUTES.DASHBOARD + "?section=notifications");
                     } else if (item.id === "profile") {
                       navigate(ROUTES.PROFILE);
                     } else if (item.id === "settings") {
@@ -255,19 +278,11 @@ function MyJobsPage() {
         <main className={styles.mainContent}>
           {/* Header */}
           <header className={styles.contentHeader}>
-            <div className={styles.headerTop}>
-              <h1 className={styles.pageTitle}>
-                {t("dashboard.navigation.myJobs") || "My Jobs"}
-              </h1>
-              <button
-                className={styles.postJobBtn}
-                onClick={() => navigate(ROUTES.POST_JOB)}
-              >
-                + {t("common.postJob") || "Post New Job"}
-              </button>
-            </div>
+            <h1 className={styles.pageTitle}>
+              {t("dashboard.navigation.myJobs") || "My Jobs"}
+            </h1>
             <p className={styles.pageSubtitle}>
-              Quản lý các công việc bạn đã đăng
+              {t("myJobs.subtitle") || "Manage your posted jobs"}
             </p>
           </header>
 
@@ -333,13 +348,10 @@ function MyJobsPage() {
               <div className={styles.emptyState}>
                 <span className={styles.emptyIcon}>💼</span>
                 <h3>No Jobs Posted</h3>
-                <p>You haven't posted any jobs yet. Start by posting your first job!</p>
-                <button
-                  className={styles.postJobBtn}
-                  onClick={() => navigate(ROUTES.POST_JOB)}
-                >
-                  + Post Your First Job
-                </button>
+                <p>
+                  You haven't posted any jobs yet. Start by posting your first
+                  job!
+                </p>
               </div>
             ) : (
               <>
@@ -351,16 +363,16 @@ function MyJobsPage() {
                           <h3 className={styles.jobTitle}>{job.title}</h3>
                           <div className={styles.statusBadges}>
                             <span
-                              className={`${styles.statusBadge} ${getStatusClass(
-                                job.status
-                              )}`}
+                              className={`${
+                                styles.statusBadge
+                              } ${getStatusClass(job.status)}`}
                             >
                               {getStatusText(job.status)}
                             </span>
                             <span
-                              className={`${styles.reviewBadge} ${getReviewStatusClass(
-                                job.reviewStatus
-                              )}`}
+                              className={`${
+                                styles.reviewBadge
+                              } ${getReviewStatusClass(job.reviewStatus)}`}
                             >
                               {getReviewStatusText(job.reviewStatus)}
                             </span>
@@ -395,7 +407,8 @@ function MyJobsPage() {
                           </span>
                           {job.expirationDate && (
                             <span className={styles.metaItem}>
-                              <FaCalendar /> Expires: {formatDate(job.expirationDate)}
+                              <FaCalendar /> Expires:{" "}
+                              {formatDate(job.expirationDate)}
                             </span>
                           )}
                           <span className={styles.metaItem}>
@@ -429,19 +442,26 @@ function MyJobsPage() {
                       className={styles.paginationBtn}
                       disabled={pagination.page === 1}
                       onClick={() =>
-                        setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+                        setPagination((prev) => ({
+                          ...prev,
+                          page: prev.page - 1,
+                        }))
                       }
                     >
                       Previous
                     </button>
                     <span className={styles.paginationInfo}>
-                      Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+                      Page {pagination.page} of {pagination.totalPages} (
+                      {pagination.total} total)
                     </span>
                     <button
                       className={styles.paginationBtn}
                       disabled={pagination.page === pagination.totalPages}
                       onClick={() =>
-                        setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+                        setPagination((prev) => ({
+                          ...prev,
+                          page: prev.page + 1,
+                        }))
                       }
                     >
                       Next
@@ -458,4 +478,3 @@ function MyJobsPage() {
 }
 
 export default MyJobsPage;
-

@@ -9,22 +9,52 @@ import authService from "../../services/authService";
 import languageService from "../../services/languageService";
 import certificationService from "../../services/certificationService";
 import { toast } from "react-toastify";
-import { 
-  FaChartBar, 
-  FaClipboardList, 
+import {
+  FaChartBar,
+  FaClipboardList,
   FaStar,
-  FaHeart,
-  FaBell,
   FaUser,
   FaCog,
-  FaCamera
+  FaCamera,
+  FaBriefcase,
+  FaEnvelope,
 } from "react-icons/fa";
 
-const SIDEBAR_MENU = [
+// Sidebar menu for Interpreter role
+const INTERPRETER_SIDEBAR_MENU = [
   { id: "overview", icon: FaChartBar, labelKey: "overview", active: false },
-  { id: "applications", icon: FaClipboardList, labelKey: "applications", active: false },
-  { id: "favorites", icon: FaHeart, labelKey: "favorites", active: false },
-  { id: "alerts", icon: FaBell, labelKey: "alerts", active: false },
+  {
+    id: "applications",
+    icon: FaClipboardList,
+    labelKey: "applications",
+    active: false,
+  },
+  {
+    id: "notifications",
+    icon: FaEnvelope,
+    labelKey: "notifications",
+    active: false,
+  },
+  { id: "profile", icon: FaUser, labelKey: "profile", active: true },
+  { id: "settings", icon: FaCog, labelKey: "settings", active: false },
+];
+
+// Sidebar menu for Client/Company role
+const CLIENT_SIDEBAR_MENU = [
+  { id: "overview", icon: FaChartBar, labelKey: "overview", active: false },
+  { id: "myJobs", icon: FaBriefcase, labelKey: "myJobs", active: false },
+  {
+    id: "jobApplications",
+    icon: FaClipboardList,
+    labelKey: "jobApplications",
+    active: false,
+  },
+  {
+    id: "notifications",
+    icon: FaEnvelope,
+    labelKey: "notifications",
+    active: false,
+  },
   { id: "profile", icon: FaUser, labelKey: "profile", active: true },
   { id: "settings", icon: FaCog, labelKey: "settings", active: false },
 ];
@@ -141,6 +171,10 @@ const ProfilePage = () => {
     refreshUser,
   } = useAuth();
 
+  // Get sidebar menu based on user role
+  const SIDEBAR_MENU =
+    user?.role === "client" ? CLIENT_SIDEBAR_MENU : INTERPRETER_SIDEBAR_MENU;
+
   // States for editing
   const [activeMenu, setActiveMenu] = useState("profile");
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
@@ -207,14 +241,16 @@ const ProfilePage = () => {
         userProfile,
         specializations: userProfile.specializations,
         specializationsType: typeof userProfile.specializations,
-        isArray: Array.isArray(userProfile.specializations)
+        isArray: Array.isArray(userProfile.specializations),
       });
       setProfessionalForm({
         hourlyRate: userProfile.hourlyRate || "",
         experience: userProfile.experience || "",
-        specializations: Array.isArray(userProfile.specializations) 
-          ? userProfile.specializations 
-          : (userProfile.specializations ? [userProfile.specializations] : []),
+        specializations: Array.isArray(userProfile.specializations)
+          ? userProfile.specializations
+          : userProfile.specializations
+          ? [userProfile.specializations]
+          : [],
         portfolio: userProfile.portfolio || "",
       });
     }
@@ -231,15 +267,30 @@ const ProfilePage = () => {
   // Get missing fields for completeness alert
   const getMissingFields = () => {
     const missing = [];
-    if (!user?.phone || user.phone.trim().length === 0) missing.push("Phone Number");
-    if (!user?.address || user.address.trim().length === 0) missing.push("Address");
+    if (!user?.phone || user.phone.trim().length === 0)
+      missing.push("Phone Number");
+    if (!user?.address || user.address.trim().length === 0)
+      missing.push("Address");
     // Languages and certifications are in user object, not profile
     if (!languages || languages.length === 0) missing.push("Languages");
-    if (!certifications || certifications.length === 0) missing.push("Certifications");
-    if (!userProfile?.specializations || userProfile.specializations.length === 0) missing.push("Specializations");
-    if (!userProfile?.experience || userProfile.experience <= 0) missing.push("Years of Experience");
-    if (!userProfile?.hourlyRate || (typeof userProfile.hourlyRate === 'number' ? userProfile.hourlyRate <= 0 : parseFloat(userProfile.hourlyRate) <= 0)) missing.push("Hourly Rate");
-    if (!userProfile?.portfolio || userProfile.portfolio.trim().length === 0) missing.push("Portfolio/Bio");
+    if (!certifications || certifications.length === 0)
+      missing.push("Certifications");
+    if (
+      !userProfile?.specializations ||
+      userProfile.specializations.length === 0
+    )
+      missing.push("Specializations");
+    if (!userProfile?.experience || userProfile.experience <= 0)
+      missing.push("Years of Experience");
+    if (
+      !userProfile?.hourlyRate ||
+      (typeof userProfile.hourlyRate === "number"
+        ? userProfile.hourlyRate <= 0
+        : parseFloat(userProfile.hourlyRate) <= 0)
+    )
+      missing.push("Hourly Rate");
+    if (!userProfile?.portfolio || userProfile.portfolio.trim().length === 0)
+      missing.push("Portfolio/Bio");
     return missing;
   };
 
@@ -303,8 +354,12 @@ const ProfilePage = () => {
 
     try {
       // Ensure specializations is an array and filter out empty values
-      const specializationsArray = Array.isArray(professionalForm.specializations)
-        ? professionalForm.specializations.filter(spec => spec && typeof spec === 'string' && spec.trim().length > 0)
+      const specializationsArray = Array.isArray(
+        professionalForm.specializations
+      )
+        ? professionalForm.specializations.filter(
+            (spec) => spec && typeof spec === "string" && spec.trim().length > 0
+          )
         : [];
 
       const dataToUpdate = {
@@ -326,17 +381,17 @@ const ProfilePage = () => {
         length: dataToUpdate.specializations?.length,
         professionalFormState: professionalForm,
         professionalFormSpecializations: professionalForm.specializations,
-        specializationsArray: specializationsArray
+        specializationsArray: specializationsArray,
       });
 
       const result = await authService.updateInterpreterProfile(dataToUpdate);
-      
+
       console.log("Frontend - Update response:", {
         result,
         profile: result.profile,
         specializations: result.profile?.specializations,
         specializationsType: typeof result.profile?.specializations,
-        isArray: Array.isArray(result.profile?.specializations)
+        isArray: Array.isArray(result.profile?.specializations),
       });
 
       // Update profile immediately from response before refreshing
@@ -365,7 +420,7 @@ const ProfilePage = () => {
   // Handle toggle active status
   const handleToggleActiveStatus = async () => {
     if (user.role !== "interpreter") return;
-    
+
     const previousStatus = user.isActive !== false;
     setLoading(true);
     try {
@@ -383,7 +438,12 @@ const ProfilePage = () => {
           : "Profile deactivated"
       );
     } catch (error) {
-      toast.error(error.message || (lang === "vi" ? "Không thể thay đổi trạng thái" : "Failed to toggle active status"));
+      toast.error(
+        error.message ||
+          (lang === "vi"
+            ? "Không thể thay đổi trạng thái"
+            : "Failed to toggle active status")
+      );
     } finally {
       setLoading(false);
     }
@@ -558,14 +618,14 @@ const ProfilePage = () => {
       trimmedSpec,
       trimmedLength: trimmedSpec?.length,
       currentForm: professionalForm,
-      currentSpecializations: professionalForm.specializations
+      currentSpecializations: professionalForm.specializations,
     });
-    
+
     if (trimmedSpec && trimmedSpec.length > 0) {
       setProfessionalForm((prev) => {
         // Check if already exists (case-insensitive)
         const exists = prev.specializations.some(
-          s => s.toLowerCase() === trimmedSpec.toLowerCase()
+          (s) => s.toLowerCase() === trimmedSpec.toLowerCase()
         );
         if (!exists) {
           const newSpecializations = [...prev.specializations, trimmedSpec];
@@ -573,7 +633,7 @@ const ProfilePage = () => {
             newSpec: trimmedSpec,
             currentSpecializations: prev.specializations,
             newArray: newSpecializations,
-            newLength: newSpecializations.length
+            newLength: newSpecializations.length,
           });
           return {
             ...prev,
@@ -630,19 +690,20 @@ const ProfilePage = () => {
                   activeMenu === item.id ? styles.menuItemActive : ""
                 }`}
                 onClick={() => {
-                  setActiveMenu(item.id);
                   if (item.id === "overview") {
                     navigate(ROUTES.DASHBOARD);
                   } else if (item.id === "applications") {
                     navigate(ROUTES.MY_APPLICATIONS);
-                  } else if (item.id === "favorites") {
-                    navigate(ROUTES.SAVED_JOBS);
-                  } else if (item.id === "alerts") {
-                    navigate(ROUTES.JOB_ALERTS);
                   } else if (item.id === "profile") {
-                    navigate(ROUTES.PROFILE);
+                    // Stay on current page
+                    setActiveMenu(item.id);
+                  } else if (item.id === "myJobs") {
+                    navigate(ROUTES.MY_JOBS);
+                  } else if (item.id === "jobApplications") {
+                    navigate(ROUTES.MY_APPLICATIONS);
+                  } else if (item.id === "notifications") {
+                    navigate(ROUTES.DASHBOARD + "?section=notifications");
                   }
-                  // Add other navigation logic for other menu items when implemented
                 }}
               >
                 <span className={styles.menuIcon}>
@@ -756,7 +817,9 @@ const ProfilePage = () => {
                         </div>
                       )}
                       <div className={styles.avatarOverlay}>
-                        <span><FaCamera /></span>
+                        <span>
+                          <FaCamera />
+                        </span>
                         <span>{t("profile.basicInfo.changeAvatar")}</span>
                       </div>
                     </div>
@@ -787,7 +850,9 @@ const ProfilePage = () => {
                     {user.role === "interpreter" && (
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Trạng thái hoạt động" : "Active Status"}
+                          {lang === "vi"
+                            ? "Trạng thái hoạt động"
+                            : "Active Status"}
                         </label>
                         <div className={styles.toggleContainer}>
                           <label className={styles.toggleSwitch}>
@@ -801,8 +866,12 @@ const ProfilePage = () => {
                           </label>
                           <span className={styles.toggleLabel}>
                             {user.isActive !== false
-                              ? lang === "vi" ? "Đang hoạt động" : "Active"
-                              : lang === "vi" ? "Đã tắt" : "Inactive"}
+                              ? lang === "vi"
+                                ? "Đang hoạt động"
+                                : "Active"
+                              : lang === "vi"
+                              ? "Đã tắt"
+                              : "Inactive"}
                           </span>
                         </div>
                         <p className={styles.toggleDescription}>
@@ -1231,15 +1300,24 @@ const ProfilePage = () => {
                             const file = e.target.files?.[0];
                             if (file) {
                               // Validate file type
-                              const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+                              const validTypes = [
+                                "image/jpeg",
+                                "image/jpg",
+                                "image/png",
+                                "image/gif",
+                                "image/webp",
+                                "application/pdf",
+                              ];
                               if (!validTypes.includes(file.type)) {
                                 toast.error(
-                                  t("profile.certifications.errors.invalidFileType") || "Please select an image or PDF file"
+                                  t(
+                                    "profile.certifications.errors.invalidFileType"
+                                  ) || "Please select an image or PDF file"
                                 );
                                 e.target.value = "";
                                 return;
                               }
-                              
+
                               // Check file size (max 10MB)
                               if (file.size > 10 * 1024 * 1024) {
                                 toast.error(
@@ -1250,7 +1328,7 @@ const ProfilePage = () => {
                                 e.target.value = "";
                                 return;
                               }
-                              
+
                               setCertificationForm({
                                 ...certificationForm,
                                 certificationImage: file,
@@ -1258,14 +1336,15 @@ const ProfilePage = () => {
                             }
                           }}
                           required
-                          style={{ 
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            opacity: loading ? 0.6 : 1
+                          style={{
+                            cursor: loading ? "not-allowed" : "pointer",
+                            opacity: loading ? 0.6 : 1,
                           }}
                         />
                         {certificationForm.certificationImage && (
                           <small className={styles.fileInfo}>
-                            {t("profile.certifications.fileSelected") || "Selected"}{" "}
+                            {t("profile.certifications.fileSelected") ||
+                              "Selected"}{" "}
                             {certificationForm.certificationImage.name}
                           </small>
                         )}
@@ -1415,11 +1494,15 @@ const ProfilePage = () => {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               const value = e.target.value;
-                              console.log("Enter pressed, adding specialization:", {
-                                value,
-                                trimmed: value?.trim(),
-                                currentSpecializations: professionalForm.specializations
-                              });
+                              console.log(
+                                "Enter pressed, adding specialization:",
+                                {
+                                  value,
+                                  trimmed: value?.trim(),
+                                  currentSpecializations:
+                                    professionalForm.specializations,
+                                }
+                              );
                               if (value && value.trim().length > 0) {
                                 handleAddSpecialization(value);
                                 e.target.value = "";
@@ -1431,13 +1514,19 @@ const ProfilePage = () => {
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
-                            const input = document.getElementById("specialization-input");
+                            const input = document.getElementById(
+                              "specialization-input"
+                            );
                             const value = input?.value;
-                            console.log("Add button clicked, adding specialization:", {
-                              value,
-                              trimmed: value?.trim(),
-                              currentSpecializations: professionalForm.specializations
-                            });
+                            console.log(
+                              "Add button clicked, adding specialization:",
+                              {
+                                value,
+                                trimmed: value?.trim(),
+                                currentSpecializations:
+                                  professionalForm.specializations,
+                              }
+                            );
                             if (value && value.trim().length > 0) {
                               handleAddSpecialization(value);
                               input.value = "";
@@ -1512,7 +1601,9 @@ const ProfilePage = () => {
               <div className={styles.cardContent}>
                 <div className={styles.statsGrid}>
                   <div className={styles.statItem}>
-                    <div className={styles.statIcon}><FaStar /></div>
+                    <div className={styles.statIcon}>
+                      <FaStar />
+                    </div>
                     <div className={styles.statInfo}>
                       <h4>{userProfile?.rating || "0.0"}</h4>
                       <p>{t("profile.stats.rating")}</p>

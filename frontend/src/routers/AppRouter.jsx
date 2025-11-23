@@ -12,15 +12,13 @@ import {
   MyApplicationsPage,
   MyJobsPage,
   ProfilePage,
-  NotificationsPage,
   AdminJobModerationPage,
   PostJobPage,
   JobDetailPage,
   ApplyJobPage,
 } from "../pages";
-import SavedJobsPage from "../pages/SavedJobs/SavedJobsPage";
-import JobAlertsPage from "../pages/JobAlerts/JobAlertsPage";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
+import PaymentCallback from "../pages/Payment/PaymentCallback";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { ROUTES } from "../constants";
 
@@ -29,14 +27,6 @@ const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
     element: <HomePage />,
-  },
-  {
-    path: ROUTES.NOTIFICATIONS,
-    element: (
-      <ProtectedRoute>
-        <NotificationsPage />
-      </ProtectedRoute>
-    ),
   },
   {
     path: ROUTES.FIND_JOB,
@@ -75,22 +65,6 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: ROUTES.SAVED_JOBS,
-    element: (
-      <ProtectedRoute>
-        <SavedJobsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: ROUTES.JOB_ALERTS,
-    element: (
-      <ProtectedRoute>
-        <JobAlertsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: ROUTES.PROFILE,
     element: (
       <ProtectedRoute>
@@ -117,6 +91,10 @@ const router = createBrowserRouter([
   {
     path: ROUTES.PRICING,
     element: <PricingPage />,
+  },
+  {
+    path: "/payment/vnpay/callback",
+    element: <PaymentCallback />,
   },
   {
     path: ROUTES.POST_JOB,

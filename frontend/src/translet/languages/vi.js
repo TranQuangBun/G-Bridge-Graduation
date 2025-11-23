@@ -259,6 +259,9 @@ const vi = {
   applications: {
     pageTitle: "Đơn Ứng Tuyển Của Tôi",
     subtitle: "Theo dõi các đơn ứng tuyển và trạng thái của chúng",
+    clientSubtitle: "Xem và quản lý các đơn ứng tuyển cho công việc của bạn",
+    clientNoApplicationsDesc:
+      "Chưa có đơn ứng tuyển nào cho công việc của bạn.",
     filterByStatus: "Lọc theo trạng thái",
     sortBy: "Sắp xếp theo",
     appliedOn: "Ứng tuyển ngày",
@@ -268,6 +271,8 @@ const vi = {
     noApplicationsDesc:
       "Bạn chưa ứng tuyển công việc nào. Hãy bắt đầu khám phá cơ hội!",
     findJobs: "Tìm việc làm",
+    noResume: "Chưa có CV",
+    downloadResume: "Tải xuống",
     status: {
       all: "Tất cả",
       active: "Đang hoạt động",
@@ -305,6 +310,17 @@ const vi = {
       jobTitle: "Vị trí công việc",
       // Interpreter-specific
       companyName: "Công ty",
+      // Action messages
+      acceptSuccess: "Chấp nhận đơn ứng tuyển thành công!",
+      rejectSuccess: "Từ chối đơn ứng tuyển thành công!",
+      acceptError: "Không thể chấp nhận đơn ứng tuyển",
+      rejectError: "Không thể từ chối đơn ứng tuyển",
+      rejectPrompt: "Nhập lý do từ chối (tùy chọn):",
+      errorPrefix: "Lỗi: ",
+      // Button states
+      processing: "Đang xử lý...",
+      accepted: "Đã chấp nhận",
+      rejected: "Đã từ chối",
     },
   },
   dashboard: {
@@ -325,6 +341,8 @@ const vi = {
     },
     stats: {
       appliedJobs: "Đã ứng tuyển",
+      savedJobs: "Đã lưu",
+      repliedJobs: "Đã có phản hồi",
       favoriteJobs: "Yêu thích",
       jobAlerts: "Thông báo",
       postedJobs: "Việc làm đã đăng",
@@ -385,6 +403,9 @@ const vi = {
     emptyTitle: "Chưa có thông báo",
     emptyMessage:
       "Bạn sẽ nhìn thấy thông báo tại đây khi có cập nhật từ công ty, phiên dịch viên hoặc hệ thống.",
+  },
+  myJobs: {
+    subtitle: "Quản lý các công việc bạn đã đăng",
   },
   postJob: {
     eyebrow: "Dành cho nhà tuyển dụng",
@@ -450,8 +471,10 @@ const vi = {
         previewCompany: "Tên doanh nghiệp",
         province: "Địa điểm",
         mode: "Hình thức làm việc",
-        descriptionFallback: "Nội dung mô tả sẽ xuất hiện tại đây khi bạn nhập thông tin.",
+        descriptionFallback:
+          "Nội dung mô tả sẽ xuất hiện tại đây khi bạn nhập thông tin.",
         contactEmail: "Email liên hệ",
+        contactPhone: "Số điện thoại",
       },
     },
     salaryTypes: {
@@ -469,13 +492,15 @@ const vi = {
       removeLanguage: "Xóa",
     },
     messages: {
-      organizationRequired: "Vui lòng chọn hoặc tạo tổ chức trước khi đăng tin.",
+      organizationRequired:
+        "Vui lòng chọn hoặc tạo tổ chức trước khi đăng tin.",
       titleRequired: "Vui lòng nhập tiêu đề công việc.",
       workingModeRequired: "Vui lòng chọn hình thức làm việc.",
       descriptionRequired: "Vui lòng mô tả nội dung công việc.",
       contactEmailRequired: "Vui lòng nhập email liên hệ.",
       salaryRangeInvalid: "Lương tối thiểu không thể lớn hơn lương tối đa.",
-      success: "Tin đã được gửi xét duyệt! Chúng tôi sẽ thông báo khi có kết quả.",
+      success:
+        "Tin đã được gửi xét duyệt! Chúng tôi sẽ thông báo khi có kết quả.",
       error: "Không thể xử lý yêu cầu. Vui lòng thử lại.",
       orgSuccess: "Lưu tổ chức thành công.",
     },
@@ -827,7 +852,8 @@ const vi = {
       "Bạn chưa lưu công việc nào. Hãy khám phá và lưu những cơ hội thú vị!",
     findJobs: "Tìm kiếm công việc",
     errors: {
-      fetchFailed: "Không thể tải danh sách việc làm đã lưu. Vui lòng thử lại sau.",
+      fetchFailed:
+        "Không thể tải danh sách việc làm đã lưu. Vui lòng thử lại sau.",
     },
     modal: {
       jobType: "Loại hình công việc",

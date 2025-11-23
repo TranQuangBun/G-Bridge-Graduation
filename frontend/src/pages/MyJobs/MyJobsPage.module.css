@@ -43,7 +43,7 @@
   min-height: 600px;
   background: var(--dashboard-bg);
   display: flex;
-  padding-top: 85px;
+  padding-top: 5px; /* 80px from main-content + 5px = 85px total */
   padding-bottom: 32px;
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -64,41 +64,73 @@
   background-size: 100px 100px;
 }
 
-/* Modern Sidebar Styles - EXACT SAME AS DASHBOARD */
+/* Ultra Modern Sidebar Styles */
 .sidebar {
   width: 280px;
   min-width: 280px;
-  background: var(--sidebar-bg);
-  border-right: 1px solid var(--sidebar-border);
-  padding: 32px 0;
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  border-right: 1px solid #e2e8f0;
+  padding: 24px 0;
   position: absolute;
-  top: 85px;
+  top: 0;
   left: 0;
-  bottom: 0;
+  height: 100%;
   overflow-y: auto;
-  z-index: 1;
+  z-index: 10;
   box-sizing: border-box;
 
-  /* Modern styling */
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-lg);
-  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+  /* Ultra modern styling */
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 8px 0 32px rgba(30, 58, 138, 0.06), 4px 0 16px rgba(0, 0, 0, 0.03),
+    inset -1px 0 0 rgba(255, 255, 255, 0.5);
+
+  /* Subtle animation on load */
+  animation: slideInLeft 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Custom scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(14, 165, 233, 0.3) transparent;
+  scrollbar-color: rgba(30, 58, 138, 0.15) transparent;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .sidebar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .sidebar::-webkit-scrollbar-track {
   background: transparent;
+  margin: 8px 0;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--primary-light), var(--primary));
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.3),
+    rgba(30, 58, 138, 0.3)
+  );
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: all 0.3s ease;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.5),
+    rgba(30, 58, 138, 0.5)
+  );
+  background-clip: padding-box;
   border-radius: 3px;
 }
 
@@ -106,188 +138,279 @@
   background: linear-gradient(180deg, var(--primary), var(--primary-dark));
 }
 
-/* Modern Sidebar Header - EXACT SAME AS DASHBOARD */
+/* Ultra Modern Sidebar Header */
 .sidebarHeader {
-  padding: 0 32px 32px;
-  border-bottom: 1px solid var(--sidebar-border);
-  margin-bottom: 32px;
+  padding: 0 24px 24px;
+  margin-bottom: 20px;
   position: relative;
 }
 
 .sidebarHeader::after {
   content: "";
   position: absolute;
-  bottom: -1px;
-  left: 32px;
-  right: 32px;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
   height: 2px;
-  background: var(--primary-gradient);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.3) 25%,
+    rgba(30, 58, 138, 0.5) 50%,
+    rgba(59, 130, 246, 0.3) 75%,
+    transparent 100%
+  );
   border-radius: 2px;
 }
 
 .sidebarTitle {
-  font-size: 1.75rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 60%, #06b6d4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
+  position: relative;
+  display: inline-block;
+  animation: shimmer 3s ease-in-out infinite;
+  background-size: 200% auto;
 }
 
-/* Modern Navigation - EXACT SAME AS DASHBOARD */
+@keyframes shimmer {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+/* Ultra Modern Navigation */
 .sidebarNav {
-  padding: 0 24px;
+  padding: 0 16px;
+  position: relative;
 }
 
-/* Modern Menu Items - EXACT SAME AS DASHBOARD */
+/* Ultra Modern Menu Items with Advanced Animations */
 .menuItem {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
-  padding: 16px 20px;
-  margin-bottom: 8px;
+  padding: 14px 18px;
+  margin-bottom: 6px;
   border: none;
   background: transparent;
-  border-radius: var(--radius-lg);
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-align: left;
   position: relative;
   overflow: hidden;
-
-  /* Hover effects */
-  transform: translateX(0);
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
 }
 
-.menuItem::before {
+/* Animated gradient background on hover */
+.menuItem::after {
   content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: var(--sidebar-active-bg);
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.08),
+    transparent
+  );
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
 }
 
-.menuItem:hover {
-  transform: translateX(4px);
-  box-shadow: var(--shadow-md);
-  color: var(--sidebar-active);
-}
-
-.menuItem:hover::before {
-  left: 0;
-}
-
-.menuItemActive {
-  background: var(--sidebar-active-bg);
-  color: var(--sidebar-active);
-  font-weight: 600;
-  transform: translateX(4px);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-
-  /* Active state glow */
-  position: relative;
-}
-
-.menuItemActive::before {
-  left: 0;
-}
-
-.menuItemActive::after {
+/* Left border indicator with smooth scale animation */
+.menuItem::before {
   content: "";
   position: absolute;
   top: 50%;
-  right: 16px;
+  left: 0;
   width: 4px;
-  height: 20px;
-  background: var(--primary-gradient);
-  border-radius: 2px;
+  height: 0%;
+  background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%);
   transform: translateY(-50%);
+  transition: height 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
 }
 
-/* Modern Menu Icon & Label - EXACT SAME AS DASHBOARD */
+.menuItem:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(30, 58, 138, 0.06) 0%,
+    rgba(59, 130, 246, 0.08) 50%,
+    rgba(30, 58, 138, 0.04) 100%
+  );
+  color: #1e3a8a;
+  transform: translateX(6px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.menuItem:hover::before {
+  height: 70%;
+}
+
+.menuItem:hover::after {
+  left: 100%;
+}
+
+.menuItem:active {
+  transform: translateX(4px) scale(0.98);
+}
+
+.menuItemActive {
+  background: linear-gradient(
+    135deg,
+    rgba(30, 58, 138, 0.12) 0%,
+    rgba(59, 130, 246, 0.15) 50%,
+    rgba(6, 182, 212, 0.08) 100%
+  );
+  color: #1e3a8a;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(30, 58, 138, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(30, 58, 138, 0.1);
+  transform: translateX(4px);
+}
+
+.menuItemActive::before {
+  height: 80%;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(30, 58, 138, 0.4);
+}
+
+.menuItemActive::after {
+  animation: slideShine 2s ease-in-out infinite;
+}
+
+@keyframes slideShine {
+  0% {
+    left: -100%;
+  }
+  50%,
+  100% {
+    left: 100%;
+  }
+}
+
+/* Ultra Modern Menu Icon & Label with Smooth Animations */
 .menuIcon {
-  font-size: 1.5rem;
-  width: 32px;
-  height: 32px;
+  font-size: 1.35rem;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    135deg,
-    rgba(14, 165, 233, 0.1),
-    rgba(99, 102, 241, 0.1)
-  );
-  border-radius: var(--radius-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.menuItem:hover .menuIcon {
+  transform: scale(1.15) rotate(5deg);
+  filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.4));
 }
 
 .menuItemActive .menuIcon {
-  background: var(--primary-gradient);
-  color: white;
-  transform: scale(1.1);
-  box-shadow: var(--shadow-md);
+  transform: scale(1.2);
+  filter: drop-shadow(0 4px 12px rgba(30, 58, 138, 0.5));
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1.25);
+  }
 }
 
 .menuLabel {
-  font-size: 1rem;
-  font-weight: 500;
-  color: inherit;
-  letter-spacing: -0.025em;
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
 }
 
-/* Modern Main Content - EXACT SAME AS DASHBOARD */
+.menuItem:hover .menuLabel {
+  letter-spacing: 0.01em;
+}
+
+.menuItemActive .menuLabel {
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+
+/* Ultra Modern Main Content */
 .mainContent {
   flex: 1;
   margin-left: 280px;
-  padding: 40px;
-  max-width: calc(100vw - 280px);
-  min-height: 500px;
+  padding: 32px 40px;
+  max-width: calc(100% - 280px);
   box-sizing: border-box;
+  min-height: 500px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Modern Content Header - Similar to Dashboard but adapted for Applications */
+/* Modern Content Header */
 .contentHeader {
-  margin-bottom: 48px;
+  margin-bottom: 40px;
   text-align: center;
   position: relative;
+  animation: fadeInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.contentHeader::after {
-  content: "";
-  position: absolute;
-  bottom: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background: var(--primary-gradient);
-  border-radius: 2px;
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pageTitle {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #64748b 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.025em;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
 }
 
 .pageSubtitle {
-  font-size: 1.125rem;
-  color: var(--sidebar-text);
+  font-size: 1rem;
+  color: #64748b;
   margin: 0;
-  font-weight: 400;
-  opacity: 0.8;
+  font-weight: 500;
+  opacity: 0.9;
+  letter-spacing: -0.01em;
 }
 
 /* Controls Section */
@@ -1220,28 +1343,6 @@
   margin-bottom: 12px;
 }
 
-.postJobBtn {
-  background: var(--primary-gradient);
-  color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: var(--radius-lg);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.postJobBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-}
-
 /* Jobs Section */
 .jobsSection {
   margin-bottom: 48px;
@@ -1572,11 +1673,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
-  }
-
-  .postJobBtn {
-    width: 100%;
-    justify-content: center;
   }
 }
 
