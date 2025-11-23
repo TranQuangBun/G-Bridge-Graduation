@@ -184,7 +184,9 @@ const Header = () => {
                         />
                       ) : (
                         <div className="avatar-placeholder">
-                          {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                          {user?.fullName?.charAt(0)?.toUpperCase() ||
+                            user?.email?.charAt(0)?.toUpperCase() ||
+                            "U"}
                         </div>
                       )}
                     </button>
@@ -206,7 +208,9 @@ const Header = () => {
                               />
                             ) : (
                               <div className="dropdown-avatar-placeholder">
-                                {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                                {user?.fullName?.charAt(0)?.toUpperCase() ||
+                                  user?.email?.charAt(0)?.toUpperCase() ||
+                                  "U"}
                               </div>
                             )}
                             <div className="user-details">
@@ -226,7 +230,9 @@ const Header = () => {
                             className="dropdown-item"
                             onClick={() => {
                               setIsUserMenuOpen(false);
-                              navigate(ROUTES.NOTIFICATIONS);
+                              navigate(
+                                ROUTES.DASHBOARD + "?section=notifications"
+                              );
                             }}
                           >
                             <svg
@@ -456,7 +462,9 @@ const Header = () => {
                       />
                     ) : (
                       <div className="mobile-avatar-placeholder">
-                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                        {user?.fullName?.charAt(0)?.toUpperCase() ||
+                          user?.email?.charAt(0)?.toUpperCase() ||
+                          "U"}
                       </div>
                     )}
                     <div className="mobile-user-details">
@@ -511,7 +519,7 @@ const Header = () => {
                     <button
                       className="mobile-menu-action"
                       onClick={() => {
-                        navigate(ROUTES.NOTIFICATIONS);
+                        navigate(ROUTES.DASHBOARD + "?section=notifications");
                         setIsMobileMenuOpen(false);
                       }}
                     >

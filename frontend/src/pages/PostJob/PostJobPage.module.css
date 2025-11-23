@@ -468,6 +468,15 @@
 .previewSection p {
   margin: 0;
   line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.previewPlaceholder {
+  color: #94a3b8;
+  font-style: italic;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .emptyState {
@@ -514,5 +523,3 @@
     width: 100%;
   }
 }
-
-

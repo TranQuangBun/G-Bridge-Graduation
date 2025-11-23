@@ -255,6 +255,8 @@ const en = {
   applications: {
     pageTitle: "My Applications",
     subtitle: "Track your job applications and their status",
+    clientSubtitle: "View and manage applications for your jobs",
+    clientNoApplicationsDesc: "No applications received for your jobs yet.",
     filterByStatus: "Filter by Status",
     sortBy: "Sort by",
     appliedOn: "Applied on",
@@ -264,6 +266,8 @@ const en = {
     noApplicationsDesc:
       "You haven't applied to any jobs yet. Start exploring opportunities!",
     findJobs: "Find Jobs",
+    noResume: "No resume",
+    downloadResume: "Download",
     status: {
       all: "All",
       active: "Active",
@@ -301,6 +305,17 @@ const en = {
       jobTitle: "Job Position",
       // Interpreter-specific
       companyName: "Company",
+      // Action messages
+      acceptSuccess: "Application accepted successfully!",
+      rejectSuccess: "Application rejected successfully!",
+      acceptError: "Unable to accept application",
+      rejectError: "Unable to reject application",
+      rejectPrompt: "Enter rejection reason (optional):",
+      errorPrefix: "Error: ",
+      // Button states
+      processing: "Processing...",
+      accepted: "Accepted",
+      rejected: "Rejected",
     },
   },
   dashboard: {
@@ -320,6 +335,8 @@ const en = {
     },
     stats: {
       appliedJobs: "Applied Jobs",
+      savedJobs: "Saved Jobs",
+      repliedJobs: "Replied Jobs",
       favoriteJobs: "Favorite Jobs",
       jobAlerts: "Job Alerts",
       postedJobs: "Posted Jobs",
@@ -370,20 +387,27 @@ const en = {
   notificationsPage: {
     eyebrow: "Updates",
     title: "Notifications Center",
-    subtitle: "Track applications, bookings, payments and subscription messages in one place.",
+    subtitle:
+      "Track applications, bookings, payments and subscription messages in one place.",
     showUnread: "Unread only",
     showAll: "Show all",
     markAll: "Mark all as read",
     markRead: "Mark as read",
     loadMore: "Load more",
     emptyTitle: "No notifications yet",
-    emptyMessage: "You will see updates here when companies, interpreters or the system send you messages.",
+    emptyMessage:
+      "You will see updates here when companies, interpreters or the system send you messages.",
+  },
+  myJobs: {
+    subtitle: "Manage your posted jobs",
   },
   postJob: {
     eyebrow: "For employers",
     title: "Post a new job",
-    subtitle: "Share your interpreting opportunity and connect with verified linguists.",
-    reviewNotice: "All new jobs are reviewed by moderators before going live. You'll receive a notification once the review is complete.",
+    subtitle:
+      "Share your interpreting opportunity and connect with verified linguists.",
+    reviewNotice:
+      "All new jobs are reviewed by moderators before going live. You'll receive a notification once the review is complete.",
     organization: {
       title: "Company or organization",
       description: "Choose the company that will appear on your job listing.",
@@ -441,8 +465,10 @@ const en = {
         previewCompany: "Company name",
         province: "Location",
         mode: "Working mode",
-        descriptionFallback: "Job description will appear here once you start typing.",
+        descriptionFallback:
+          "Job description will appear here once you start typing.",
         contactEmail: "Contact email",
+        contactPhone: "Phone number",
       },
     },
     salaryTypes: {
@@ -465,7 +491,8 @@ const en = {
       workingModeRequired: "Please choose a working mode.",
       descriptionRequired: "Please describe the role.",
       contactEmailRequired: "Please provide a contact email.",
-      salaryRangeInvalid: "Minimum salary cannot be greater than maximum salary.",
+      salaryRangeInvalid:
+        "Minimum salary cannot be greater than maximum salary.",
       success: "Job submitted! We'll notify you once it's reviewed.",
       error: "Unable to process your request. Please try again.",
       orgSuccess: "Organization saved successfully.",

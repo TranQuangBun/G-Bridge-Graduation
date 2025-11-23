@@ -6,13 +6,20 @@ import { logger } from "../utils/Logger.js";
 dotenv.config();
 
 const entitySchemas = Object.values(entities).filter(
-  (item) => item && typeof item === "object" && item.constructor && item.constructor.name === "EntitySchema"
+  (item) =>
+    item &&
+    typeof item === "object" &&
+    item.constructor &&
+    item.constructor.name === "EntitySchema"
 );
 
 if (entitySchemas.length === 0) {
-  logger.warn("No EntitySchema found. Please check entities/index.js exports.", {
-    entityCount: entitySchemas.length,
-  });
+  logger.warn(
+    "No EntitySchema found. Please check entities/index.js exports.",
+    {
+      entityCount: entitySchemas.length,
+    }
+  );
 }
 
 export const AppDataSource = new DataSource({
@@ -23,7 +30,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "gbridge_db",
   entities: entitySchemas,
-  synchronize: process.env.NODE_ENV === "development",
+  synchronize: true, // Re-enabled for MariaDB
   logging: false,
   charset: "utf8mb4",
   extra: {
@@ -34,7 +41,7 @@ export const AppDataSource = new DataSource({
 export async function initDatabase(retries = 15, delay = 3000) {
   // Add initial delay to give MySQL more time to fully initialize
   await new Promise((resolve) => setTimeout(resolve, 2000));
-  
+
   for (let i = 0; i < retries; i++) {
     try {
       await AppDataSource.initialize();
@@ -44,14 +51,16 @@ export async function initDatabase(retries = 15, delay = 3000) {
         database: AppDataSource.options.database,
         synchronize: AppDataSource.options.synchronize,
       });
-      
+
       // Log synchronize status
       if (AppDataSource.options.synchronize) {
-        logger.info("Auto-sync enabled: Tables will be created/updated from entities");
+        logger.info(
+          "Auto-sync enabled: Tables will be created/updated from entities"
+        );
       } else {
         logger.warn("Auto-sync disabled: Use migrations to create tables");
       }
-      
+
       // Seed default data after database is initialized
       try {
         const { seedDefaultData } = await import("../utils/seedData.js");
@@ -59,7 +68,7 @@ export async function initDatabase(retries = 15, delay = 3000) {
       } catch (seedError) {
         logger.warn("Failed to seed default data (non-critical)", seedError);
       }
-      
+
       return AppDataSource;
     } catch (error) {
       if (i === retries - 1) {
@@ -75,4 +84,3 @@ export async function initDatabase(retries = 15, delay = 3000) {
     }
   }
 }
-

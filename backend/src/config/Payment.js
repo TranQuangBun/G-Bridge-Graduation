@@ -28,21 +28,48 @@ export const vnpayHelpers = {
     return sorted;
   },
 
-  createSecureHash(data, secretKey) {
-    const sortedData = this.sortObject(data);
+  createSecureHash(params, secretKey) {
+    // VNPay demo code: create hash from sorted query string
+    // Step 1: Remove vnp_SecureHash if present
+    const { vnp_SecureHash, vnp_SecureHashType, ...inputData } = params;
+
+    // Step 2: Sort params alphabetically
+    const sortedData = this.sortObject(inputData);
+
+    // Step 3: Build query string (key=value&key=value)
     const signData = Object.keys(sortedData)
-      .map((key) => {
-        return `${key}=${encodeURIComponent(sortedData[key]).replace(
-          /%20/g,
-          "+"
-        )}`;
-      })
+      .filter(
+        (key) =>
+          sortedData[key] !== null &&
+          sortedData[key] !== undefined &&
+          sortedData[key] !== ""
+      )
+      .map((key) => `${key}=${sortedData[key]}`)
       .join("&");
 
-    const hmac = crypto.createHmac("sha512", secretKey);
-    const hash = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+    console.log("VNPay Sign Data:", signData);
+    console.log("VNPay Secret Key:", secretKey);
 
-    return hash;
+    // Step 4: Create HMAC SHA512 hash
+    const hmac = crypto.createHmac("sha512", secretKey);
+    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
+    console.log("VNPay Secure Hash:", signed);
+
+    return signed;
+  },
+
+  createSecureHashFromQueryString(queryString, secretKey) {
+    // Hash directly from URL-encoded query string
+    console.log("VNPay Query String (URL-encoded):", queryString);
+    console.log("VNPay Secret Key:", secretKey);
+
+    const hmac = crypto.createHmac("sha512", secretKey);
+    const signed = hmac.update(Buffer.from(queryString, "utf-8")).digest("hex");
+
+    console.log("VNPay Secure Hash:", signed);
+
+    return signed;
   },
 
   verifySecureHash(data, secureHash, secretKey) {
@@ -127,4 +154,3 @@ export default {
   PAYMENT_GATEWAY,
   SUBSCRIPTION_STATUS,
 };
-

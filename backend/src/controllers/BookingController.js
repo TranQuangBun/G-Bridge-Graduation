@@ -11,7 +11,7 @@ const notificationService = new NotificationService();
 
 export const createBookingRequest = async (req, res) => {
   try {
-    const clientId = req.user.id;
+    const clientId = req.user.sub; // JWT payload uses 'sub' for user ID
     const {
       interpreterId,
       serviceType,
@@ -38,11 +38,19 @@ export const createBookingRequest = async (req, res) => {
 
     if (eventDuration === "single") {
       if (!eventDate || !startTime || !endTime) {
-        return sendError(res, "Missing required fields for single day event", 400);
+        return sendError(
+          res,
+          "Missing required fields for single day event",
+          400
+        );
       }
     } else if (eventDuration === "multiple") {
       if (!startDate || !endDate || !timeRequirement) {
-        return sendError(res, "Missing required fields for multiple days event", 400);
+        return sendError(
+          res,
+          "Missing required fields for multiple days event",
+          400
+        );
       }
     }
 
@@ -58,7 +66,8 @@ export const createBookingRequest = async (req, res) => {
       return sendError(res, "Interpreter not found", 404);
     }
 
-    const bookingRequestRepository = AppDataSource.getRepository(BookingRequest);
+    const bookingRequestRepository =
+      AppDataSource.getRepository(BookingRequest);
     const bookingRequest = bookingRequestRepository.create({
       clientId,
       interpreterId,
@@ -81,7 +90,9 @@ export const createBookingRequest = async (req, res) => {
       status: "pending",
     });
 
-    const savedBookingRequest = await bookingRequestRepository.save(bookingRequest);
+    const savedBookingRequest = await bookingRequestRepository.save(
+      bookingRequest
+    );
 
     try {
       await notificationService.createNotification({
@@ -89,7 +100,9 @@ export const createBookingRequest = async (req, res) => {
         actorId: clientId,
         type: NotificationType.BOOKING_REQUEST_CREATED,
         title: `New booking request: ${topic}`,
-        message: `${fullName || "A client"} wants to book you for ${serviceType}`,
+        message: `${
+          fullName || "A client"
+        } wants to book you for ${serviceType}`,
         metadata: {
           bookingId: savedBookingRequest.id,
           bookingType,
@@ -100,7 +113,12 @@ export const createBookingRequest = async (req, res) => {
       logError(notifyError, "Sending booking request notification");
     }
 
-    return sendSuccess(res, savedBookingRequest, "Booking request created successfully", 201);
+    return sendSuccess(
+      res,
+      savedBookingRequest,
+      "Booking request created successfully",
+      201
+    );
   } catch (error) {
     logError(error, "Creating booking request");
     return sendError(res, "Failed to create booking request", 500, error);
@@ -109,10 +127,11 @@ export const createBookingRequest = async (req, res) => {
 
 export const getInterpreterBookings = async (req, res) => {
   try {
-    const interpreterId = req.user.id;
+    const interpreterId = req.user.sub; // JWT payload uses 'sub' for user ID
     const { status, page = 1, limit = 10 } = req.query;
 
-    const bookingRequestRepository = AppDataSource.getRepository(BookingRequest);
+    const bookingRequestRepository =
+      AppDataSource.getRepository(BookingRequest);
     const whereClause = { interpreterId: parseInt(interpreterId) };
     if (status) {
       whereClause.status = status;
@@ -120,10 +139,7 @@ export const getInterpreterBookings = async (req, res) => {
 
     const [bookings, count] = await bookingRequestRepository.findAndCount({
       where: whereClause,
-      relations: [
-        "client",
-        "client.clientProfile",
-      ],
+      relations: ["client", "client.clientProfile"],
       select: {
         client: {
           id: true,
@@ -143,12 +159,17 @@ export const getInterpreterBookings = async (req, res) => {
       skip: (parseInt(page) - 1) * parseInt(limit),
     });
 
-    return sendPaginated(res, bookings, {
-      total: count,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(count / parseInt(limit)),
-    }, "Interpreter bookings fetched successfully");
+    return sendPaginated(
+      res,
+      bookings,
+      {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+      "Interpreter bookings fetched successfully"
+    );
   } catch (error) {
     logError(error, "Fetching interpreter bookings");
     return sendError(res, "Failed to fetch booking requests", 500, error);
@@ -160,7 +181,8 @@ export const getClientBookings = async (req, res) => {
     const clientId = req.user.id;
     const { status, page = 1, limit = 10 } = req.query;
 
-    const bookingRequestRepository = AppDataSource.getRepository(BookingRequest);
+    const bookingRequestRepository =
+      AppDataSource.getRepository(BookingRequest);
     const whereClause = { clientId: parseInt(clientId) };
     if (status) {
       whereClause.status = status;
@@ -183,12 +205,17 @@ export const getClientBookings = async (req, res) => {
       skip: (parseInt(page) - 1) * parseInt(limit),
     });
 
-    return sendPaginated(res, bookings, {
-      total: count,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(count / parseInt(limit)),
-    }, "Client bookings fetched successfully");
+    return sendPaginated(
+      res,
+      bookings,
+      {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+      "Client bookings fetched successfully"
+    );
   } catch (error) {
     logError(error, "Fetching client bookings");
     return sendError(res, "Failed to fetch booking requests", 500, error);
@@ -197,7 +224,7 @@ export const getClientBookings = async (req, res) => {
 
 export const updateBookingStatus = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
     const { id } = req.params;
     const { status, interpreterNotes } = req.body;
 
@@ -207,7 +234,8 @@ export const updateBookingStatus = async (req, res) => {
       return sendError(res, "Invalid status", 400);
     }
 
-    const bookingRequestRepository = AppDataSource.getRepository(BookingRequest);
+    const bookingRequestRepository =
+      AppDataSource.getRepository(BookingRequest);
     const booking = await bookingRequestRepository.findOne({
       where: [
         { id: parseInt(id), interpreterId: parseInt(userId) },
@@ -232,10 +260,18 @@ export const updateBookingStatus = async (req, res) => {
     } else if (isClient) {
       if (status === "cancelled") {
         if (!["pending", "accepted"].includes(booking.status)) {
-          return sendError(res, "Can only cancel pending or accepted bookings", 400);
+          return sendError(
+            res,
+            "Can only cancel pending or accepted bookings",
+            400
+          );
         }
       } else if (status !== "completed") {
-        return sendError(res, "Client can only cancel or mark as completed", 400);
+        return sendError(
+          res,
+          "Client can only cancel or mark as completed",
+          400
+        );
       }
     }
 
@@ -246,13 +282,17 @@ export const updateBookingStatus = async (req, res) => {
     const updatedBooking = await bookingRequestRepository.save(booking);
 
     try {
-      const recipientId = isInterpreter ? booking.clientId : booking.interpreterId;
+      const recipientId = isInterpreter
+        ? booking.clientId
+        : booking.interpreterId;
       await notificationService.createNotification({
         recipientId,
         actorId: userId,
         type: NotificationType.BOOKING_STATUS_UPDATED,
         title: `Booking ${status}`,
-        message: `Booking request ${booking.topic || booking.serviceType || ""} is now ${status}`,
+        message: `Booking request ${
+          booking.topic || booking.serviceType || ""
+        } is now ${status}`,
         metadata: {
           bookingId: booking.id,
           status,
@@ -262,29 +302,30 @@ export const updateBookingStatus = async (req, res) => {
       logError(notifyError, "Sending booking status notification");
     }
 
-    return sendSuccess(res, updatedBooking, "Booking status updated successfully");
+    return sendSuccess(
+      res,
+      updatedBooking,
+      "Booking status updated successfully"
+    );
   } catch (error) {
     logError(error, "Updating booking status");
     return sendError(res, "Failed to update booking status", 500, error);
   }
 };
 
-export const getBookingDetail = async (req, res) => {
+export const getBookingById = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
     const { id } = req.params;
 
-    const bookingRequestRepository = AppDataSource.getRepository(BookingRequest);
+    const bookingRequestRepository =
+      AppDataSource.getRepository(BookingRequest);
     const booking = await bookingRequestRepository.findOne({
       where: [
         { id: parseInt(id), clientId: parseInt(userId) },
         { id: parseInt(id), interpreterId: parseInt(userId) },
       ],
-      relations: [
-        "client",
-        "client.clientProfile",
-        "interpreter",
-      ],
+      relations: ["client", "client.clientProfile", "interpreter"],
       select: {
         client: {
           id: true,

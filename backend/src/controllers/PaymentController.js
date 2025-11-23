@@ -19,7 +19,12 @@ export async function getAllPayments(req, res) {
   try {
     const data = await paymentService.getAllPayments(req.query);
     if (data.pagination) {
-      return sendPaginated(res, data.payments || data, data.pagination, "Payments fetched successfully");
+      return sendPaginated(
+        res,
+        data.payments || data,
+        data.pagination,
+        "Payments fetched successfully"
+      );
     }
     return sendSuccess(res, data, "Payments fetched successfully");
   } catch (error) {
@@ -55,11 +60,16 @@ export async function createPayment(req, res) {
       return sendError(res, error.message, error.statusCode);
     }
     if (
-      error.message === "userId, amount, paymentGateway, and orderId are required" ||
+      error.message ===
+        "userId, amount, paymentGateway, and orderId are required" ||
       error.message === "User not found" ||
       error.message === "Subscription plan not found"
     ) {
-      const statusCode = error.message === "userId, amount, paymentGateway, and orderId are required" ? 400 : 404;
+      const statusCode =
+        error.message ===
+        "userId, amount, paymentGateway, and orderId are required"
+          ? 400
+          : 404;
       return sendError(res, error.message, statusCode);
     }
     logError(error, "Creating payment");
@@ -94,7 +104,7 @@ export async function getSubscriptionPlans(req, res) {
 export async function createVNPayPayment(req, res) {
   try {
     const { planId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
 
     if (!planId) {
       return sendError(res, "planId is required", 400);
@@ -120,32 +130,45 @@ export async function createVNPayPayment(req, res) {
       description: `Payment for ${plan.name}`,
     });
 
-    // Build VNPay payment URL
-    const vnp_Params = {
-      vnp_Version: "2.1.0",
-      vnp_Command: "pay",
-      vnp_TmnCode: vnpayConfig.vnp_TmnCode,
-      vnp_Amount: Math.round(amount * 100), // VNPay expects amount in cents
-      vnp_CurrCode: "VND",
-      vnp_TxnRef: orderId,
-      vnp_OrderInfo: `Payment for ${plan.name}`,
-      vnp_OrderType: "other",
-      vnp_Locale: "vn",
-      vnp_ReturnUrl: vnpayConfig.vnp_ReturnUrl,
-      vnp_IpAddr: req.ip || req.connection.remoteAddress,
-      vnp_CreateDate: vnpayHelpers.formatDateTime(),
-    };
+    // Build VNPay payment URL according to official demo
+    let vnp_Params = {};
+    vnp_Params["vnp_Version"] = "2.1.0";
+    vnp_Params["vnp_Command"] = "pay";
+    vnp_Params["vnp_TmnCode"] = vnpayConfig.vnp_TmnCode;
+    vnp_Params["vnp_Locale"] = "vn";
+    vnp_Params["vnp_CurrCode"] = "VND";
+    vnp_Params["vnp_TxnRef"] = orderId;
+    vnp_Params["vnp_OrderInfo"] = `Payment for ${plan.name}`;
+    vnp_Params["vnp_OrderType"] = "other";
+    vnp_Params["vnp_Amount"] = Math.round(amount * 100);
+    vnp_Params["vnp_ReturnUrl"] = vnpayConfig.vnp_ReturnUrl;
+    vnp_Params["vnp_IpAddr"] =
+      req.ip || req.connection.remoteAddress || "127.0.0.1";
+    vnp_Params["vnp_CreateDate"] = vnpayHelpers.formatDateTime();
 
+    // Sort params first
+    vnp_Params = vnpayHelpers.sortObject(vnp_Params);
+
+    // Create secure hash from RAW params (not URL-encoded)
     const secureHash = vnpayHelpers.createSecureHash(
       vnp_Params,
       vnpayConfig.vnp_HashSecret
     );
-    vnp_Params.vnp_SecureHash = secureHash;
 
-    const paymentUrl =
-      vnpayConfig.vnp_Url +
-      "?" +
-      new URLSearchParams(vnp_Params).toString();
+    // Add hash to params
+    vnp_Params["vnp_SecureHash"] = secureHash;
+
+    // Build query string (this will URL-encode the values)
+    const queryString = new URLSearchParams(vnp_Params).toString();
+
+    // Build final payment URL
+    const paymentUrl = vnpayConfig.vnp_Url + "?" + queryString;
+
+    // Debug log
+    console.log("=== VNPay Payment Request ===");
+    console.log("Order ID:", orderId);
+    console.log("Amount:", amount);
+    console.log("Payment URL:", paymentUrl);
 
     return sendSuccess(
       res,
@@ -236,7 +259,9 @@ export async function verifyVNPayPayment(req, res) {
           actorId: null,
           type: NotificationType.PAYMENT_SUCCESS,
           title: `Payment successful for ${plan.name}`,
-          message: `Your ${plan.name} plan is now active until ${endDate.toLocaleDateString()}`,
+          message: `Your ${
+            plan.name
+          } plan is now active until ${endDate.toLocaleDateString()}`,
           metadata: {
             paymentId: payment.id,
             planId: plan.id,
@@ -258,7 +283,9 @@ export async function verifyVNPayPayment(req, res) {
           ? "Payment verified successfully"
           : "Payment verification failed",
       },
-      isSuccess ? "Payment verified successfully" : "Payment verification failed"
+      isSuccess
+        ? "Payment verified successfully"
+        : "Payment verification failed"
     );
   } catch (error) {
     if (error instanceof AppError || error.message === "Payment not found") {
@@ -272,7 +299,7 @@ export async function verifyVNPayPayment(req, res) {
 export async function createPayPalPayment(req, res) {
   try {
     const { planId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
 
     if (!planId) {
       return sendError(res, "planId is required", 400);
@@ -327,7 +354,7 @@ export async function createPayPalPayment(req, res) {
 export async function verifyPayPalPayment(req, res) {
   try {
     const { orderId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
 
     if (!orderId) {
       return sendError(res, "orderId is required", 400);
@@ -382,7 +409,9 @@ export async function verifyPayPalPayment(req, res) {
           actorId: null,
           type: NotificationType.PAYMENT_SUCCESS,
           title: `Payment successful for ${plan.name}`,
-          message: `Your ${plan.name} plan is now active until ${endDate.toLocaleDateString()}`,
+          message: `Your ${
+            plan.name
+          } plan is now active until ${endDate.toLocaleDateString()}`,
           metadata: {
             paymentId: payment.id,
             planId: plan.id,
@@ -458,7 +487,7 @@ export async function getSubscriptionStatus(req, res) {
 
 export async function cancelSubscription(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
     const { reason } = req.body;
 
     // Get user's subscription
@@ -516,9 +545,7 @@ export async function handleVNPayWebhook(req, res) {
         if (payment) {
           const isSuccess = webhookData.vnp_ResponseCode === "00";
           await paymentService.updatePayment(payment.id, {
-            status: isSuccess
-              ? PaymentStatus.COMPLETED
-              : PaymentStatus.FAILED,
+            status: isSuccess ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
             vnpayTransactionNo: webhookData.vnp_TransactionNo || null,
             vnpayBankCode: webhookData.vnp_BankCode || null,
             vnpayCardType: webhookData.vnp_CardType || null,

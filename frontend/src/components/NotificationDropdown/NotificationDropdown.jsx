@@ -70,7 +70,7 @@ const NotificationDropdown = () => {
 
   const handleViewAll = () => {
     setIsOpen(false);
-    navigate(`${ROUTES.DASHBOARD}?tab=notifications`);
+    navigate(`${ROUTES.DASHBOARD}?section=notifications`);
   };
 
   return (
@@ -109,8 +109,7 @@ const NotificationDropdown = () => {
               <div className={styles.dropdownEmpty}>{error}</div>
             ) : notifications.length === 0 ? (
               <div className={styles.dropdownEmpty}>
-                {t("dashboard.notifications.empty") ||
-                  "You're all caught up!"}
+                {t("dashboard.notifications.empty") || "You're all caught up!"}
               </div>
             ) : (
               notifications.map((notification) => (
@@ -146,4 +145,3 @@ const NotificationDropdown = () => {
 };
 
 export default NotificationDropdown;
-
