@@ -19,6 +19,7 @@ export const ROUTES = {
   REGISTER: "/register",
   JOB_DETAIL: "/job/:id",
   APPLY_JOB: "/job/:id/apply",
+  MESSAGES: "/messages",
 };
 
 // Enum cho status

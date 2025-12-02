@@ -14,3 +14,4 @@ export { default as AdminJobModerationPage } from "./AdminJobModeration";
 export { default as PostJobPage } from "./PostJob";
 export { default as JobDetailPage } from "./JobDetail/JobDetailPage";
 export { default as ApplyJobPage } from "./ApplyJob/ApplyJobPage";
+export { default as MessagesPage } from "./Messages/MessagesPage";

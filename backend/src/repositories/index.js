@@ -22,4 +22,6 @@ export { JobDomainRepository } from "./JobDomainRepository.js";
 export { JobRequiredLanguageRepository } from "./JobRequiredLanguageRepository.js";
 export { JobRequiredCertificateRepository } from "./JobRequiredCertificateRepository.js";
 export { NotificationRepository } from "./NotificationRepository.js";
+export { ConversationRepository } from "./ConversationRepository.js";
+export { MessageRepository } from "./MessageRepository.js";
 

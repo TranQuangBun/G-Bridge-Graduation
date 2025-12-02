@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import CryptoJS from "crypto-js";
 import moment from "moment";
+import querystring from "querystring";
 
 dotenv.config();
 
@@ -19,42 +20,49 @@ export const vnpayConfig = {
 };
 
 export const vnpayHelpers = {
+  // VNPay official sortObject function - exactly as in VNPay sample code
   sortObject(obj) {
     const sorted = {};
-    const keys = Object.keys(obj).sort();
-    keys.forEach((key) => {
-      sorted[key] = obj[key];
-    });
+    const str = [];
+    let key;
+    for (key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        str.push(encodeURIComponent(key));
+      }
+    }
+    str.sort();
+    for (key = 0; key < str.length; key++) {
+      sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+    }
     return sorted;
   },
 
   createSecureHash(params, secretKey) {
-    // VNPay demo code: create hash from sorted query string
-    // Step 1: Remove vnp_SecureHash if present
+    // VNPay hash calculation - exactly as in official sample code
+    // Step 1: Remove vnp_SecureHash and vnp_SecureHashType if present
     const { vnp_SecureHash, vnp_SecureHashType, ...inputData } = params;
 
-    // Step 2: Sort params alphabetically
+    // Step 2: Sort params using VNPay's official sortObject
+    // This function encodes both keys and values, and replaces %20 with +
     const sortedData = this.sortObject(inputData);
 
-    // Step 3: Build query string (key=value&key=value)
-    const signData = Object.keys(sortedData)
-      .filter(
-        (key) =>
-          sortedData[key] !== null &&
-          sortedData[key] !== undefined &&
-          sortedData[key] !== ""
-      )
-      .map((key) => `${key}=${sortedData[key]}`)
-      .join("&");
+    // Step 3: Build query string using querystring.stringify
+    // This matches VNPay's official implementation: querystring.stringify(vnp_Params, { encode: false })
+    // Note: sortedData already has encoded keys and values from sortObject
+    const signData = querystring.stringify(sortedData);
 
     console.log("VNPay Sign Data:", signData);
+    console.log("VNPay Sign Data Length:", signData.length);
     console.log("VNPay Secret Key:", secretKey);
+    console.log("VNPay Secret Key Length:", secretKey.length);
 
-    // Step 4: Create HMAC SHA512 hash
+    // Step 4: Create HMAC SHA512 hash using Buffer (exactly as VNPay sample)
+    // VNPay uses: hmac.update(new Buffer(signData, 'utf-8')).digest("hex")
     const hmac = crypto.createHmac("sha512", secretKey);
     const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
     console.log("VNPay Secure Hash:", signed);
+    console.log("VNPay Secure Hash Length:", signed.length);
 
     return signed;
   },

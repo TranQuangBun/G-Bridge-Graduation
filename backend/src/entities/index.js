@@ -44,4 +44,6 @@ export { UserSubscription, SubscriptionStatus, UserSubscriptionSchema } from "./
 export { PaymentWebhook, PaymentWebhookSchema } from "./PaymentWebhook.js";
 export { PaymentRefund, RefundStatus, PaymentRefundSchema } from "./PaymentRefund.js";
 export { Notification, NotificationType, NotificationSchema } from "./Notification.js";
+export { Conversation, ConversationSchema } from "./Conversation.js";
+export { Message, MessageSchema } from "./Message.js";
 

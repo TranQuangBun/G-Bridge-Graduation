@@ -4,10 +4,11 @@ import { UserSubscriptionService } from "../services/UserSubscriptionService.js"
 import { PaymentWebhookService } from "../services/PaymentWebhookService.js";
 import { logError, AppError } from "../utils/Errors.js";
 import { sendSuccess, sendError, sendPaginated } from "../utils/Response.js";
-import { vnpayConfig, vnpayHelpers, paypalConfig } from "../config/Payment.js";
+import { vnpayConfig, vnpayHelpers, paypalConfig, convertCurrency } from "../config/Payment.js";
 import { PaymentGateway, PaymentStatus } from "../entities/PaymentConstants.js";
 import { NotificationService } from "../services/NotificationService.js";
 import { NotificationType } from "../entities/Notification.js";
+import querystring from "node:querystring";
 
 const paymentService = new PaymentService();
 const subscriptionPlanService = new SubscriptionPlanService();
@@ -116,14 +117,17 @@ export async function createVNPayPayment(req, res) {
     }
 
     const orderId = vnpayHelpers.createOrderId("VNPAY");
-    const amount = parseFloat(plan.price);
+    
+    // Convert amount from USD to VND for VNPay
+    const amountUSD = parseFloat(plan.price);
+    const amountVND = convertCurrency(amountUSD, plan.currency || "USD", "VND");
     const currency = "VND";
 
-    // Create payment record
+    // Create payment record (store in VND)
     const payment = await paymentService.createPayment({
       userId,
       planId,
-      amount,
+      amount: amountVND,
       currency,
       paymentGateway: PaymentGateway.VNPAY,
       orderId,
@@ -138,36 +142,73 @@ export async function createVNPayPayment(req, res) {
     vnp_Params["vnp_Locale"] = "vn";
     vnp_Params["vnp_CurrCode"] = "VND";
     vnp_Params["vnp_TxnRef"] = orderId;
-    vnp_Params["vnp_OrderInfo"] = `Payment for ${plan.name}`;
+    // VNPay vnp_OrderInfo: remove spaces or use underscore to avoid hash issues
+    // Some VNPay versions are sensitive to spaces in OrderInfo
+    vnp_Params["vnp_OrderInfo"] = `Payment_for_${plan.name}`.replace(/\s+/g, "_");
     vnp_Params["vnp_OrderType"] = "other";
-    vnp_Params["vnp_Amount"] = Math.round(amount * 100);
+    // VNPay amount is in smallest currency unit (đồng), so multiply by 100
+    // amountVND is already in VND, so multiply by 100 to get đồng
+    vnp_Params["vnp_Amount"] = Math.round(amountVND * 100);
     vnp_Params["vnp_ReturnUrl"] = vnpayConfig.vnp_ReturnUrl;
-    vnp_Params["vnp_IpAddr"] =
-      req.ip || req.connection.remoteAddress || "127.0.0.1";
+    // Note: vnp_IpnUrl is optional and may not be required for sandbox
+    // VNPay cannot access localhost URLs, so we skip it for development
+    // Uncomment if you have a public URL for IPN callback
+    // vnp_Params["vnp_IpnUrl"] = vnpayConfig.vnp_IpnUrl;
+    
+    // Get IP address - VNPay requires real client IP
+    // In Docker, req.ip might be Docker network IP, so try to get real client IP from headers
+    let clientIp = 
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.headers["x-real-ip"] ||
+      req.ip || 
+      req.connection.remoteAddress || 
+      "127.0.0.1";
+    
+    // Remove IPv6 prefix if present (::ffff:)
+    if (clientIp && clientIp.startsWith("::ffff:")) {
+      clientIp = clientIp.replace("::ffff:", "");
+    }
+    // If still IPv6 or Docker network IP, use 127.0.0.1 for localhost development
+    if (clientIp && (clientIp.includes(":") || clientIp.startsWith("172.") || clientIp.startsWith("192.168."))) {
+      // For Docker/localhost, use 127.0.0.1
+      // In production, this should be the real client IP
+      clientIp = "127.0.0.1";
+    }
+    vnp_Params["vnp_IpAddr"] = clientIp;
+    
     vnp_Params["vnp_CreateDate"] = vnpayHelpers.formatDateTime();
 
-    // Sort params first
+    // Sort params alphabetically (VNPay requirement)
     vnp_Params = vnpayHelpers.sortObject(vnp_Params);
 
-    // Create secure hash from RAW params (not URL-encoded)
+    // Debug: Log params before creating hash
+    console.log("=== VNPay Payment Request ===");
+    console.log("VNPay Config - TMN Code:", vnpayConfig.vnp_TmnCode);
+    console.log("VNPay Config - Hash Secret:", vnpayConfig.vnp_HashSecret ? "***SET***" : "NOT SET");
+    console.log("VNPay Config - Return URL:", vnpayConfig.vnp_ReturnUrl);
+    console.log("Order ID:", orderId);
+    console.log("Amount USD:", amountUSD);
+    console.log("Amount VND:", amountVND);
+    console.log("Client IP:", clientIp);
+    console.log("VNPay Params (sorted, before hash):", JSON.stringify(vnp_Params, null, 2));
+
+    // Create secure hash from sorted params (BEFORE adding vnp_SecureHash)
     const secureHash = vnpayHelpers.createSecureHash(
       vnp_Params,
       vnpayConfig.vnp_HashSecret
     );
 
-    // Add hash to params
+    // Add hash to params AFTER creating hash
     vnp_Params["vnp_SecureHash"] = secureHash;
 
-    // Build query string (this will URL-encode the values)
-    const queryString = new URLSearchParams(vnp_Params).toString();
+    // Build query string using querystring.stringify (VNPay official method)
+    // Sort params again before building final URL (VNPay requirement)
+    vnp_Params = vnpayHelpers.sortObject(vnp_Params);
+    const queryString = querystring.stringify(vnp_Params);
 
     // Build final payment URL
     const paymentUrl = vnpayConfig.vnp_Url + "?" + queryString;
 
-    // Debug log
-    console.log("=== VNPay Payment Request ===");
-    console.log("Order ID:", orderId);
-    console.log("Amount:", amount);
     console.log("Payment URL:", paymentUrl);
 
     return sendSuccess(

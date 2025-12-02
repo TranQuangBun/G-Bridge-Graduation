@@ -30,12 +30,16 @@ import jobDomainRoutes from "./routes/JobDomainRoutes.js";
 import jobRequiredLanguageRoutes from "./routes/JobRequiredLanguageRoutes.js";
 import jobRequiredCertificateRoutes from "./routes/JobRequiredCertificateRoutes.js";
 import notificationRoutes from "./routes/NotificationRoutes.js";
+import messageRoutes from "./routes/MessageRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const createApp = async () => {
   const app = express();
+
+  // Trust proxy for correct IP address in Docker/behind proxy
+  app.set("trust proxy", true);
 
   app.use(
     cors({
@@ -86,6 +90,7 @@ const createApp = async () => {
   app.use("/api/job-required-languages", jobRequiredLanguageRoutes);
   app.use("/api/job-required-certificates", jobRequiredCertificateRoutes);
   app.use("/api/notifications", notificationRoutes);
+  app.use("/api/messages", messageRoutes);
 
   // Health check endpoint - Check database connection
   app.get("/health", async (_, res) => {

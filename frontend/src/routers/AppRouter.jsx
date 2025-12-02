@@ -16,6 +16,7 @@ import {
   PostJobPage,
   JobDetailPage,
   ApplyJobPage,
+  MessagesPage,
 } from "../pages";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
 import PaymentCallback from "../pages/Payment/PaymentCallback";
@@ -121,6 +122,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ApplyJobPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.MESSAGES,
+    element: (
+      <ProtectedRoute>
+        <MessagesPage />
       </ProtectedRoute>
     ),
   },

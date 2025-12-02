@@ -62,6 +62,16 @@ services:
       
       # ImgBB API Configuration (for file uploads)
       - IMGBB_API_KEY=608d854aebb411657d9684305ae89fa6
+      
+      # VNPay Configuration (Payment Gateway)
+      # Lưu ý: Cần đăng ký tài khoản VNPay sandbox tại https://sandbox.vnpayment.vn/
+      # và lấy VNP_TMN_CODE và VNP_HASH_SECRET từ dashboard
+      # Tạo file docker-compose.override.yml để cấu hình credentials (file này được gitignore)
+      - VNP_TMN_CODE=HZO7L9T6
+      - VNP_HASH_SECRET=5UIIVIR2F4DOLI41JIYN1C0V4O3HAU9H
+      - VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - VNP_RETURN_URL=http://localhost:3000/payment/vnpay/callback
+      - VNP_IPN_URL=http://localhost:4000/api/payments/webhook/vnpay
     ports:
       - "4000:4000"
     volumes:

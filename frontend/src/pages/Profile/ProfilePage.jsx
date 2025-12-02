@@ -179,6 +179,7 @@ const ProfilePage = () => {
   const [activeMenu, setActiveMenu] = useState("profile");
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
   const [isEditingProfessional, setIsEditingProfessional] = useState(false);
+  const [isEditingCompanyInfo, setIsEditingCompanyInfo] = useState(false);
   const [isAddingLanguage, setIsAddingLanguage] = useState(false);
   const [isAddingCertification, setIsAddingCertification] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -196,6 +197,17 @@ const ProfilePage = () => {
     experience: "",
     specializations: [],
     portfolio: "",
+  });
+
+  const [companyInfoForm, setCompanyInfoForm] = useState({
+    companyName: "",
+    companyType: "",
+    companySize: "",
+    website: "",
+    industry: "",
+    description: "",
+    headquarters: "",
+    foundedYear: "",
   });
 
   const [languageForm, setLanguageForm] = useState({
@@ -235,7 +247,7 @@ const ProfilePage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (userProfile && !isEditingProfessional) {
+    if (userProfile && user?.role === "interpreter" && !isEditingProfessional) {
       // Only reset form when not editing and userProfile changes
       console.log("Resetting professional form from userProfile:", {
         userProfile,
@@ -254,12 +266,57 @@ const ProfilePage = () => {
         portfolio: userProfile.portfolio || "",
       });
     }
-  }, [userProfile, isEditingProfessional]);
+  }, [userProfile, user?.role, isEditingProfessional]);
+
+  // Initialize company info form when client profile loads
+  useEffect(() => {
+    if (userProfile && user?.role === "client" && !isEditingCompanyInfo) {
+      const clientProfile = userProfile;
+      setCompanyInfoForm({
+        companyName: clientProfile.companyName || "",
+        companyType: clientProfile.companyType || "",
+        companySize: clientProfile.companySize || "",
+        website: clientProfile.website || "",
+        industry: clientProfile.industry || "",
+        description: clientProfile.description || "",
+        headquarters: clientProfile.headquarters || "",
+        foundedYear: clientProfile.foundedYear || "",
+      });
+    }
+  }, [userProfile, user?.role, isEditingCompanyInfo]);
 
   // Calculate profile completeness
   const calculateProfileCompleteness = () => {
-    if (!userProfile) return 0;
-    return userProfile.profileCompleteness || 0;
+    if (!userProfile && !user) return 0;
+    
+    // For interpreter role, use backend-calculated completeness
+    if (user?.role === "interpreter") {
+      return userProfile?.profileCompleteness || 0;
+    }
+    
+    // For client role, calculate manually based on company information
+    if (user?.role === "client") {
+      // userProfile is clientProfile for client role
+      const clientProfile = userProfile || user?.clientProfile;
+      let completedFields = 0;
+      const totalFields = 8; // Total number of fields to check
+      
+      // Basic user info
+      if (user?.phone && user.phone.trim().length > 0) completedFields++;
+      if (user?.address && user.address.trim().length > 0) completedFields++;
+      
+      // Company information
+      if (clientProfile?.companyName && clientProfile.companyName.trim().length > 0) completedFields++;
+      if (clientProfile?.companyType && clientProfile.companyType.trim().length > 0) completedFields++;
+      if (clientProfile?.companySize && clientProfile.companySize.trim().length > 0) completedFields++;
+      if (clientProfile?.website && clientProfile.website.trim().length > 0) completedFields++;
+      if (clientProfile?.industry && clientProfile.industry.trim().length > 0) completedFields++;
+      if (clientProfile?.description && clientProfile.description.trim().length > 0) completedFields++;
+      
+      return Math.round((completedFields / totalFields) * 100);
+    }
+    
+    return 0;
   };
 
   const profileCompleteness = calculateProfileCompleteness();
@@ -267,30 +324,55 @@ const ProfilePage = () => {
   // Get missing fields for completeness alert
   const getMissingFields = () => {
     const missing = [];
-    if (!user?.phone || user.phone.trim().length === 0)
-      missing.push("Phone Number");
-    if (!user?.address || user.address.trim().length === 0)
-      missing.push("Address");
-    // Languages and certifications are in user object, not profile
-    if (!languages || languages.length === 0) missing.push("Languages");
-    if (!certifications || certifications.length === 0)
-      missing.push("Certifications");
-    if (
-      !userProfile?.specializations ||
-      userProfile.specializations.length === 0
-    )
-      missing.push("Specializations");
-    if (!userProfile?.experience || userProfile.experience <= 0)
-      missing.push("Years of Experience");
-    if (
-      !userProfile?.hourlyRate ||
-      (typeof userProfile.hourlyRate === "number"
-        ? userProfile.hourlyRate <= 0
-        : parseFloat(userProfile.hourlyRate) <= 0)
-    )
-      missing.push("Hourly Rate");
-    if (!userProfile?.portfolio || userProfile.portfolio.trim().length === 0)
-      missing.push("Portfolio/Bio");
+    
+    if (user?.role === "interpreter") {
+      // Missing fields for interpreter role
+      if (!user?.phone || user.phone.trim().length === 0)
+        missing.push("Phone Number");
+      if (!user?.address || user.address.trim().length === 0)
+        missing.push("Address");
+      if (!languages || languages.length === 0) missing.push("Languages");
+      if (!certifications || certifications.length === 0)
+        missing.push("Certifications");
+      if (
+        !userProfile?.specializations ||
+        userProfile.specializations.length === 0
+      )
+        missing.push("Specializations");
+      if (!userProfile?.experience || userProfile.experience <= 0)
+        missing.push("Years of Experience");
+      if (
+        !userProfile?.hourlyRate ||
+        (typeof userProfile.hourlyRate === "number"
+          ? userProfile.hourlyRate <= 0
+          : parseFloat(userProfile.hourlyRate) <= 0)
+      )
+        missing.push("Hourly Rate");
+      if (!userProfile?.portfolio || userProfile.portfolio.trim().length === 0)
+        missing.push("Portfolio/Bio");
+    } else if (user?.role === "client") {
+      // Missing fields for client role
+      // userProfile is clientProfile for client role
+      const clientProfile = userProfile || user?.clientProfile;
+      
+      if (!user?.phone || user.phone.trim().length === 0)
+        missing.push("Phone Number");
+      if (!user?.address || user.address.trim().length === 0)
+        missing.push("Address");
+      if (!clientProfile?.companyName || clientProfile.companyName.trim().length === 0)
+        missing.push("Company Name");
+      if (!clientProfile?.companyType || clientProfile.companyType.trim().length === 0)
+        missing.push("Company Type");
+      if (!clientProfile?.companySize || clientProfile.companySize.trim().length === 0)
+        missing.push("Company Size");
+      if (!clientProfile?.website || clientProfile.website.trim().length === 0)
+        missing.push("Website");
+      if (!clientProfile?.industry || clientProfile.industry.trim().length === 0)
+        missing.push("Industry");
+      if (!clientProfile?.description || clientProfile.description.trim().length === 0)
+        missing.push("Company Description");
+    }
+    
     return missing;
   };
 
@@ -412,6 +494,45 @@ const ProfilePage = () => {
     } catch (error) {
       console.error("Frontend - Update error:", error);
       toast.error(error.message || "Failed to update professional info");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle update company info
+  const handleUpdateCompanyInfo = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const dataToUpdate = {
+        companyName: companyInfoForm.companyName || null,
+        companyType: companyInfoForm.companyType || null,
+        companySize: companyInfoForm.companySize || null,
+        website: companyInfoForm.website || null,
+        industry: companyInfoForm.industry || null,
+        description: companyInfoForm.description || null,
+        headquarters: companyInfoForm.headquarters || null,
+        foundedYear: companyInfoForm.foundedYear
+          ? parseInt(companyInfoForm.foundedYear)
+          : null,
+      };
+
+      await authService.updateClientProfile(dataToUpdate);
+      await refreshUser();
+      setIsEditingCompanyInfo(false);
+      toast.success(
+        lang === "vi"
+          ? "Cập nhật thông tin công ty thành công!"
+          : "Company information updated successfully!"
+      );
+    } catch (error) {
+      toast.error(
+        error.message ||
+          (lang === "vi"
+            ? "Cập nhật thông tin công ty thất bại"
+            : "Failed to update company information")
+      );
     } finally {
       setLoading(false);
     }
@@ -719,6 +840,7 @@ const ProfilePage = () => {
 
         {/* Main Content */}
         <div className={styles.mainContent}>
+          <div className={styles.profileContentWrapper}>
           {/* Profile Completeness Alert */}
           {profileCompleteness < 100 && (
             <div className={styles.completenessAlert}>
@@ -1384,6 +1506,275 @@ const ProfilePage = () => {
             </div>
           )}
 
+          {/* Company Information Card - For Client Role */}
+          {user.role === "client" && (
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>
+                  {lang === "vi" ? "Thông tin công ty" : "Company Information"}
+                </h3>
+                <button
+                  className={styles.editBtn}
+                  onClick={() =>
+                    setIsEditingCompanyInfo(!isEditingCompanyInfo)
+                  }
+                >
+                  {isEditingCompanyInfo
+                    ? (lang === "vi" ? "Hủy" : "Cancel")
+                    : (lang === "vi" ? "Chỉnh sửa" : "Edit")}
+                </button>
+              </div>
+
+              <div className={styles.cardContent}>
+                {!isEditingCompanyInfo ? (
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Tên công ty" : "Company Name"}</label>
+                      <p>
+                        {userProfile?.companyName ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Loại công ty" : "Company Type"}</label>
+                      <p>
+                        {userProfile?.companyType ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Quy mô công ty" : "Company Size"}</label>
+                      <p>
+                        {userProfile?.companySize ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Website" : "Website"}</label>
+                      <p>
+                        {userProfile?.website ? (
+                          <a
+                            href={userProfile.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.link}
+                          >
+                            {userProfile.website}
+                          </a>
+                        ) : (
+                          lang === "vi" ? "Chưa cung cấp" : "Not provided"
+                        )}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Ngành nghề" : "Industry"}</label>
+                      <p>
+                        {userProfile?.industry ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Mô tả" : "Description"}</label>
+                      <p>
+                        {userProfile?.description ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Trụ sở chính" : "Headquarters"}</label>
+                      <p>
+                        {userProfile?.headquarters ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>{lang === "vi" ? "Năm thành lập" : "Founded Year"}</label>
+                      <p>
+                        {userProfile?.foundedYear ||
+                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={handleUpdateCompanyInfo}
+                    className={styles.editForm}
+                  >
+                    <div className={styles.formGroup}>
+                      <label>
+                        {lang === "vi" ? "Tên công ty" : "Company Name"} *
+                      </label>
+                      <input
+                        type="text"
+                        value={companyInfoForm.companyName}
+                        onChange={(e) =>
+                          setCompanyInfoForm({
+                            ...companyInfoForm,
+                            companyName: e.target.value,
+                          })
+                        }
+                        required
+                        placeholder={lang === "vi" ? "Nhập tên công ty" : "Enter company name"}
+                      />
+                    </div>
+
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>{lang === "vi" ? "Loại công ty" : "Company Type"}</label>
+                        <select
+                          value={companyInfoForm.companyType}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              companyType: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">
+                            {lang === "vi" ? "Chọn loại công ty" : "Select company type"}
+                          </option>
+                          <option value="startup">
+                            {lang === "vi" ? "Startup" : "Startup"}
+                          </option>
+                          <option value="corporation">
+                            {lang === "vi" ? "Tập đoàn" : "Corporation"}
+                          </option>
+                          <option value="nonprofit">
+                            {lang === "vi" ? "Phi lợi nhuận" : "Nonprofit"}
+                          </option>
+                          <option value="government">
+                            {lang === "vi" ? "Chính phủ" : "Government"}
+                          </option>
+                          <option value="healthcare">
+                            {lang === "vi" ? "Y tế" : "Healthcare"}
+                          </option>
+                          <option value="education">
+                            {lang === "vi" ? "Giáo dục" : "Education"}
+                          </option>
+                          <option value="other">
+                            {lang === "vi" ? "Khác" : "Other"}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{lang === "vi" ? "Quy mô công ty" : "Company Size"}</label>
+                        <select
+                          value={companyInfoForm.companySize}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              companySize: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">
+                            {lang === "vi" ? "Chọn quy mô" : "Select company size"}
+                          </option>
+                          <option value="size_1_10">1-10 {lang === "vi" ? "nhân viên" : "employees"}</option>
+                          <option value="size_11_50">11-50 {lang === "vi" ? "nhân viên" : "employees"}</option>
+                          <option value="size_51_200">51-200 {lang === "vi" ? "nhân viên" : "employees"}</option>
+                          <option value="size_201_500">201-500 {lang === "vi" ? "nhân viên" : "employees"}</option>
+                          <option value="size_501_1000">501-1000 {lang === "vi" ? "nhân viên" : "employees"}</option>
+                          <option value="size_1001_plus">1001+ {lang === "vi" ? "nhân viên" : "employees"}</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>{lang === "vi" ? "Website" : "Website"}</label>
+                        <input
+                          type="url"
+                          value={companyInfoForm.website}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              website: e.target.value,
+                            })
+                          }
+                          placeholder="https://example.com"
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{lang === "vi" ? "Năm thành lập" : "Founded Year"}</label>
+                        <input
+                          type="number"
+                          min="1800"
+                          max={new Date().getFullYear()}
+                          value={companyInfoForm.foundedYear}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              foundedYear: e.target.value,
+                            })
+                          }
+                          placeholder="YYYY"
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>{lang === "vi" ? "Ngành nghề" : "Industry"}</label>
+                      <input
+                        type="text"
+                        value={companyInfoForm.industry}
+                        onChange={(e) =>
+                          setCompanyInfoForm({
+                            ...companyInfoForm,
+                            industry: e.target.value,
+                          })
+                        }
+                        placeholder={lang === "vi" ? "Ví dụ: Công nghệ, Dịch vụ, Sản xuất..." : "e.g., Technology, Services, Manufacturing..."}
+                      />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>{lang === "vi" ? "Trụ sở chính" : "Headquarters"}</label>
+                      <input
+                        type="text"
+                        value={companyInfoForm.headquarters}
+                        onChange={(e) =>
+                          setCompanyInfoForm({
+                            ...companyInfoForm,
+                            headquarters: e.target.value,
+                          })
+                        }
+                        placeholder={lang === "vi" ? "Địa chỉ trụ sở chính" : "Headquarters address"}
+                      />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>{lang === "vi" ? "Mô tả công ty" : "Company Description"}</label>
+                      <textarea
+                        value={companyInfoForm.description}
+                        onChange={(e) =>
+                          setCompanyInfoForm({
+                            ...companyInfoForm,
+                            description: e.target.value,
+                          })
+                        }
+                        rows={5}
+                        placeholder={lang === "vi" ? "Mô tả về công ty của bạn..." : "Describe your company..."}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className={styles.saveBtn}
+                      disabled={loading}
+                    >
+                      {loading
+                        ? (lang === "vi" ? "Đang lưu..." : "Saving...")
+                        : (lang === "vi" ? "Lưu thay đổi" : "Save Changes")}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Professional Information Card */}
           {user.role === "interpreter" && (
             <div className={styles.card}>
@@ -1629,6 +2020,7 @@ const ProfilePage = () => {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </MainLayout>

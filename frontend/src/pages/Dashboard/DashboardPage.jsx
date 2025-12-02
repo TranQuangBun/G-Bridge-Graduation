@@ -223,12 +223,29 @@ function DashboardPage() {
           ).length || 0;
         if (user?.role === "client") {
           // For client: fetch posted jobs and applications
-          // TODO: Implement API calls for client stats
-          setClientStats({
-            postedJobs: 0, // TODO: Fetch from API
-            receivedApplications: 0, // TODO: Fetch from API
-            activeJobs: 0, // TODO: Fetch from API
-          });
+          try {
+            const jobsData = await jobService.getClientJobs();
+            const jobs = jobsData.data || [];
+            const activeJobs = jobs.filter(
+              (job) => job.status === "active"
+            ).length;
+
+            setClientStats({
+              postedJobs: jobs.length,
+              activeJobs: activeJobs,
+              receivedApplications: jobs.reduce(
+                (sum, job) => sum + (job.applicationCount || 0),
+                0
+              ),
+            });
+          } catch (error) {
+            console.error("Error fetching client stats:", error);
+            setClientStats({
+              postedJobs: 0,
+              receivedApplications: 0,
+              activeJobs: 0,
+            });
+          }
         } else {
           // For interpreter: use existing stats
           setInterpreterStats({
@@ -239,7 +256,53 @@ function DashboardPage() {
         }
 
         // Get recent applications (latest 3)
-        if (applicationsResponse?.data?.applications) {
+        if (user?.role === "client") {
+          // For client: get received applications from their posted jobs
+          try {
+            const jobsData = await jobService.getClientJobs();
+            const jobs = jobsData.data || [];
+            const allApplications = [];
+            
+            // Fetch applications for each job
+            for (const job of jobs.slice(0, 5)) { // Limit to first 5 jobs for performance
+              try {
+                const applicationsData = await jobService.getJobApplications(job.id);
+                if (applicationsData?.data) {
+                  const jobApps = applicationsData.data.map((app) => ({
+                    ...app,
+                    jobTitle: job.title,
+                    jobId: job.id,
+                  }));
+                  allApplications.push(...jobApps);
+                }
+              } catch (error) {
+                console.error(`Error fetching applications for job ${job.id}:`, error);
+              }
+            }
+            
+            // Sort by createdAt and get latest 3
+            const recentApplications = allApplications
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .slice(0, 3)
+              .map((app) => ({
+                id: app.id,
+                company: app.interpreterProfile?.user?.fullName || app.interpreterProfile?.user?.email?.split("@")[0] || "Interpreter",
+                logo: FaBuilding,
+                position: app.jobTitle || "Job",
+                jobType: "Application",
+                workType: app.status || "pending",
+                location: app.interpreterProfile?.user?.address || "Location TBD",
+                salary: "-",
+                dateApplied: app.createdAt || new Date().toISOString(),
+                status: app.status || "pending",
+              }));
+            setRecentJobs(recentApplications);
+          } catch (error) {
+            console.error("Error fetching client applications:", error);
+            setRecentJobs([]);
+          }
+        } else if (applicationsResponse?.data?.applications) {
+          // For interpreter: get their applied jobs
           const recentApplications = applicationsResponse.data.applications
             .slice(0, 3)
             .map((app) => ({
@@ -851,113 +914,115 @@ function DashboardPage() {
                 </section>
               )}
 
-              {/* Recent Jobs */}
-              <section className={styles.recentJobsSection}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>
-                    {t("dashboard.recentJobs.title")}
-                  </h2>
-                  <button
-                    className={styles.viewAllBtn}
-                    onClick={() => navigate(ROUTES.MY_APPLICATIONS)}
-                  >
-                    {t("dashboard.recentJobs.viewAll")}
-                  </button>
-                </div>
+              {/* Recent Jobs and Notifications - Side by Side */}
+              <div className={styles.twoColumnSection}>
+                {/* Recent Jobs/Applications */}
+                <section className={styles.recentJobsSection}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>
+                        {t("dashboard.recentJobs.title")}
+                      </h2>
+                      <button
+                        className={styles.viewAllBtn}
+                        onClick={() => navigate(ROUTES.MY_APPLICATIONS)}
+                      >
+                        {t("dashboard.recentJobs.viewAll")}
+                      </button>
+                    </div>
 
-                <div className={styles.jobsList}>
-                  {dataLoading ? (
-                    <div style={{ padding: "20px", textAlign: "center" }}>
-                      {t("common.loading") || "Loading..."}
-                    </div>
-                  ) : recentJobs.length === 0 ? (
-                    <div style={{ padding: "20px", textAlign: "center" }}>
-                      {t("dashboard.recentJobs.noApplications") ||
-                        "No applications yet"}
-                    </div>
-                  ) : (
-                    recentJobs.map((job) => (
-                      <div key={job.id} className={styles.jobCard}>
-                        {/* Job Info Column */}
-                        <div className={styles.jobInfo}>
-                          <div className={styles.jobHeader}>
-                            <div className={styles.companyLogo}>
-                              {typeof job.logo === "string" ? (
-                                job.logo
-                              ) : job.logo ? (
-                                <job.logo />
-                              ) : (
-                                <FaBuilding />
-                              )}
+                    <div className={styles.jobsList}>
+                      {dataLoading ? (
+                        <div style={{ padding: "20px", textAlign: "center" }}>
+                          {t("common.loading") || "Loading..."}
+                        </div>
+                      ) : recentJobs.length === 0 ? (
+                        <div style={{ padding: "20px", textAlign: "center" }}>
+                          {t("dashboard.recentJobs.noApplications") ||
+                            "No applications yet"}
+                        </div>
+                      ) : (
+                        recentJobs.map((job) => (
+                          <div key={job.id} className={styles.jobCard}>
+                            {/* Job Info Column */}
+                            <div className={styles.jobInfo}>
+                              <div className={styles.jobHeader}>
+                                <div className={styles.companyLogo}>
+                                  {typeof job.logo === "string" ? (
+                                    job.logo
+                                  ) : job.logo ? (
+                                    <job.logo />
+                                  ) : (
+                                    <FaBuilding />
+                                  )}
+                                </div>
+                                <div className={styles.jobDetails}>
+                                  <h3 className={styles.jobTitle}>
+                                    {job.position}
+                                  </h3>
+                                  <p className={styles.companyName}>
+                                    {job.company}
+                                  </p>
+                                  <div className={styles.jobTags}>
+                                    <span className={styles.tag}>
+                                      {job.workType}
+                                    </span>
+                                    <span className={styles.tag}>
+                                      {job.jobType}
+                                    </span>
+                                  </div>
+                                  <div className={styles.jobMeta}>
+                                    <span className={styles.location}>
+                                      <FaMapMarkerAlt /> {job.location}
+                                    </span>
+                                    <span className={styles.salary}>
+                                      <FaDollarSign /> {job.salary}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className={styles.jobDetails}>
-                              <h3 className={styles.jobTitle}>
-                                {job.position}
-                              </h3>
-                              <p className={styles.companyName}>
-                                {job.company}
-                              </p>
-                              <div className={styles.jobTags}>
-                                <span className={styles.tag}>
-                                  {job.workType}
-                                </span>
-                                <span className={styles.tag}>
-                                  {job.jobType}
+
+                            {/* Date Applied Column */}
+                            <div className={styles.dateColumn}>
+                              <span className={styles.dateLabel}>
+                                {t("dashboard.recentJobs.dateApplied")}
+                              </span>
+                              <span className={styles.dateValue}>
+                                {formatDate(job.dateApplied)}
+                              </span>
+                            </div>
+
+                            {/* Status Column */}
+                            <div className={styles.statusColumn}>
+                              <span className={styles.statusLabel}>
+                                {t("dashboard.recentJobs.status")}
+                              </span>
+                              <div
+                                className={`${styles.statusBadge} ${getStatusClass(
+                                  job.status
+                                )}`}
+                              >
+                                <span className={styles.statusIcon}>●</span>
+                                <span className={styles.statusText}>
+                                  {getStatusText(job.status)}
                                 </span>
                               </div>
-                              <div className={styles.jobMeta}>
-                                <span className={styles.location}>
-                                  <FaMapMarkerAlt /> {job.location}
-                                </span>
-                                <span className={styles.salary}>
-                                  <FaDollarSign /> {job.salary}
-                                </span>
-                              </div>
+                            </div>
+
+                            {/* Action Column */}
+                            <div className={styles.actionColumn}>
+                              <button className={styles.viewDetailsBtn}>
+                                {t("dashboard.recentJobs.viewDetails")}
+                              </button>
                             </div>
                           </div>
-                        </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
 
-                        {/* Date Applied Column */}
-                        <div className={styles.dateColumn}>
-                          <span className={styles.dateLabel}>
-                            {t("dashboard.recentJobs.dateApplied")}
-                          </span>
-                          <span className={styles.dateValue}>
-                            {formatDate(job.dateApplied)}
-                          </span>
-                        </div>
-
-                        {/* Status Column */}
-                        <div className={styles.statusColumn}>
-                          <span className={styles.statusLabel}>
-                            {t("dashboard.recentJobs.status")}
-                          </span>
-                          <div
-                            className={`${styles.statusBadge} ${getStatusClass(
-                              job.status
-                            )}`}
-                          >
-                            <span className={styles.statusIcon}>●</span>
-                            <span className={styles.statusText}>
-                              {getStatusText(job.status)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Action Column */}
-                        <div className={styles.actionColumn}>
-                          <button className={styles.viewDetailsBtn}>
-                            {t("dashboard.recentJobs.viewDetails")}
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-
-              {/* Notifications */}
-              <section className={styles.notificationsSection}>
+                {/* Notifications */}
+                <section className={styles.notificationsSection}>
                 <div className={styles.sectionHeader}>
                   <h2 className={styles.sectionTitle}>
                     {t("dashboard.notifications.title") ||
@@ -1049,6 +1114,7 @@ function DashboardPage() {
                   )}
                 </div>
               </section>
+              </div>
             </>
           )}
         </main>
