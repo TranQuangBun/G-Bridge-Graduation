@@ -76,10 +76,8 @@ export default function PricingPage() {
   const [purchased, setPurchased] = useState({}); // { planKey: true }
   const [showMethodModal, setShowMethodModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(null); // 'paypal' or 'vnpay'
-  const [paymentTab, setPaymentTab] = useState("qr");
-  const [card, setCard] = useState({ number: "", name: "", exp: "", cvc: "" });
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
 
   const YEARLY_DISCOUNT = 10; // percent
   const basePlans = useMemo(() => planDefinitions(t), [t]);
@@ -192,19 +190,6 @@ export default function PricingPage() {
     } finally {
       setProcessing(false);
     }
-  }
-
-  function fakeComplete(planKey) {
-    processPayment();
-  }
-
-  function submitCard(e) {
-    e.preventDefault();
-    if (!card.number || !card.name || !card.exp || !card.cvc) {
-      setError("Vui lòng nhập đầy đủ thông tin thẻ");
-      return;
-    }
-    processPayment();
   }
 
   const currentPlan = plans.find((p) => p.key === openPlan);

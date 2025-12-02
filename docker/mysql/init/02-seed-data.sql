@@ -48,3 +48,25 @@ ON DUPLICATE KEY UPDATE
   description = VALUES(description), 
   updatedAt = NOW();
 
+-- Seed Subscription Plans
+-- Insert subscription plans if they don't exist
+-- Note: IDs are fixed to match frontend mapping (free: 1, pro: 2, team: 3, enterprise: 4)
+INSERT INTO subscription_plans (id, name, displayName, description, price, currency, duration, durationType, features, maxInterpreterViews, maxJobPosts, isActive, sortOrder, createdAt, updatedAt) VALUES
+(1, 'free', 'Free', 'Perfect for getting started with basic features', 0.00, 'USD', 1, 'monthly', '["Create interpreter profile", "Apply to 1 job per month", "Basic email notifications", "Community access"]', 5, 1, 1, 1, NOW(), NOW()),
+(2, 'pro', 'Pro', 'Most popular plan for professional interpreters', 10.00, 'USD', 1, 'monthly', '["Unlimited job applications", "AI-powered job matching", "Advanced search filters", "Priority customer support", "Export capabilities"]', -1, -1, 1, 2, NOW(), NOW()),
+(3, 'team', 'Team', 'Great for growing interpreter teams', 15.00, 'USD', 1, 'monthly', '["Up to 5 team members", "Analytics dashboard", "Shared interpreter pool", "Bulk job posting", "Team roles & permissions", "Priority in search results"]', -1, -1, 1, 3, NOW(), NOW()),
+(4, 'enterprise', 'Enterprise', 'Custom solution for large organizations', 21.00, 'USD', 1, 'monthly', '["Unlimited team members", "Dedicated success manager", "Custom integrations", "Advanced security & compliance", "SLA guarantee", "Early access to new features"]', -1, -1, 1, 4, NOW(), NOW())
+ON DUPLICATE KEY UPDATE 
+  displayName = VALUES(displayName), 
+  description = VALUES(description), 
+  price = VALUES(price), 
+  currency = VALUES(currency), 
+  duration = VALUES(duration), 
+  durationType = VALUES(durationType), 
+  features = VALUES(features), 
+  maxInterpreterViews = VALUES(maxInterpreterViews), 
+  maxJobPosts = VALUES(maxJobPosts), 
+  isActive = VALUES(isActive), 
+  sortOrder = VALUES(sortOrder), 
+  updatedAt = NOW();
+

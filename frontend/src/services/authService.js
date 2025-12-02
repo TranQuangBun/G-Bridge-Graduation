@@ -327,6 +327,161 @@ const authService = {
   },
 
   /**
+   * Cập nhật thông tin client profile (company info)
+   * @param {Object} profileData - Dữ liệu profile công ty
+   * @returns {Promise} Response from API
+   */
+  updateClientProfile: async (profileData) => {
+    try {
+      console.log("updateClientProfile - Starting with data:", profileData);
+      
+      // First get the client profile ID from user
+      const meResponse = await apiClient.get("/auth/me");
+      console.log("updateClientProfile - /auth/me full response:", {
+        status: meResponse.status,
+        data: meResponse.data,
+        dataStructure: {
+          hasData: !!meResponse.data?.data,
+          hasClientProfile: !!meResponse.data?.data?.clientProfile,
+          hasUser: !!meResponse.data?.data?.user,
+          hasUserClientProfile: !!meResponse.data?.data?.user?.clientProfile,
+        }
+      });
+      
+      // Try multiple possible response structures
+      // Backend returns: { success: true, message: "Success", data: userObject }
+      // userObject has clientProfile as a relation
+      const responseData = meResponse.data;
+      const userData = responseData?.data || responseData;
+      
+      // userData is the user object itself, which has clientProfile as a property
+      const clientProfile = userData?.clientProfile;
+      const clientProfileId = clientProfile?.id;
+      
+      console.log("updateClientProfile - Extracted clientProfileId:", clientProfileId);
+      console.log("updateClientProfile - clientProfile object:", clientProfile);
+      
+      if (!clientProfileId) {
+        // Client profile doesn't exist, create it first
+        console.log("updateClientProfile - Creating new client profile");
+        try {
+          const createResponse = await apiClient.post("/client-profiles", profileData);
+          console.log("updateClientProfile - Create response:", createResponse.data);
+          
+          // Backend returns: { success: true, message: "...", data: profileObject }
+          const createdProfile = createResponse.data?.data || createResponse.data;
+          console.log("updateClientProfile - Created profile:", createdProfile);
+          
+          // Refresh user data after creation to get updated user with clientProfile
+          const refreshResponse = await apiClient.get("/auth/me");
+          const refreshResponseData = refreshResponse.data;
+          const updatedUserData = refreshResponseData?.data || refreshResponseData;
+          
+          console.log("updateClientProfile - Refreshed user after create:", updatedUserData);
+          
+          if (updatedUserData) {
+            // updatedUserData is the user object itself
+            authStorage.setUser(updatedUserData);
+            if (updatedUserData.clientProfile) {
+              authStorage.setProfile(updatedUserData.clientProfile);
+            }
+          }
+          
+          return createResponse.data;
+        } catch (createError) {
+          console.error("updateClientProfile - Create error:", createError);
+          console.error("Create error response:", createError.response?.data);
+          console.error("Create error status:", createError.response?.status);
+          
+          // If profile already exists (409), try to update instead
+          if (createError.response?.status === 409) {
+            console.log("updateClientProfile - Profile already exists (409), fetching ID to update");
+            const meResponse2 = await apiClient.get("/auth/me");
+            const responseData2 = meResponse2.data;
+            const userData2 = responseData2?.data || responseData2;
+            const clientProfile2 = userData2?.clientProfile;
+            const clientProfileId2 = clientProfile2?.id;
+            
+            console.log("updateClientProfile - Found clientProfileId2:", clientProfileId2);
+            
+            if (clientProfileId2) {
+              const updateResponse = await apiClient.put(
+                `/client-profiles/${clientProfileId2}`,
+                profileData
+              );
+              console.log("updateClientProfile - Update response:", updateResponse.data);
+              
+              // Refresh user data after update
+              const refreshResponse = await apiClient.get("/auth/me");
+              const refreshResponseData = refreshResponse.data;
+              const updatedUserData = refreshResponseData?.data || refreshResponseData;
+              
+              if (updatedUserData) {
+                // updatedUserData is the user object itself
+                authStorage.setUser(updatedUserData);
+                if (updatedUserData.clientProfile) {
+                  authStorage.setProfile(updatedUserData.clientProfile);
+                }
+              }
+              
+              return updateResponse.data;
+            } else {
+              throw new Error("Không thể tìm thấy ID của client profile để cập nhật");
+            }
+          } else {
+            throw createError;
+          }
+        }
+      } else {
+        // Client profile exists, update it
+        console.log("updateClientProfile - Updating existing client profile:", clientProfileId);
+        const updateResponse = await apiClient.put(
+          `/client-profiles/${clientProfileId}`,
+          profileData
+        );
+        console.log("updateClientProfile - Update response:", updateResponse.data);
+        
+        // Refresh user data after update
+        const refreshResponse = await apiClient.get("/auth/me");
+        const refreshResponseData = refreshResponse.data;
+        const updatedUserData = refreshResponseData?.data || refreshResponseData;
+        
+        console.log("updateClientProfile - Refreshed user data:", updatedUserData);
+        
+        if (updatedUserData) {
+          // updatedUserData is the user object itself
+          authStorage.setUser(updatedUserData);
+          if (updatedUserData.clientProfile) {
+            authStorage.setProfile(updatedUserData.clientProfile);
+          }
+        }
+        
+        return updateResponse.data;
+      }
+    } catch (error) {
+      console.error("Error updating client profile:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error config:", error.config);
+      
+      const errorMessage = getErrorMessage(error);
+      console.error("Error message:", errorMessage);
+      
+      // More specific error messages
+      if (error.response?.status === 404) {
+        throw new Error("Không tìm thấy thông tin profile. Vui lòng thử lại sau.");
+      }
+      if (error.response?.status === 401) {
+        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      }
+      if (errorMessage.includes("Route not found") || errorMessage.includes("404")) {
+        throw new Error("Không tìm thấy thông tin profile. Vui lòng thử lại sau.");
+      }
+      throw new Error(errorMessage || "Cập nhật thông tin công ty thất bại");
+    }
+  },
+
+  /**
    * Upload avatar
    * @param {File} file - File ảnh avatar
    * @returns {Promise} Response from API

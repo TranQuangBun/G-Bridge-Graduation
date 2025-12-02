@@ -7,6 +7,8 @@ import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
 import { useLanguage } from "../../translet/LanguageContext";
+import { FaEnvelope } from "react-icons/fa";
+import messageService from "../../services/messageService";
 
 const Header = () => {
   const { lang, setLang, t } = useLanguage();
@@ -16,7 +18,11 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMessageDropdownOpen, setIsMessageDropdownOpen] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [unreadConversations, setUnreadConversations] = useState([]);
   const userMenuRef = useRef(null);
+  const messageDropdownRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -30,15 +36,200 @@ const Header = () => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
+      if (messageDropdownRef.current && !messageDropdownRef.current.contains(event.target)) {
+        setIsMessageDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Load unread message count and conversations
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const loadUnreadData = async () => {
+      try {
+        const [countResponse, conversationsResponse] = await Promise.all([
+          messageService.getUnreadCount(),
+          messageService.getConversations(false, false) // Not archived, not deleted
+        ]);
+        
+        setUnreadMessageCount(countResponse.data?.unreadCount || 0);
+        
+        // Filter conversations with unread messages
+        const conversations = conversationsResponse.data || [];
+        console.log("🔍 Loading conversations for dropdown:", conversations);
+        console.log("🔍 User ID:", user?.id || user?.sub);
+        console.log("🔍 Unread count from API:", countResponse.data?.unreadCount);
+        
+        const unread = conversations.filter(conv => {
+          let unreadCount = 0;
+          
+          // Check if conversation has otherParticipant structure (transformed)
+          if (conv.otherParticipant) {
+            unreadCount = Number(conv.unreadCount) || 0;
+            console.log(`📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`);
+          } else {
+            // Fallback to raw structure
+            const isParticipant1 = conv.participant1Id === parseInt(user?.id || user?.sub);
+            const rawUnread1 = conv.participant1UnreadCount;
+            const rawUnread2 = conv.participant2UnreadCount;
+            unreadCount = isParticipant1 
+              ? (Number(rawUnread1) || 0)
+              : (Number(rawUnread2) || 0);
+            console.log(`📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`);
+          }
+          
+          const hasUnread = unreadCount > 0;
+          if (hasUnread) {
+            console.log(`✅ Found unread conversation ${conv.id}:`, {
+              id: conv.id,
+              unreadCount,
+              lastMessage: conv.lastMessage,
+              lastMessageAt: conv.lastMessageAt,
+              otherParticipant: conv.otherParticipant
+            });
+          } else if (conv.lastMessage) {
+            console.log(`⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`, {
+              id: conv.id,
+              unreadCount,
+              lastMessage: conv.lastMessage
+            });
+          }
+          return hasUnread;
+        });
+        
+        console.log(`📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`);
+        console.log("📋 Filtered unread conversations:", unread);
+        
+        // If no unread but we have unread count > 0, show recent conversations with messages
+        let conversationsToShow = unread;
+        if (unread.length === 0 && countResponse.data?.unreadCount > 0) {
+          console.log("⚠️ No unread conversations found but unreadCount > 0, showing recent conversations with messages");
+          conversationsToShow = conversations
+            .filter(conv => conv.lastMessage) // Has at least one message
+            .sort((a, b) => {
+              const dateA = new Date(a.lastMessageAt || 0).getTime();
+              const dateB = new Date(b.lastMessageAt || 0).getTime();
+              return dateB - dateA;
+            })
+            .slice(0, 5);
+        }
+        
+        // Sort by lastMessageAt (most recent first) and limit to 5
+        const sorted = conversationsToShow
+          .sort((a, b) => {
+            const dateA = new Date(a.lastMessageAt || 0).getTime();
+            const dateB = new Date(b.lastMessageAt || 0).getTime();
+            return dateB - dateA;
+          })
+          .slice(0, 5);
+        
+        console.log("✅ Final conversations to display:", sorted);
+        setUnreadConversations(sorted);
+      } catch (error) {
+        console.error("Error loading unread message data:", error);
+      }
+    };
+
+    loadUnreadData();
+
+    // Poll for updates every 10 seconds
+    const interval = setInterval(loadUnreadData, 10000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user]);
+
   const toggleMobileMenu = () => setIsMobileMenuOpen((o) => !o);
   const toggleLanguage = () => setLang(lang === "vi" ? "en" : "vi");
   const toggleUserMenu = () => setIsUserMenuOpen((prev) => !prev);
+  const toggleMessageDropdown = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const willOpen = !isMessageDropdownOpen;
+    setIsMessageDropdownOpen(willOpen);
+    
+    // Reload conversations when opening dropdown
+    if (willOpen && isAuthenticated) {
+      try {
+        const conversationsResponse = await messageService.getConversations(false, false);
+        const conversations = conversationsResponse.data || [];
+        
+        console.log("🔍 All conversations when opening dropdown:", conversations);
+        console.log("🔍 User ID:", user?.id || user?.sub);
+        
+        // Filter conversations with unread messages
+        const unread = conversations.filter(conv => {
+          let unreadCount = 0;
+          
+          // Check if conversation has otherParticipant structure (transformed)
+          if (conv.otherParticipant) {
+            unreadCount = Number(conv.unreadCount) || 0;
+            console.log(`📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`);
+          } else {
+            // Fallback to raw structure
+            const isParticipant1 = conv.participant1Id === parseInt(user?.id || user?.sub);
+            const rawUnread1 = conv.participant1UnreadCount;
+            const rawUnread2 = conv.participant2UnreadCount;
+            unreadCount = isParticipant1 
+              ? (Number(rawUnread1) || 0)
+              : (Number(rawUnread2) || 0);
+            console.log(`📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`);
+          }
+          
+          const hasUnread = unreadCount > 0;
+          if (hasUnread) {
+            console.log(`✅ Found unread conversation ${conv.id}:`, {
+              id: conv.id,
+              unreadCount,
+              lastMessage: conv.lastMessage,
+              lastMessageAt: conv.lastMessageAt,
+              otherParticipant: conv.otherParticipant
+            });
+          } else if (conv.lastMessage) {
+            console.log(`⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`, {
+              id: conv.id,
+              unreadCount,
+              lastMessage: conv.lastMessage
+            });
+          }
+          return hasUnread;
+        });
+        
+        console.log(`📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`);
+        console.log("📋 Filtered unread conversations:", unread);
+        
+        // If no unread but we have unread count > 0, show recent conversations with messages
+        let conversationsToShow = unread;
+        if (unread.length === 0 && unreadMessageCount > 0) {
+          console.log("⚠️ No unread conversations found but unreadMessageCount > 0, showing recent conversations with messages");
+          conversationsToShow = conversations
+            .filter(conv => conv.lastMessage) // Has at least one message
+            .sort((a, b) => {
+              const dateA = new Date(a.lastMessageAt || 0).getTime();
+              const dateB = new Date(b.lastMessageAt || 0).getTime();
+              return dateB - dateA;
+            })
+            .slice(0, 5);
+        }
+        
+        // Sort by lastMessageAt (most recent first) and limit to 5
+        const sorted = conversationsToShow
+          .sort((a, b) => {
+            const dateA = new Date(a.lastMessageAt || 0).getTime();
+            const dateB = new Date(b.lastMessageAt || 0).getTime();
+            return dateB - dateA;
+          })
+          .slice(0, 5);
+        
+        console.log("✅ Final conversations to display:", sorted);
+        setUnreadConversations(sorted);
+      } catch (error) {
+        console.error("Error loading conversations for dropdown:", error);
+      }
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -165,6 +356,115 @@ const Header = () => {
                   )}
 
                   <NotificationDropdown />
+
+                  {/* Messages Icon with Dropdown */}
+                  <div className="message-dropdown-container" ref={messageDropdownRef}>
+                    <button
+                      onClick={toggleMessageDropdown}
+                      className={`message-btn ${isActiveRoute(ROUTES.MESSAGES) ? "active" : ""} ${isMessageDropdownOpen ? "open" : ""}`}
+                      title={t("common.messages") || "Messages"}
+                    >
+                      <FaEnvelope />
+                      {unreadMessageCount > 0 && (
+                        <span className="message-badge">{unreadMessageCount > 99 ? "99+" : unreadMessageCount}</span>
+                      )}
+                    </button>
+                    
+                    {/* Message Dropdown Preview */}
+                    {isMessageDropdownOpen && (
+                      <div className="message-dropdown">
+                        <div className="message-dropdown-header">
+                          <h4>{t("common.messages") || "Messages"}</h4>
+                          <Link 
+                            to={ROUTES.MESSAGES}
+                            onClick={() => setIsMessageDropdownOpen(false)}
+                            className="view-all-link"
+                          >
+                            {t("common.viewAll") || "View All"}
+                          </Link>
+                        </div>
+                        <div className="message-dropdown-content">
+                          {unreadConversations.length === 0 ? (
+                            <div className="message-dropdown-empty">
+                              <FaEnvelope />
+                              <p>{lang === "vi" ? "Không có tin nhắn chưa đọc" : "No unread messages"}</p>
+                            </div>
+                          ) : (
+                            unreadConversations.map((conv) => {
+                              // Handle both transformed and raw conversation structures
+                              let otherParticipant, unreadCount;
+                              
+                              if (conv.otherParticipant) {
+                                // Transformed structure (from API)
+                                otherParticipant = conv.otherParticipant;
+                                unreadCount = Number(conv.unreadCount) || 0;
+                              } else {
+                                // Raw structure (fallback)
+                                const isParticipant1 = conv.participant1Id === parseInt(user?.id || user?.sub);
+                                unreadCount = isParticipant1 
+                                  ? (Number(conv.participant1UnreadCount) || 0)
+                                  : (Number(conv.participant2UnreadCount) || 0);
+                                otherParticipant = isParticipant1 ? conv.participant2 : conv.participant1;
+                              }
+                              
+                              console.log(`Rendering conversation ${conv.id}:`, {
+                                otherParticipant,
+                                unreadCount,
+                                lastMessage: conv.lastMessage
+                              });
+                              
+                              return (
+                                <Link
+                                  key={conv.id}
+                                  to={`${ROUTES.MESSAGES}?conversation=${conv.id}`}
+                                  onClick={() => setIsMessageDropdownOpen(false)}
+                                  className="message-dropdown-item"
+                                >
+                                  <div className="message-item-avatar">
+                                    {otherParticipant?.avatar ? (
+                                      <img 
+                                        src={otherParticipant.avatar.startsWith("http") 
+                                          ? otherParticipant.avatar 
+                                          : `http://localhost:4000${otherParticipant.avatar}`} 
+                                        alt={otherParticipant.fullName} 
+                                      />
+                                    ) : (
+                                      <span>{otherParticipant?.fullName?.charAt(0)?.toUpperCase() || otherParticipant?.email?.charAt(0)?.toUpperCase() || "?"}</span>
+                                    )}
+                                  </div>
+                                  <div className="message-item-content">
+                                    <div className="message-item-header">
+                                      <span className="message-item-name">
+                                        {otherParticipant?.fullName || otherParticipant?.email || "User"}
+                                      </span>
+                                      {unreadCount > 0 && (
+                                        <span className="message-item-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+                                      )}
+                                    </div>
+                                    <p className="message-item-preview">
+                                      {conv.lastMessage?.content 
+                                        ? (conv.lastMessage.content.length > 50 
+                                            ? conv.lastMessage.content.substring(0, 50) + "..." 
+                                            : conv.lastMessage.content)
+                                        : (lang === "vi" ? "Không có tin nhắn" : "No message")}
+                                    </p>
+                                    {conv.lastMessageAt && (
+                                      <span className="message-item-time">
+                                        {new Date(conv.lastMessageAt).toLocaleTimeString("vi-VN", {
+                                          hour: "2-digit",
+                                          minute: "2-digit"
+                                        })}
+                                      </span>
+                                    )}
+                                  </div>
+                                </Link>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* User Avatar Dropdown */}
                   <div className="user-menu-container">
@@ -515,6 +815,23 @@ const Header = () => {
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
                       {lang === "vi" ? "Hồ sơ" : "Profile"}
+                    </button>
+                    <button
+                      className="mobile-menu-action"
+                      onClick={() => {
+                        navigate(ROUTES.MESSAGES);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <FaEnvelope />
+                      <span>
+                        {t("common.messages") || "Messages"}
+                        {unreadMessageCount > 0 && (
+                          <span className="mobile-message-badge">
+                            {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                          </span>
+                        )}
+                      </span>
                     </button>
                     <button
                       className="mobile-menu-action"

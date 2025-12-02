@@ -16,7 +16,6 @@ export default function PaymentCallback() {
       try {
         // Get query parameters
         const queryParams = new URLSearchParams(location.search);
-        const vnp_ResponseCode = queryParams.get("vnp_ResponseCode");
         const vnp_TxnRef = queryParams.get("vnp_TxnRef");
 
         if (!vnp_TxnRef) {

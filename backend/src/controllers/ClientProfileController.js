@@ -33,7 +33,19 @@ export async function getClientProfileById(req, res) {
 
 export async function createClientProfile(req, res) {
   try {
-    const profile = await clientProfileService.createClientProfile(req.body);
+    // Automatically use the authenticated user's ID
+    const userId = req.user?.sub || req.user?.id;
+    if (!userId) {
+      return sendError(res, "User ID not found in token", 401);
+    }
+
+    // Add userId to the request body if not already present
+    const profileData = {
+      ...req.body,
+      userId: userId,
+    };
+
+    const profile = await clientProfileService.createClientProfile(profileData);
     return sendSuccess(res, profile, "Client profile created successfully", 201);
   } catch (error) {
     if (error instanceof AppError) {
