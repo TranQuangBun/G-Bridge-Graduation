@@ -15,10 +15,13 @@ import {
   AdminJobModerationPage,
   PostJobPage,
   JobDetailPage,
-  ApplyJobPage,
   MessagesPage,
 } from "../pages";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
+import SavedJobs from "../pages/Dashboard/SavedJobs/SavedJobs";
+import SavedInterpreters from "../pages/Dashboard/SavedInterpreters/SavedInterpreters";
+import SettingsPage from "../pages/Dashboard/Settings/SettingsPage";
+import NotificationsPage from "../pages/Notifications/NotificationsPage";
 import PaymentCallback from "../pages/Payment/PaymentCallback";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { ROUTES } from "../constants";
@@ -62,6 +65,46 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["client", "admin"]}>
         <MyJobsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/saved-jobs",
+    element: (
+      <ProtectedRoute allowedRoles={["interpreter"]}>
+        <SavedJobs />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/saved-interpreters",
+    element: (
+      <ProtectedRoute allowedRoles={["client", "admin"]}>
+        <SavedInterpreters />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.SETTINGS,
+    element: (
+      <ProtectedRoute>
+        <SettingsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.NOTIFICATIONS,
+    element: (
+      <ProtectedRoute>
+        <NotificationsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.JOB_APPLICATIONS,
+    element: (
+      <ProtectedRoute allowedRoles={["client", "admin"]}>
+        <MyApplicationsPage />
       </ProtectedRoute>
     ),
   },
@@ -116,14 +159,6 @@ const router = createBrowserRouter([
   {
     path: ROUTES.JOB_DETAIL,
     element: <JobDetailPage />,
-  },
-  {
-    path: ROUTES.APPLY_JOB,
-    element: (
-      <ProtectedRoute>
-        <ApplyJobPage />
-      </ProtectedRoute>
-    ),
   },
   {
     path: ROUTES.MESSAGES,

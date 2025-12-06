@@ -9,12 +9,7 @@ export class SavedInterpreterService {
   }
 
   async getAllSavedInterpreters(query) {
-    const {
-      page = 1,
-      limit = 20,
-      userId = "",
-      interpreterId = "",
-    } = query;
+    const { page = 1, limit = 20, userId = "", interpreterId = "" } = query;
 
     const filters = {};
     if (userId) filters.userId = userId;
@@ -64,7 +59,8 @@ export class SavedInterpreterService {
         interpreterId
       );
     if (existing) {
-      throw new Error("Interpreter already saved");
+      // Return existing instead of throwing error
+      return existing;
     }
 
     // Verify users exist
@@ -104,4 +100,3 @@ export class SavedInterpreterService {
     return true;
   }
 }
-

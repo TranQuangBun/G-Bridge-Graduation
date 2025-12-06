@@ -19,6 +19,7 @@ import {
   FaEye,
   FaEdit,
   FaEnvelope,
+  FaBookmark,
 } from "react-icons/fa";
 
 // Sidebar menu for Client/Company role
@@ -29,6 +30,12 @@ const CLIENT_SIDEBAR_MENU = [
     id: "jobApplications",
     icon: FaClipboardList,
     labelKey: "jobApplications",
+    active: false,
+  },
+  {
+    id: "savedInterpreters",
+    icon: FaBookmark,
+    labelKey: "savedInterpreters",
     active: false,
   },
   {
@@ -250,9 +257,11 @@ function MyJobsPage() {
                     if (item.id === "overview") {
                       navigate(ROUTES.DASHBOARD);
                     } else if (item.id === "myJobs") {
-                      navigate(ROUTES.MY_JOBS);
+                      // Stay on current page
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
+                    } else if (item.id === "savedInterpreters") {
+                      navigate(ROUTES.SAVED_INTERPRETERS);
                     } else if (item.id === "notifications") {
                       navigate(ROUTES.DASHBOARD + "?section=notifications");
                     } else if (item.id === "profile") {

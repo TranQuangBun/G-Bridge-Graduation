@@ -18,6 +18,7 @@ import {
   FaCamera,
   FaBriefcase,
   FaEnvelope,
+  FaBookmark,
 } from "react-icons/fa";
 
 // Sidebar menu for Interpreter role
@@ -27,6 +28,12 @@ const INTERPRETER_SIDEBAR_MENU = [
     id: "applications",
     icon: FaClipboardList,
     labelKey: "applications",
+    active: false,
+  },
+  {
+    id: "savedJobs",
+    icon: FaBookmark,
+    labelKey: "savedJobs",
     active: false,
   },
   {
@@ -47,6 +54,12 @@ const CLIENT_SIDEBAR_MENU = [
     id: "jobApplications",
     icon: FaClipboardList,
     labelKey: "jobApplications",
+    active: false,
+  },
+  {
+    id: "savedInterpreters",
+    icon: FaBookmark,
+    labelKey: "savedInterpreters",
     active: false,
   },
   {
@@ -288,34 +301,52 @@ const ProfilePage = () => {
   // Calculate profile completeness
   const calculateProfileCompleteness = () => {
     if (!userProfile && !user) return 0;
-    
+
     // For interpreter role, use backend-calculated completeness
     if (user?.role === "interpreter") {
       return userProfile?.profileCompleteness || 0;
     }
-    
+
     // For client role, calculate manually based on company information
     if (user?.role === "client") {
       // userProfile is clientProfile for client role
       const clientProfile = userProfile || user?.clientProfile;
       let completedFields = 0;
       const totalFields = 8; // Total number of fields to check
-      
+
       // Basic user info
       if (user?.phone && user.phone.trim().length > 0) completedFields++;
       if (user?.address && user.address.trim().length > 0) completedFields++;
-      
+
       // Company information
-      if (clientProfile?.companyName && clientProfile.companyName.trim().length > 0) completedFields++;
-      if (clientProfile?.companyType && clientProfile.companyType.trim().length > 0) completedFields++;
-      if (clientProfile?.companySize && clientProfile.companySize.trim().length > 0) completedFields++;
-      if (clientProfile?.website && clientProfile.website.trim().length > 0) completedFields++;
-      if (clientProfile?.industry && clientProfile.industry.trim().length > 0) completedFields++;
-      if (clientProfile?.description && clientProfile.description.trim().length > 0) completedFields++;
-      
+      if (
+        clientProfile?.companyName &&
+        clientProfile.companyName.trim().length > 0
+      )
+        completedFields++;
+      if (
+        clientProfile?.companyType &&
+        clientProfile.companyType.trim().length > 0
+      )
+        completedFields++;
+      if (
+        clientProfile?.companySize &&
+        clientProfile.companySize.trim().length > 0
+      )
+        completedFields++;
+      if (clientProfile?.website && clientProfile.website.trim().length > 0)
+        completedFields++;
+      if (clientProfile?.industry && clientProfile.industry.trim().length > 0)
+        completedFields++;
+      if (
+        clientProfile?.description &&
+        clientProfile.description.trim().length > 0
+      )
+        completedFields++;
+
       return Math.round((completedFields / totalFields) * 100);
     }
-    
+
     return 0;
   };
 
@@ -324,55 +355,70 @@ const ProfilePage = () => {
   // Get missing fields for completeness alert
   const getMissingFields = () => {
     const missing = [];
-    
+
     if (user?.role === "interpreter") {
       // Missing fields for interpreter role
       if (!user?.phone || user.phone.trim().length === 0)
-        missing.push("Phone Number");
+        missing.push("phoneNumber");
       if (!user?.address || user.address.trim().length === 0)
-        missing.push("Address");
-      if (!languages || languages.length === 0) missing.push("Languages");
+        missing.push("address");
+      if (!languages || languages.length === 0) missing.push("languages");
       if (!certifications || certifications.length === 0)
-        missing.push("Certifications");
+        missing.push("certifications");
       if (
         !userProfile?.specializations ||
         userProfile.specializations.length === 0
       )
-        missing.push("Specializations");
+        missing.push("specializations");
       if (!userProfile?.experience || userProfile.experience <= 0)
-        missing.push("Years of Experience");
+        missing.push("yearsOfExperience");
       if (
         !userProfile?.hourlyRate ||
         (typeof userProfile.hourlyRate === "number"
           ? userProfile.hourlyRate <= 0
           : parseFloat(userProfile.hourlyRate) <= 0)
       )
-        missing.push("Hourly Rate");
+        missing.push("hourlyRate");
       if (!userProfile?.portfolio || userProfile.portfolio.trim().length === 0)
-        missing.push("Portfolio/Bio");
+        missing.push("portfolioBio");
     } else if (user?.role === "client") {
       // Missing fields for client role
       // userProfile is clientProfile for client role
       const clientProfile = userProfile || user?.clientProfile;
-      
+
       if (!user?.phone || user.phone.trim().length === 0)
-        missing.push("Phone Number");
+        missing.push("phoneNumber");
       if (!user?.address || user.address.trim().length === 0)
-        missing.push("Address");
-      if (!clientProfile?.companyName || clientProfile.companyName.trim().length === 0)
-        missing.push("Company Name");
-      if (!clientProfile?.companyType || clientProfile.companyType.trim().length === 0)
-        missing.push("Company Type");
-      if (!clientProfile?.companySize || clientProfile.companySize.trim().length === 0)
-        missing.push("Company Size");
+        missing.push("address");
+      if (
+        !clientProfile?.companyName ||
+        clientProfile.companyName.trim().length === 0
+      )
+        missing.push("companyName");
+      if (
+        !clientProfile?.companyType ||
+        clientProfile.companyType.trim().length === 0
+      )
+        missing.push("companyType");
+      if (
+        !clientProfile?.companySize ||
+        clientProfile.companySize.trim().length === 0
+      )
+        missing.push("companySize");
       if (!clientProfile?.website || clientProfile.website.trim().length === 0)
-        missing.push("Website");
-      if (!clientProfile?.industry || clientProfile.industry.trim().length === 0)
-        missing.push("Industry");
-      if (!clientProfile?.description || clientProfile.description.trim().length === 0)
-        missing.push("Company Description");
+        missing.push("website");
+      if (
+        !clientProfile?.industry ||
+        clientProfile.industry.trim().length === 0
+      )
+        missing.push("industry");
+      if (
+        !clientProfile?.description ||
+        clientProfile.description.trim().length === 0
+      )
+        missing.push("companyDescription");
     }
-    
+
     return missing;
   };
 
@@ -633,13 +679,12 @@ const ProfilePage = () => {
   };
 
   // Handle remove language
-  const handleRemoveLanguage = async (index) => {
+  const handleRemoveLanguage = async (languageId) => {
     setLoading(true);
 
     try {
-      const languageToRemove = languages[index];
-      if (languageToRemove?.id) {
-        await languageService.deleteLanguage(languageToRemove.id);
+      if (languageId) {
+        await languageService.deleteLanguage(languageId);
         await refreshUser();
         toast.success(t("profile.languages.success.removed"));
       } else {
@@ -815,6 +860,8 @@ const ProfilePage = () => {
                     navigate(ROUTES.DASHBOARD);
                   } else if (item.id === "applications") {
                     navigate(ROUTES.MY_APPLICATIONS);
+                  } else if (item.id === "savedJobs") {
+                    navigate(ROUTES.SAVED_JOBS);
                   } else if (item.id === "profile") {
                     // Stay on current page
                     setActiveMenu(item.id);
@@ -822,8 +869,12 @@ const ProfilePage = () => {
                     navigate(ROUTES.MY_JOBS);
                   } else if (item.id === "jobApplications") {
                     navigate(ROUTES.MY_APPLICATIONS);
+                  } else if (item.id === "savedInterpreters") {
+                    navigate(ROUTES.SAVED_INTERPRETERS);
                   } else if (item.id === "notifications") {
-                    navigate(ROUTES.DASHBOARD + "?section=notifications");
+                    navigate(ROUTES.DASHBOARD + "?tab=notifications");
+                  } else if (item.id === "settings") {
+                    navigate(ROUTES.SETTINGS);
                   }
                 }}
               >
@@ -841,922 +892,233 @@ const ProfilePage = () => {
         {/* Main Content */}
         <div className={styles.mainContent}>
           <div className={styles.profileContentWrapper}>
-          {/* Profile Completeness Alert */}
-          {profileCompleteness < 100 && (
-            <div className={styles.completenessAlert}>
-              <div className={styles.alertHeader}>
-                <div className={styles.alertIcon}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-                <div className={styles.alertContent}>
-                  <h3>{t("profile.completeness.title")}</h3>
-                  <p>{t("profile.completeness.description")}</p>
-                </div>
-              </div>
-
-              <div className={styles.progressBarContainer}>
-                <div className={styles.progressBarLabel}>
-                  <span>{t("profile.completeness.label")}</span>
-                  <span>{profileCompleteness}%</span>
-                </div>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: `${profileCompleteness}%` }}
-                  />
-                </div>
-              </div>
-
-              {missingFields.length > 0 && (
-                <div className={styles.missingFieldsSection}>
-                  <h4>{t("profile.completeness.missingTitle")}</h4>
-                  <div className={styles.missingFieldsList}>
-                    {missingFields.map((field, index) => (
-                      <span key={index} className={styles.missingFieldTag}>
-                        {field}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Basic Information Card */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>
-                {t("profile.basicInfo.title")}
-              </h3>
-              <button
-                className={styles.editBtn}
-                onClick={() => setIsEditingBasicInfo(!isEditingBasicInfo)}
-              >
-                {isEditingBasicInfo
-                  ? t("profile.basicInfo.cancel")
-                  : t("profile.basicInfo.edit")}
-              </button>
-            </div>
-
-            <div className={styles.cardContent}>
-              {!isEditingBasicInfo ? (
-                <>
-                  {/* Avatar Display */}
-                  <div className={styles.avatarSection}>
-                    <input
-                      type="file"
-                      id="avatar-upload-input"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      style={{ display: "none" }}
-                    />
-                    <div
-                      className={styles.avatarContainer}
-                      onClick={handleAvatarClick}
-                      title="Click to change avatar"
+            {/* Profile Completeness Alert */}
+            {profileCompleteness < 100 && (
+              <div className={styles.completenessAlert}>
+                <div className={styles.alertHeader}>
+                  <div className={styles.alertIcon}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      {user.avatar ? (
-                        <img
-                          src={`http://localhost:4000${user.avatar}`}
-                          alt="Profile Avatar"
-                          className={styles.avatar}
-                        />
-                      ) : (
-                        <div className={styles.avatarPlaceholder}>
-                          {user.fullName?.charAt(0)?.toUpperCase() || "U"}
-                        </div>
-                      )}
-                      <div className={styles.avatarOverlay}>
-                        <span>
-                          <FaCamera />
-                        </span>
-                        <span>{t("profile.basicInfo.changeAvatar")}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={styles.infoGrid}>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.basicInfo.fullName")}</label>
-                      <p>
-                        {user.fullName || t("profile.basicInfo.notProvided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.basicInfo.email")}</label>
-                      <p>{user.email}</p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.basicInfo.phone")}</label>
-                      <p>{user.phone || t("profile.basicInfo.notProvided")}</p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.basicInfo.address")}</label>
-                      <p>
-                        {user.address || t("profile.basicInfo.notProvided")}
-                      </p>
-                    </div>
-                    {/* Active Status Toggle - Only for interpreters */}
-                    {user.role === "interpreter" && (
-                      <div className={styles.infoItem}>
-                        <label>
-                          {lang === "vi"
-                            ? "Trạng thái hoạt động"
-                            : "Active Status"}
-                        </label>
-                        <div className={styles.toggleContainer}>
-                          <label className={styles.toggleSwitch}>
-                            <input
-                              type="checkbox"
-                              checked={user.isActive !== false}
-                              onChange={handleToggleActiveStatus}
-                              disabled={loading}
-                            />
-                            <span className={styles.toggleSlider}></span>
-                          </label>
-                          <span className={styles.toggleLabel}>
-                            {user.isActive !== false
-                              ? lang === "vi"
-                                ? "Đang hoạt động"
-                                : "Active"
-                              : lang === "vi"
-                              ? "Đã tắt"
-                              : "Inactive"}
-                          </span>
-                        </div>
-                        <p className={styles.toggleDescription}>
-                          {lang === "vi"
-                            ? "Khi tắt, hồ sơ của bạn sẽ không hiển thị trong kết quả tìm kiếm"
-                            : "When off, your profile will not appear in search results"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <form
-                  onSubmit={handleUpdateBasicInfo}
-                  className={styles.editForm}
-                >
-                  <div className={styles.formGroup}>
-                    <label>{t("profile.basicInfo.fullNameRequired")}</label>
-                    <input
-                      type="text"
-                      value={basicInfoForm.fullName}
-                      onChange={(e) =>
-                        setBasicInfoForm({
-                          ...basicInfoForm,
-                          fullName: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label>{t("profile.basicInfo.email")}</label>
-                    <div className={styles.disabledFieldWrapper}>
-                      <input
-                        type="email"
-                        value={user.email}
-                        disabled
-                        className={styles.disabledField}
-                        title={t("profile.basicInfo.contactAdmin")}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                       />
-                      <span className={styles.disabledTooltip}>
-                        {t("profile.basicInfo.contactAdmin")}
-                      </span>
-                    </div>
+                    </svg>
                   </div>
+                  <div className={styles.alertContent}>
+                    <h3>{t("profile.completeness.title")}</h3>
+                    <p>{t("profile.completeness.description")}</p>
+                  </div>
+                </div>
 
-                  <div className={styles.formGroup}>
-                    <label>{t("profile.basicInfo.phone")}</label>
-                    <input
-                      type="tel"
-                      value={basicInfoForm.phone}
-                      onChange={(e) =>
-                        setBasicInfoForm({
-                          ...basicInfoForm,
-                          phone: e.target.value,
-                        })
-                      }
+                <div className={styles.progressBarContainer}>
+                  <div className={styles.progressBarLabel}>
+                    <span>{t("profile.completeness.label")}</span>
+                    <span>{profileCompleteness}%</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div
+                      className={styles.progressFill}
+                      style={{ width: `${profileCompleteness}%` }}
                     />
                   </div>
+                </div>
 
-                  <div className={styles.formGroup}>
-                    <label>{t("profile.basicInfo.address")}</label>
-                    <textarea
-                      value={basicInfoForm.address}
-                      onChange={(e) =>
-                        setBasicInfoForm({
-                          ...basicInfoForm,
-                          address: e.target.value,
-                        })
-                      }
-                      rows={3}
-                    />
+                {missingFields.length > 0 && (
+                  <div className={styles.missingFieldsSection}>
+                    <h4>{t("profile.completeness.missingTitle")}</h4>
+                    <div className={styles.missingFieldsList}>
+                      {missingFields.map((field, index) => (
+                        <span key={index} className={styles.missingFieldTag}>
+                          {t(`profile.completeness.fields.${field}`)}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-
-                  <button
-                    type="submit"
-                    className={styles.saveBtn}
-                    disabled={loading}
-                  >
-                    {loading ? "Saving..." : "Save Changes"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-
-          {/* Languages & Certifications - Two Column Layout */}
-          {user.role === "interpreter" && (
-            <div className={styles.twoColumnGrid}>
-              {/* Languages Card - Left Column */}
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <h3 className={styles.cardTitle}>
-                    {t("profile.languages.title")}
-                  </h3>
-                  <button
-                    className={styles.addBtn}
-                    onClick={() => setIsAddingLanguage(true)}
-                  >
-                    + {t("profile.languages.add")}
-                  </button>
-                </div>
-
-                <div className={styles.cardContent}>
-                  {Array.isArray(languages) && languages.length > 0 ? (
-                    <div className={styles.languagesList}>
-                      {languages.map((lang, index) => (
-                        <div key={index} className={styles.languageItem}>
-                          <div className={styles.languageInfo}>
-                            <h4>{lang.name}</h4>
-                            <span className={styles.languageLevel}>
-                              {lang.proficiencyLevel || lang.level}
-                            </span>
-                          </div>
-                          <button
-                            className={styles.removeBtn}
-                            onClick={() => handleRemoveLanguage(index)}
-                            disabled={loading}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className={styles.emptyMessage}>
-                      {t("profile.languages.noLanguages")}
-                    </p>
-                  )}
-
-                  {isAddingLanguage && (
-                    <form
-                      onSubmit={handleAddLanguage}
-                      className={styles.addForm}
-                    >
-                      <div className={styles.formRow}>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.modal.language")} *</label>
-                          <select
-                            value={languageForm.name}
-                            onChange={(e) =>
-                              setLanguageForm({
-                                ...languageForm,
-                                name: e.target.value,
-                              })
-                            }
-                            required
-                          >
-                            <option value="">
-                              {t("profile.languages.selectLanguage")}
-                            </option>
-                            {Object.keys(LANGUAGE_CERTIFICATIONS)
-                              .sort()
-                              .map((lang) => (
-                                <option key={lang} value={lang}>
-                                  {lang}
-                                </option>
-                              ))}
-                            <option value="Other">
-                              Other (No suggestions)
-                            </option>
-                          </select>
-                        </div>
-
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.languages.level")} *</label>
-                          <select
-                            value={languageForm.level}
-                            onChange={(e) =>
-                              setLanguageForm({
-                                ...languageForm,
-                                level: e.target.value,
-                              })
-                            }
-                            required
-                          >
-                            <option value="Beginner">
-                              {t("profile.languages.beginner")}
-                            </option>
-                            <option value="Intermediate">
-                              {t("profile.languages.intermediate")}
-                            </option>
-                            <option value="Advanced">
-                              {t("profile.languages.advanced")}
-                            </option>
-                            <option value="Native">
-                              {t("profile.languages.native")}
-                            </option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className={styles.formActions}>
-                        <button
-                          type="button"
-                          className={styles.cancelBtn}
-                          onClick={() => {
-                            setIsAddingLanguage(false);
-                            setLanguageForm({ name: "", level: "Beginner" });
-                          }}
-                        >
-                          {t("profile.modal.cancel")}
-                        </button>
-                        <button
-                          type="submit"
-                          className={styles.saveBtn}
-                          disabled={loading}
-                        >
-                          {loading
-                            ? t("profile.languages.adding")
-                            : t("profile.modal.add")}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
+                )}
               </div>
+            )}
 
-              {/* Certifications Card - Right Column */}
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <h3 className={styles.cardTitle}>
-                    {t("profile.certifications.title")}
-                  </h3>
-                  <button
-                    className={styles.addBtn}
-                    onClick={() => setIsAddingCertification(true)}
-                  >
-                    + {t("profile.certifications.add")}
-                  </button>
-                </div>
-
-                <div className={styles.cardContent}>
-                  {/* Suggested Certifications */}
-                  {showSuggestedCerts && suggestedCertifications.length > 0 && (
-                    <div className={styles.suggestedCertsContainer}>
-                      <div className={styles.suggestedHeader}>
-                        <h4>💡 {t("profile.certifications.suggestedTitle")}</h4>
-                        <button
-                          className={styles.dismissBtn}
-                          onClick={handleDismissSuggestions}
-                          title={t("profile.modal.cancel")}
-                        >
-                          ×
-                        </button>
-                      </div>
-                      <div className={styles.suggestedList}>
-                        {suggestedCertifications.map((cert, index) => (
-                          <button
-                            key={index}
-                            className={styles.suggestedItem}
-                            onClick={() => handleQuickAddCertification(cert)}
-                          >
-                            <span className={styles.certIcon}>📜</span>
-                            <div className={styles.suggestedInfo}>
-                              <strong>{cert.name}</strong>
-                              <small>{cert.organization}</small>
-                            </div>
-                            <span className={styles.addIcon}>+</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {Array.isArray(certifications) &&
-                  certifications.length > 0 ? (
-                    <div className={styles.certificationsList}>
-                      {certifications.map((cert, index) => (
-                        <div key={index} className={styles.certificationItem}>
-                          <div className={styles.certificationInfo}>
-                            <div className={styles.certificationHeader}>
-                              <h4>{cert.name}</h4>
-                              {cert.verificationStatus && (
-                                <span
-                                  className={`${styles.statusBadge} ${
-                                    styles[cert.verificationStatus]
-                                  }`}
-                                >
-                                  {cert.verificationStatus === "draft" &&
-                                    `📝 ${t(
-                                      "profile.certifications.statusDraft"
-                                    )}`}
-                                  {cert.verificationStatus === "pending" &&
-                                    `⏳ ${t(
-                                      "profile.certifications.statusPending"
-                                    )}`}
-                                  {cert.verificationStatus === "approved" &&
-                                    `✅ ${t(
-                                      "profile.certifications.statusApproved"
-                                    )}`}
-                                  {cert.verificationStatus === "rejected" &&
-                                    `❌ ${t(
-                                      "profile.certifications.statusRejected"
-                                    )}`}
-                                </span>
-                              )}
-                            </div>
-                            <div className={styles.certificationMeta}>
-                              {cert.score && <span>Score: {cert.score}</span>}
-                              {cert.issueDate && (
-                                <span>
-                                  Year: {new Date(cert.issueDate).getFullYear()}
-                                </span>
-                              )}
-                              {cert.year && <span>Year: {cert.year}</span>}
-                              {cert.issuingOrganization && (
-                                <span>Org: {cert.issuingOrganization}</span>
-                              )}
-                            </div>
-                            {cert.imageUrl && (
-                              <div className={styles.certificationImage}>
-                                <a
-                                  href={`http://localhost:4000${cert.imageUrl}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {t("profile.certifications.viewCertificate")}
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            className={styles.removeBtn}
-                            onClick={() => handleRemoveCertification(index)}
-                            disabled={loading}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className={styles.emptyMessage}>
-                      {t("profile.certifications.noCertifications")}
-                    </p>
-                  )}
-
-                  {isAddingCertification && (
-                    <form
-                      onSubmit={handleAddCertification}
-                      className={styles.addForm}
-                    >
-                      <div className={styles.formGroup}>
-                        <label>{t("profile.certifications.name")} *</label>
-                        <input
-                          type="text"
-                          value={certificationForm.name}
-                          onChange={(e) =>
-                            setCertificationForm({
-                              ...certificationForm,
-                              name: e.target.value,
-                            })
-                          }
-                          placeholder={t(
-                            "profile.certifications.namePlaceholder"
-                          )}
-                          required
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>
-                          {t("profile.certifications.organization")}
-                        </label>
-                        <input
-                          type="text"
-                          value={certificationForm.organization}
-                          onChange={(e) =>
-                            setCertificationForm({
-                              ...certificationForm,
-                              organization: e.target.value,
-                            })
-                          }
-                          placeholder={t(
-                            "profile.certifications.organizationPlaceholder"
-                          )}
-                        />
-                      </div>
-
-                      <div className={styles.formRow}>
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.certifications.score")}</label>
-                          <input
-                            type="text"
-                            value={certificationForm.score}
-                            onChange={(e) =>
-                              setCertificationForm({
-                                ...certificationForm,
-                                score: e.target.value,
-                              })
-                            }
-                            placeholder={t(
-                              "profile.certifications.scorePlaceholder"
-                            )}
-                          />
-                        </div>
-
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.certifications.year")}</label>
-                          <input
-                            type="text"
-                            value={certificationForm.year}
-                            onChange={(e) =>
-                              setCertificationForm({
-                                ...certificationForm,
-                                year: e.target.value,
-                              })
-                            }
-                            placeholder={t(
-                              "profile.certifications.yearPlaceholder"
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>{t("profile.certifications.uploadImage")}</label>
-                        <input
-                          type="file"
-                          id="certification-image-input"
-                          accept="image/*,.pdf"
-                          disabled={loading}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              // Validate file type
-                              const validTypes = [
-                                "image/jpeg",
-                                "image/jpg",
-                                "image/png",
-                                "image/gif",
-                                "image/webp",
-                                "application/pdf",
-                              ];
-                              if (!validTypes.includes(file.type)) {
-                                toast.error(
-                                  t(
-                                    "profile.certifications.errors.invalidFileType"
-                                  ) || "Please select an image or PDF file"
-                                );
-                                e.target.value = "";
-                                return;
-                              }
-
-                              // Check file size (max 10MB)
-                              if (file.size > 10 * 1024 * 1024) {
-                                toast.error(
-                                  t(
-                                    "profile.certifications.errors.fileSizeLimit"
-                                  ) || "File size must be less than 10MB"
-                                );
-                                e.target.value = "";
-                                return;
-                              }
-
-                              setCertificationForm({
-                                ...certificationForm,
-                                certificationImage: file,
-                              });
-                            }
-                          }}
-                          required
-                          style={{
-                            cursor: loading ? "not-allowed" : "pointer",
-                            opacity: loading ? 0.6 : 1,
-                          }}
-                        />
-                        {certificationForm.certificationImage && (
-                          <small className={styles.fileInfo}>
-                            {t("profile.certifications.fileSelected") ||
-                              "Selected"}{" "}
-                            {certificationForm.certificationImage.name}
-                          </small>
-                        )}
-                      </div>
-
-                      <div className={styles.formActions}>
-                        <button
-                          type="button"
-                          className={styles.cancelBtn}
-                          onClick={() => {
-                            setIsAddingCertification(false);
-                            setCertificationForm({
-                              name: "",
-                              score: "",
-                              year: "",
-                              organization: "",
-                              certificationImage: null,
-                            });
-                          }}
-                        >
-                          {t("profile.modal.cancel")}
-                        </button>
-                        <button
-                          type="submit"
-                          className={styles.saveBtn}
-                          disabled={loading}
-                        >
-                          {loading
-                            ? t("profile.certifications.adding")
-                            : t("profile.certifications.add")}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Company Information Card - For Client Role */}
-          {user.role === "client" && (
+            {/* Basic Information Card */}
             <div className={styles.card}>
               <div className={styles.cardHeader}>
                 <h3 className={styles.cardTitle}>
-                  {lang === "vi" ? "Thông tin công ty" : "Company Information"}
+                  {t("profile.basicInfo.title")}
                 </h3>
                 <button
                   className={styles.editBtn}
-                  onClick={() =>
-                    setIsEditingCompanyInfo(!isEditingCompanyInfo)
-                  }
+                  onClick={() => setIsEditingBasicInfo(!isEditingBasicInfo)}
                 >
-                  {isEditingCompanyInfo
-                    ? (lang === "vi" ? "Hủy" : "Cancel")
-                    : (lang === "vi" ? "Chỉnh sửa" : "Edit")}
+                  {isEditingBasicInfo
+                    ? t("profile.basicInfo.cancel")
+                    : t("profile.basicInfo.edit")}
                 </button>
               </div>
 
               <div className={styles.cardContent}>
-                {!isEditingCompanyInfo ? (
-                  <div className={styles.infoGrid}>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Tên công ty" : "Company Name"}</label>
-                      <p>
-                        {userProfile?.companyName ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Loại công ty" : "Company Type"}</label>
-                      <p>
-                        {userProfile?.companyType ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Quy mô công ty" : "Company Size"}</label>
-                      <p>
-                        {userProfile?.companySize ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Website" : "Website"}</label>
-                      <p>
-                        {userProfile?.website ? (
-                          <a
-                            href={userProfile.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.link}
-                          >
-                            {userProfile.website}
-                          </a>
+                {!isEditingBasicInfo ? (
+                  <>
+                    {/* Avatar Display */}
+                    <div className={styles.avatarSection}>
+                      <input
+                        type="file"
+                        id="avatar-upload-input"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        style={{ display: "none" }}
+                      />
+                      <div
+                        className={styles.avatarContainer}
+                        onClick={handleAvatarClick}
+                        title="Click to change avatar"
+                      >
+                        {user.avatar ? (
+                          <img
+                            src={`http://localhost:4000${user.avatar}`}
+                            alt="Profile Avatar"
+                            className={styles.avatar}
+                          />
                         ) : (
-                          lang === "vi" ? "Chưa cung cấp" : "Not provided"
+                          <div className={styles.avatarPlaceholder}>
+                            {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                          </div>
                         )}
-                      </p>
+                        <div className={styles.avatarOverlay}>
+                          <span>
+                            <FaCamera />
+                          </span>
+                          <span>{t("profile.basicInfo.changeAvatar")}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Ngành nghề" : "Industry"}</label>
-                      <p>
-                        {userProfile?.industry ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
+
+                    <div className={styles.infoGrid}>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.basicInfo.fullName")}</label>
+                        <p>
+                          {user.fullName || t("profile.basicInfo.notProvided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.basicInfo.email")}</label>
+                        <p>{user.email}</p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.basicInfo.phone")}</label>
+                        <p>
+                          {user.phone || t("profile.basicInfo.notProvided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.basicInfo.address")}</label>
+                        <p>
+                          {user.address || t("profile.basicInfo.notProvided")}
+                        </p>
+                      </div>
+                      {/* Active Status Toggle - Only for interpreters */}
+                      {user.role === "interpreter" && (
+                        <div className={styles.infoItem}>
+                          <label>
+                            {lang === "vi"
+                              ? "Trạng thái hoạt động"
+                              : "Active Status"}
+                          </label>
+                          <div className={styles.toggleContainer}>
+                            <label className={styles.toggleSwitch}>
+                              <input
+                                type="checkbox"
+                                checked={user.isActive !== false}
+                                onChange={handleToggleActiveStatus}
+                                disabled={loading}
+                              />
+                              <span className={styles.toggleSlider}></span>
+                            </label>
+                            <span className={styles.toggleLabel}>
+                              {user.isActive !== false
+                                ? lang === "vi"
+                                  ? "Đang hoạt động"
+                                  : "Active"
+                                : lang === "vi"
+                                ? "Đã tắt"
+                                : "Inactive"}
+                            </span>
+                          </div>
+                          <p className={styles.toggleDescription}>
+                            {lang === "vi"
+                              ? "Khi tắt, hồ sơ của bạn sẽ không hiển thị trong kết quả tìm kiếm"
+                              : "When off, your profile will not appear in search results"}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Mô tả" : "Description"}</label>
-                      <p>
-                        {userProfile?.description ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Trụ sở chính" : "Headquarters"}</label>
-                      <p>
-                        {userProfile?.headquarters ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{lang === "vi" ? "Năm thành lập" : "Founded Year"}</label>
-                      <p>
-                        {userProfile?.foundedYear ||
-                          (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
-                      </p>
-                    </div>
-                  </div>
+                  </>
                 ) : (
                   <form
-                    onSubmit={handleUpdateCompanyInfo}
+                    onSubmit={handleUpdateBasicInfo}
                     className={styles.editForm}
                   >
                     <div className={styles.formGroup}>
-                      <label>
-                        {lang === "vi" ? "Tên công ty" : "Company Name"} *
-                      </label>
+                      <label>{t("profile.basicInfo.fullNameRequired")}</label>
                       <input
                         type="text"
-                        value={companyInfoForm.companyName}
+                        value={basicInfoForm.fullName}
                         onChange={(e) =>
-                          setCompanyInfoForm({
-                            ...companyInfoForm,
-                            companyName: e.target.value,
+                          setBasicInfoForm({
+                            ...basicInfoForm,
+                            fullName: e.target.value,
                           })
                         }
                         required
-                        placeholder={lang === "vi" ? "Nhập tên công ty" : "Enter company name"}
                       />
                     </div>
 
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>{lang === "vi" ? "Loại công ty" : "Company Type"}</label>
-                        <select
-                          value={companyInfoForm.companyType}
-                          onChange={(e) =>
-                            setCompanyInfoForm({
-                              ...companyInfoForm,
-                              companyType: e.target.value,
-                            })
-                          }
-                        >
-                          <option value="">
-                            {lang === "vi" ? "Chọn loại công ty" : "Select company type"}
-                          </option>
-                          <option value="startup">
-                            {lang === "vi" ? "Startup" : "Startup"}
-                          </option>
-                          <option value="corporation">
-                            {lang === "vi" ? "Tập đoàn" : "Corporation"}
-                          </option>
-                          <option value="nonprofit">
-                            {lang === "vi" ? "Phi lợi nhuận" : "Nonprofit"}
-                          </option>
-                          <option value="government">
-                            {lang === "vi" ? "Chính phủ" : "Government"}
-                          </option>
-                          <option value="healthcare">
-                            {lang === "vi" ? "Y tế" : "Healthcare"}
-                          </option>
-                          <option value="education">
-                            {lang === "vi" ? "Giáo dục" : "Education"}
-                          </option>
-                          <option value="other">
-                            {lang === "vi" ? "Khác" : "Other"}
-                          </option>
-                        </select>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>{lang === "vi" ? "Quy mô công ty" : "Company Size"}</label>
-                        <select
-                          value={companyInfoForm.companySize}
-                          onChange={(e) =>
-                            setCompanyInfoForm({
-                              ...companyInfoForm,
-                              companySize: e.target.value,
-                            })
-                          }
-                        >
-                          <option value="">
-                            {lang === "vi" ? "Chọn quy mô" : "Select company size"}
-                          </option>
-                          <option value="size_1_10">1-10 {lang === "vi" ? "nhân viên" : "employees"}</option>
-                          <option value="size_11_50">11-50 {lang === "vi" ? "nhân viên" : "employees"}</option>
-                          <option value="size_51_200">51-200 {lang === "vi" ? "nhân viên" : "employees"}</option>
-                          <option value="size_201_500">201-500 {lang === "vi" ? "nhân viên" : "employees"}</option>
-                          <option value="size_501_1000">501-1000 {lang === "vi" ? "nhân viên" : "employees"}</option>
-                          <option value="size_1001_plus">1001+ {lang === "vi" ? "nhân viên" : "employees"}</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>{lang === "vi" ? "Website" : "Website"}</label>
+                    <div className={styles.formGroup}>
+                      <label>{t("profile.basicInfo.email")}</label>
+                      <div className={styles.disabledFieldWrapper}>
                         <input
-                          type="url"
-                          value={companyInfoForm.website}
-                          onChange={(e) =>
-                            setCompanyInfoForm({
-                              ...companyInfoForm,
-                              website: e.target.value,
-                            })
-                          }
-                          placeholder="https://example.com"
+                          type="email"
+                          value={user.email}
+                          disabled
+                          className={styles.disabledField}
+                          title={t("profile.basicInfo.contactAdmin")}
                         />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>{lang === "vi" ? "Năm thành lập" : "Founded Year"}</label>
-                        <input
-                          type="number"
-                          min="1800"
-                          max={new Date().getFullYear()}
-                          value={companyInfoForm.foundedYear}
-                          onChange={(e) =>
-                            setCompanyInfoForm({
-                              ...companyInfoForm,
-                              foundedYear: e.target.value,
-                            })
-                          }
-                          placeholder="YYYY"
-                        />
+                        <span className={styles.disabledTooltip}>
+                          {t("profile.basicInfo.contactAdmin")}
+                        </span>
                       </div>
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label>{lang === "vi" ? "Ngành nghề" : "Industry"}</label>
+                      <label>{t("profile.basicInfo.phone")}</label>
                       <input
-                        type="text"
-                        value={companyInfoForm.industry}
+                        type="tel"
+                        value={basicInfoForm.phone}
                         onChange={(e) =>
-                          setCompanyInfoForm({
-                            ...companyInfoForm,
-                            industry: e.target.value,
+                          setBasicInfoForm({
+                            ...basicInfoForm,
+                            phone: e.target.value,
                           })
                         }
-                        placeholder={lang === "vi" ? "Ví dụ: Công nghệ, Dịch vụ, Sản xuất..." : "e.g., Technology, Services, Manufacturing..."}
                       />
                     </div>
 
                     <div className={styles.formGroup}>
-                      <label>{lang === "vi" ? "Trụ sở chính" : "Headquarters"}</label>
-                      <input
-                        type="text"
-                        value={companyInfoForm.headquarters}
-                        onChange={(e) =>
-                          setCompanyInfoForm({
-                            ...companyInfoForm,
-                            headquarters: e.target.value,
-                          })
-                        }
-                        placeholder={lang === "vi" ? "Địa chỉ trụ sở chính" : "Headquarters address"}
-                      />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label>{lang === "vi" ? "Mô tả công ty" : "Company Description"}</label>
+                      <label>{t("profile.basicInfo.address")}</label>
                       <textarea
-                        value={companyInfoForm.description}
+                        value={basicInfoForm.address}
                         onChange={(e) =>
-                          setCompanyInfoForm({
-                            ...companyInfoForm,
-                            description: e.target.value,
+                          setBasicInfoForm({
+                            ...basicInfoForm,
+                            address: e.target.value,
                           })
                         }
-                        rows={5}
-                        placeholder={lang === "vi" ? "Mô tả về công ty của bạn..." : "Describe your company..."}
+                        rows={3}
                       />
                     </div>
 
@@ -1765,128 +1127,933 @@ const ProfilePage = () => {
                       className={styles.saveBtn}
                       disabled={loading}
                     >
-                      {loading
-                        ? (lang === "vi" ? "Đang lưu..." : "Saving...")
-                        : (lang === "vi" ? "Lưu thay đổi" : "Save Changes")}
+                      {loading ? "Saving..." : "Save Changes"}
                     </button>
                   </form>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Professional Information Card */}
-          {user.role === "interpreter" && (
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>
-                  {t("profile.professional.title")}
-                </h3>
-                <button
-                  className={styles.editBtn}
-                  onClick={() =>
-                    setIsEditingProfessional(!isEditingProfessional)
-                  }
-                >
-                  {isEditingProfessional
-                    ? t("profile.professional.cancel")
-                    : t("profile.professional.edit")}
-                </button>
-              </div>
-
-              <div className={styles.cardContent}>
-                {!isEditingProfessional ? (
-                  <div className={styles.infoGrid}>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.professional.hourlyRate")}</label>
-                      <p>
-                        {userProfile?.hourlyRate
-                          ? `$${userProfile.hourlyRate} ${
-                              userProfile.currency || "USD"
-                            }`
-                          : t("profile.professional.notProvided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.professional.experience")}</label>
-                      <p>
-                        {userProfile?.experience ||
-                          t("profile.professional.notProvided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.professional.specializations")}</label>
-                      <p>
-                        {userProfile?.specializations?.length
-                          ? userProfile.specializations.join(", ")
-                          : t("profile.professional.notProvided")}
-                      </p>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <label>{t("profile.professional.portfolio")}</label>
-                      <p>
-                        {userProfile?.portfolio ||
-                          t("profile.professional.notProvided")}
-                      </p>
-                    </div>
+            {/* Languages & Certifications - Two Column Layout */}
+            {user.role === "interpreter" && (
+              <div className={styles.twoColumnGrid}>
+                {/* Languages Card - Left Column */}
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h3 className={styles.cardTitle}>
+                      {t("profile.languages.title")}
+                    </h3>
+                    <button
+                      className={styles.addBtn}
+                      onClick={() => setIsAddingLanguage(true)}
+                    >
+                      + {t("profile.languages.add")}
+                    </button>
                   </div>
-                ) : (
-                  <form
-                    onSubmit={handleUpdateProfessional}
-                    className={styles.editForm}
+
+                  <div className={styles.cardContent}>
+                    {Array.isArray(languages) && languages.length > 0 ? (
+                      <div className={styles.languagesList}>
+                        {languages.map((lang) => (
+                          <div
+                            key={lang.id || lang.name}
+                            className={styles.languageItem}
+                          >
+                            <div className={styles.languageInfo}>
+                              <h4>{lang.name}</h4>
+                              <span className={styles.languageLevel}>
+                                {lang.proficiencyLevel || lang.level}
+                              </span>
+                            </div>
+                            <button
+                              className={styles.removeBtn}
+                              onClick={() => handleRemoveLanguage(lang.id)}
+                              disabled={loading}
+                              title={t("profile.languages.remove")}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={styles.emptyMessage}>
+                        {t("profile.languages.noLanguages")}
+                      </p>
+                    )}
+
+                    {isAddingLanguage && (
+                      <form
+                        onSubmit={handleAddLanguage}
+                        className={styles.addForm}
+                      >
+                        <div className={styles.formRow}>
+                          <div className={styles.formGroup}>
+                            <label>{t("profile.modal.language")} *</label>
+                            <select
+                              value={languageForm.name}
+                              onChange={(e) =>
+                                setLanguageForm({
+                                  ...languageForm,
+                                  name: e.target.value,
+                                })
+                              }
+                              required
+                            >
+                              <option value="">
+                                {t("profile.languages.selectLanguage")}
+                              </option>
+                              {Object.keys(LANGUAGE_CERTIFICATIONS)
+                                .sort()
+                                .map((lang) => (
+                                  <option key={lang} value={lang}>
+                                    {lang}
+                                  </option>
+                                ))}
+                              <option value="Other">
+                                Other (No suggestions)
+                              </option>
+                            </select>
+                          </div>
+
+                          <div className={styles.formGroup}>
+                            <label>{t("profile.languages.level")} *</label>
+                            <select
+                              value={languageForm.level}
+                              onChange={(e) =>
+                                setLanguageForm({
+                                  ...languageForm,
+                                  level: e.target.value,
+                                })
+                              }
+                              required
+                            >
+                              <option value="Beginner">
+                                {t("profile.languages.beginner")}
+                              </option>
+                              <option value="Intermediate">
+                                {t("profile.languages.intermediate")}
+                              </option>
+                              <option value="Advanced">
+                                {t("profile.languages.advanced")}
+                              </option>
+                              <option value="Native">
+                                {t("profile.languages.native")}
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className={styles.formActions}>
+                          <button
+                            type="button"
+                            className={styles.cancelBtn}
+                            onClick={() => {
+                              setIsAddingLanguage(false);
+                              setLanguageForm({ name: "", level: "Beginner" });
+                            }}
+                          >
+                            {t("profile.modal.cancel")}
+                          </button>
+                          <button
+                            type="submit"
+                            className={styles.saveBtn}
+                            disabled={loading}
+                          >
+                            {loading
+                              ? t("profile.languages.adding")
+                              : t("profile.modal.add")}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+                {/* Certifications Card - Right Column */}
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h3 className={styles.cardTitle}>
+                      {t("profile.certifications.title")}
+                    </h3>
+                    <button
+                      className={styles.addBtn}
+                      onClick={() => setIsAddingCertification(true)}
+                    >
+                      + {t("profile.certifications.add")}
+                    </button>
+                  </div>
+
+                  <div className={styles.cardContent}>
+                    {/* Suggested Certifications */}
+                    {showSuggestedCerts &&
+                      suggestedCertifications.length > 0 && (
+                        <div className={styles.suggestedCertsContainer}>
+                          <div className={styles.suggestedHeader}>
+                            <h4>
+                              💡 {t("profile.certifications.suggestedTitle")}
+                            </h4>
+                            <button
+                              className={styles.dismissBtn}
+                              onClick={handleDismissSuggestions}
+                              title={t("profile.modal.cancel")}
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className={styles.suggestedList}>
+                            {suggestedCertifications.map((cert, index) => (
+                              <button
+                                key={index}
+                                className={styles.suggestedItem}
+                                onClick={() =>
+                                  handleQuickAddCertification(cert)
+                                }
+                              >
+                                <span className={styles.certIcon}>📜</span>
+                                <div className={styles.suggestedInfo}>
+                                  <strong>{cert.name}</strong>
+                                  <small>{cert.organization}</small>
+                                </div>
+                                <span className={styles.addIcon}>+</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {Array.isArray(certifications) &&
+                    certifications.length > 0 ? (
+                      <div className={styles.certificationsList}>
+                        {certifications.map((cert, index) => (
+                          <div key={index} className={styles.certificationItem}>
+                            <div className={styles.certificationInfo}>
+                              <div className={styles.certificationHeader}>
+                                <h4>{cert.name}</h4>
+                                {cert.verificationStatus && (
+                                  <span
+                                    className={`${styles.statusBadge} ${
+                                      styles[cert.verificationStatus]
+                                    }`}
+                                  >
+                                    {cert.verificationStatus === "draft" &&
+                                      `📝 ${t(
+                                        "profile.certifications.statusDraft"
+                                      )}`}
+                                    {cert.verificationStatus === "pending" &&
+                                      `⏳ ${t(
+                                        "profile.certifications.statusPending"
+                                      )}`}
+                                    {cert.verificationStatus === "approved" &&
+                                      `✅ ${t(
+                                        "profile.certifications.statusApproved"
+                                      )}`}
+                                    {cert.verificationStatus === "rejected" &&
+                                      `❌ ${t(
+                                        "profile.certifications.statusRejected"
+                                      )}`}
+                                  </span>
+                                )}
+                              </div>
+                              <div className={styles.certificationMeta}>
+                                {cert.score && <span>Score: {cert.score}</span>}
+                                {cert.issueDate && (
+                                  <span>
+                                    Year:{" "}
+                                    {new Date(cert.issueDate).getFullYear()}
+                                  </span>
+                                )}
+                                {cert.year && <span>Year: {cert.year}</span>}
+                                {cert.issuingOrganization && (
+                                  <span>Org: {cert.issuingOrganization}</span>
+                                )}
+                              </div>
+                              {cert.imageUrl && (
+                                <div className={styles.certificationImage}>
+                                  <a
+                                    href={`http://localhost:4000${cert.imageUrl}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {t(
+                                      "profile.certifications.viewCertificate"
+                                    )}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              className={styles.removeBtn}
+                              onClick={() => handleRemoveCertification(index)}
+                              disabled={loading}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={styles.emptyMessage}>
+                        {t("profile.certifications.noCertifications")}
+                      </p>
+                    )}
+
+                    {isAddingCertification && (
+                      <form
+                        onSubmit={handleAddCertification}
+                        className={styles.addForm}
+                      >
+                        <div className={styles.formGroup}>
+                          <label>{t("profile.certifications.name")} *</label>
+                          <input
+                            type="text"
+                            value={certificationForm.name}
+                            onChange={(e) =>
+                              setCertificationForm({
+                                ...certificationForm,
+                                name: e.target.value,
+                              })
+                            }
+                            placeholder={t(
+                              "profile.certifications.namePlaceholder"
+                            )}
+                            required
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>
+                            {t("profile.certifications.organization")}
+                          </label>
+                          <input
+                            type="text"
+                            value={certificationForm.organization}
+                            onChange={(e) =>
+                              setCertificationForm({
+                                ...certificationForm,
+                                organization: e.target.value,
+                              })
+                            }
+                            placeholder={t(
+                              "profile.certifications.organizationPlaceholder"
+                            )}
+                          />
+                        </div>
+
+                        <div className={styles.formRow}>
+                          <div className={styles.formGroup}>
+                            <label>{t("profile.certifications.score")}</label>
+                            <input
+                              type="text"
+                              value={certificationForm.score}
+                              onChange={(e) =>
+                                setCertificationForm({
+                                  ...certificationForm,
+                                  score: e.target.value,
+                                })
+                              }
+                              placeholder={t(
+                                "profile.certifications.scorePlaceholder"
+                              )}
+                            />
+                          </div>
+
+                          <div className={styles.formGroup}>
+                            <label>{t("profile.certifications.year")}</label>
+                            <input
+                              type="text"
+                              value={certificationForm.year}
+                              onChange={(e) =>
+                                setCertificationForm({
+                                  ...certificationForm,
+                                  year: e.target.value,
+                                })
+                              }
+                              placeholder={t(
+                                "profile.certifications.yearPlaceholder"
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>
+                            {t("profile.certifications.uploadImage")}
+                          </label>
+                          <input
+                            type="file"
+                            id="certification-image-input"
+                            accept="image/*,.pdf"
+                            disabled={loading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                // Validate file type
+                                const validTypes = [
+                                  "image/jpeg",
+                                  "image/jpg",
+                                  "image/png",
+                                  "image/gif",
+                                  "image/webp",
+                                  "application/pdf",
+                                ];
+                                if (!validTypes.includes(file.type)) {
+                                  toast.error(
+                                    t(
+                                      "profile.certifications.errors.invalidFileType"
+                                    ) || "Please select an image or PDF file"
+                                  );
+                                  e.target.value = "";
+                                  return;
+                                }
+
+                                // Check file size (max 10MB)
+                                if (file.size > 10 * 1024 * 1024) {
+                                  toast.error(
+                                    t(
+                                      "profile.certifications.errors.fileSizeLimit"
+                                    ) || "File size must be less than 10MB"
+                                  );
+                                  e.target.value = "";
+                                  return;
+                                }
+
+                                setCertificationForm({
+                                  ...certificationForm,
+                                  certificationImage: file,
+                                });
+                              }
+                            }}
+                            required
+                            style={{
+                              cursor: loading ? "not-allowed" : "pointer",
+                              opacity: loading ? 0.6 : 1,
+                            }}
+                          />
+                          {certificationForm.certificationImage && (
+                            <small className={styles.fileInfo}>
+                              {t("profile.certifications.fileSelected") ||
+                                "Selected"}{" "}
+                              {certificationForm.certificationImage.name}
+                            </small>
+                          )}
+                        </div>
+
+                        <div className={styles.formActions}>
+                          <button
+                            type="button"
+                            className={styles.cancelBtn}
+                            onClick={() => {
+                              setIsAddingCertification(false);
+                              setCertificationForm({
+                                name: "",
+                                score: "",
+                                year: "",
+                                organization: "",
+                                certificationImage: null,
+                              });
+                            }}
+                          >
+                            {t("profile.modal.cancel")}
+                          </button>
+                          <button
+                            type="submit"
+                            className={styles.saveBtn}
+                            disabled={loading}
+                          >
+                            {loading
+                              ? t("profile.certifications.adding")
+                              : t("profile.certifications.add")}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Company Information Card - For Client Role */}
+            {user.role === "client" && (
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
+                    {lang === "vi"
+                      ? "Thông tin công ty"
+                      : "Company Information"}
+                  </h3>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() =>
+                      setIsEditingCompanyInfo(!isEditingCompanyInfo)
+                    }
                   >
-                    <div className={styles.formRow}>
+                    {isEditingCompanyInfo
+                      ? lang === "vi"
+                        ? "Hủy"
+                        : "Cancel"
+                      : lang === "vi"
+                      ? "Chỉnh sửa"
+                      : "Edit"}
+                  </button>
+                </div>
+
+                <div className={styles.cardContent}>
+                  {!isEditingCompanyInfo ? (
+                    <div className={styles.infoGrid}>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi" ? "Tên công ty" : "Company Name"}
+                        </label>
+                        <p>
+                          {userProfile?.companyName ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi" ? "Loại công ty" : "Company Type"}
+                        </label>
+                        <p>
+                          {userProfile?.companyType ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi" ? "Quy mô công ty" : "Company Size"}
+                        </label>
+                        <p>
+                          {userProfile?.companySize ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{lang === "vi" ? "Website" : "Website"}</label>
+                        <p>
+                          {userProfile?.website ? (
+                            <a
+                              href={userProfile.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.link}
+                            >
+                              {userProfile.website}
+                            </a>
+                          ) : lang === "vi" ? (
+                            "Chưa cung cấp"
+                          ) : (
+                            "Not provided"
+                          )}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi" ? "Ngành nghề" : "Industry"}
+                        </label>
+                        <p>
+                          {userProfile?.industry ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{lang === "vi" ? "Mô tả" : "Description"}</label>
+                        <p>
+                          {userProfile?.description ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi" ? "Trụ sở chính" : "Headquarters"}
+                        </label>
+                        <p>
+                          {userProfile?.headquarters ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi" ? "Năm thành lập" : "Founded Year"}
+                        </label>
+                        <p>
+                          {userProfile?.foundedYear ||
+                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={handleUpdateCompanyInfo}
+                      className={styles.editForm}
+                    >
                       <div className={styles.formGroup}>
                         <label>
-                          {t("profile.professional.hourlyRate")} (USD)
+                          {lang === "vi" ? "Tên công ty" : "Company Name"} *
                         </label>
                         <input
-                          type="number"
-                          step="0.01"
-                          value={professionalForm.hourlyRate}
+                          type="text"
+                          value={companyInfoForm.companyName}
                           onChange={(e) =>
-                            setProfessionalForm({
-                              ...professionalForm,
-                              hourlyRate: e.target.value,
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              companyName: e.target.value,
                             })
                           }
-                          placeholder={t(
-                            "profile.professional.hourlyRatePlaceholder"
-                          )}
+                          required
+                          placeholder={
+                            lang === "vi"
+                              ? "Nhập tên công ty"
+                              : "Enter company name"
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.formRow}>
+                        <div className={styles.formGroup}>
+                          <label>
+                            {lang === "vi" ? "Loại công ty" : "Company Type"}
+                          </label>
+                          <select
+                            value={companyInfoForm.companyType}
+                            onChange={(e) =>
+                              setCompanyInfoForm({
+                                ...companyInfoForm,
+                                companyType: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="">
+                              {lang === "vi"
+                                ? "Chọn loại công ty"
+                                : "Select company type"}
+                            </option>
+                            <option value="startup">
+                              {lang === "vi" ? "Startup" : "Startup"}
+                            </option>
+                            <option value="corporation">
+                              {lang === "vi" ? "Tập đoàn" : "Corporation"}
+                            </option>
+                            <option value="nonprofit">
+                              {lang === "vi" ? "Phi lợi nhuận" : "Nonprofit"}
+                            </option>
+                            <option value="government">
+                              {lang === "vi" ? "Chính phủ" : "Government"}
+                            </option>
+                            <option value="healthcare">
+                              {lang === "vi" ? "Y tế" : "Healthcare"}
+                            </option>
+                            <option value="education">
+                              {lang === "vi" ? "Giáo dục" : "Education"}
+                            </option>
+                            <option value="other">
+                              {lang === "vi" ? "Khác" : "Other"}
+                            </option>
+                          </select>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>
+                            {lang === "vi" ? "Quy mô công ty" : "Company Size"}
+                          </label>
+                          <select
+                            value={companyInfoForm.companySize}
+                            onChange={(e) =>
+                              setCompanyInfoForm({
+                                ...companyInfoForm,
+                                companySize: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="">
+                              {lang === "vi"
+                                ? "Chọn quy mô"
+                                : "Select company size"}
+                            </option>
+                            <option value="size_1_10">
+                              1-10 {lang === "vi" ? "nhân viên" : "employees"}
+                            </option>
+                            <option value="size_11_50">
+                              11-50 {lang === "vi" ? "nhân viên" : "employees"}
+                            </option>
+                            <option value="size_51_200">
+                              51-200 {lang === "vi" ? "nhân viên" : "employees"}
+                            </option>
+                            <option value="size_201_500">
+                              201-500{" "}
+                              {lang === "vi" ? "nhân viên" : "employees"}
+                            </option>
+                            <option value="size_501_1000">
+                              501-1000{" "}
+                              {lang === "vi" ? "nhân viên" : "employees"}
+                            </option>
+                            <option value="size_1001_plus">
+                              1001+ {lang === "vi" ? "nhân viên" : "employees"}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className={styles.formRow}>
+                        <div className={styles.formGroup}>
+                          <label>{lang === "vi" ? "Website" : "Website"}</label>
+                          <input
+                            type="url"
+                            value={companyInfoForm.website}
+                            onChange={(e) =>
+                              setCompanyInfoForm({
+                                ...companyInfoForm,
+                                website: e.target.value,
+                              })
+                            }
+                            placeholder="https://example.com"
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>
+                            {lang === "vi" ? "Năm thành lập" : "Founded Year"}
+                          </label>
+                          <input
+                            type="number"
+                            min="1800"
+                            max={new Date().getFullYear()}
+                            value={companyInfoForm.foundedYear}
+                            onChange={(e) =>
+                              setCompanyInfoForm({
+                                ...companyInfoForm,
+                                foundedYear: e.target.value,
+                              })
+                            }
+                            placeholder="YYYY"
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>
+                          {lang === "vi" ? "Ngành nghề" : "Industry"}
+                        </label>
+                        <input
+                          type="text"
+                          value={companyInfoForm.industry}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              industry: e.target.value,
+                            })
+                          }
+                          placeholder={
+                            lang === "vi"
+                              ? "Ví dụ: Công nghệ, Dịch vụ, Sản xuất..."
+                              : "e.g., Technology, Services, Manufacturing..."
+                          }
                         />
                       </div>
 
                       <div className={styles.formGroup}>
-                        <label>{t("profile.professional.experience")}</label>
-                        <input
-                          type="number"
-                          value={professionalForm.experience}
-                          onChange={(e) =>
-                            setProfessionalForm({
-                              ...professionalForm,
-                              experience: e.target.value,
-                            })
-                          }
-                          placeholder="e.g., 5"
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label>{t("profile.professional.specializations")}</label>
-                      <div className={styles.specializationsInput}>
+                        <label>
+                          {lang === "vi" ? "Trụ sở chính" : "Headquarters"}
+                        </label>
                         <input
                           type="text"
-                          id="specialization-input"
-                          placeholder={t(
-                            "profile.professional.specializationsPlaceholder"
-                          )}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
+                          value={companyInfoForm.headquarters}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              headquarters: e.target.value,
+                            })
+                          }
+                          placeholder={
+                            lang === "vi"
+                              ? "Địa chỉ trụ sở chính"
+                              : "Headquarters address"
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>
+                          {lang === "vi"
+                            ? "Mô tả công ty"
+                            : "Company Description"}
+                        </label>
+                        <textarea
+                          value={companyInfoForm.description}
+                          onChange={(e) =>
+                            setCompanyInfoForm({
+                              ...companyInfoForm,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={5}
+                          placeholder={
+                            lang === "vi"
+                              ? "Mô tả về công ty của bạn..."
+                              : "Describe your company..."
+                          }
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className={styles.saveBtn}
+                        disabled={loading}
+                      >
+                        {loading
+                          ? lang === "vi"
+                            ? "Đang lưu..."
+                            : "Saving..."
+                          : lang === "vi"
+                          ? "Lưu thay đổi"
+                          : "Save Changes"}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Professional Information Card */}
+            {user.role === "interpreter" && (
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
+                    {t("profile.professional.title")}
+                  </h3>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() =>
+                      setIsEditingProfessional(!isEditingProfessional)
+                    }
+                  >
+                    {isEditingProfessional
+                      ? t("profile.professional.cancel")
+                      : t("profile.professional.edit")}
+                  </button>
+                </div>
+
+                <div className={styles.cardContent}>
+                  {!isEditingProfessional ? (
+                    <div className={styles.infoGrid}>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.professional.hourlyRate")}</label>
+                        <p>
+                          {userProfile?.hourlyRate
+                            ? `$${userProfile.hourlyRate} ${
+                                userProfile.currency || "USD"
+                              }`
+                            : t("profile.professional.notProvided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.professional.experience")}</label>
+                        <p>
+                          {userProfile?.experience ||
+                            t("profile.professional.notProvided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {t("profile.professional.specializations")}
+                        </label>
+                        <p>
+                          {userProfile?.specializations?.length
+                            ? userProfile.specializations.join(", ")
+                            : t("profile.professional.notProvided")}
+                        </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>{t("profile.professional.portfolio")}</label>
+                        <p>
+                          {userProfile?.portfolio ||
+                            t("profile.professional.notProvided")}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={handleUpdateProfessional}
+                      className={styles.editForm}
+                    >
+                      <div className={styles.formRow}>
+                        <div className={styles.formGroup}>
+                          <label>
+                            {t("profile.professional.hourlyRate")} (USD)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={professionalForm.hourlyRate}
+                            onChange={(e) =>
+                              setProfessionalForm({
+                                ...professionalForm,
+                                hourlyRate: e.target.value,
+                              })
+                            }
+                            placeholder={t(
+                              "profile.professional.hourlyRatePlaceholder"
+                            )}
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>{t("profile.professional.experience")}</label>
+                          <input
+                            type="number"
+                            value={professionalForm.experience}
+                            onChange={(e) =>
+                              setProfessionalForm({
+                                ...professionalForm,
+                                experience: e.target.value,
+                              })
+                            }
+                            placeholder="e.g., 5"
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>
+                          {t("profile.professional.specializations")}
+                        </label>
+                        <div className={styles.specializationsInput}>
+                          <input
+                            type="text"
+                            id="specialization-input"
+                            placeholder={t(
+                              "profile.professional.specializationsPlaceholder"
+                            )}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const value = e.target.value;
+                                console.log(
+                                  "Enter pressed, adding specialization:",
+                                  {
+                                    value,
+                                    trimmed: value?.trim(),
+                                    currentSpecializations:
+                                      professionalForm.specializations,
+                                  }
+                                );
+                                if (value && value.trim().length > 0) {
+                                  handleAddSpecialization(value);
+                                  e.target.value = "";
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
                               e.preventDefault();
-                              const value = e.target.value;
+                              const input = document.getElementById(
+                                "specialization-input"
+                              );
+                              const value = input?.value;
                               console.log(
-                                "Enter pressed, adding specialization:",
+                                "Add button clicked, adding specialization:",
                                 {
                                   value,
                                   trimmed: value?.trim(),
@@ -1896,130 +2063,108 @@ const ProfilePage = () => {
                               );
                               if (value && value.trim().length > 0) {
                                 handleAddSpecialization(value);
-                                e.target.value = "";
+                                input.value = "";
                               }
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const input = document.getElementById(
-                              "specialization-input"
-                            );
-                            const value = input?.value;
-                            console.log(
-                              "Add button clicked, adding specialization:",
-                              {
-                                value,
-                                trimmed: value?.trim(),
-                                currentSpecializations:
-                                  professionalForm.specializations,
-                              }
-                            );
-                            if (value && value.trim().length > 0) {
-                              handleAddSpecialization(value);
-                              input.value = "";
-                            }
-                          }}
-                          className={styles.addSpecializationBtn}
-                        >
-                          {lang === "vi" ? "Thêm" : "Add"}
-                        </button>
-                        <div className={styles.specializationTags}>
-                          {professionalForm.specializations.map(
-                            (spec, index) => (
-                              <span
-                                key={index}
-                                className={styles.specializationTag}
-                              >
-                                {spec}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleRemoveSpecialization(index)
-                                  }
+                            }}
+                            className={styles.addSpecializationBtn}
+                          >
+                            {lang === "vi" ? "Thêm" : "Add"}
+                          </button>
+                          <div className={styles.specializationTags}>
+                            {professionalForm.specializations.map(
+                              (spec, index) => (
+                                <span
+                                  key={index}
+                                  className={styles.specializationTag}
                                 >
-                                  ×
-                                </button>
-                              </span>
-                            )
-                          )}
+                                  {spec}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRemoveSpecialization(index)
+                                    }
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )
+                            )}
+                          </div>
                         </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.professional.portfolio")}</label>
+                        <textarea
+                          value={professionalForm.portfolio}
+                          onChange={(e) =>
+                            setProfessionalForm({
+                              ...professionalForm,
+                              portfolio: e.target.value,
+                            })
+                          }
+                          rows={5}
+                          placeholder={t(
+                            "profile.professional.portfolioPlaceholder"
+                          )}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className={styles.saveBtn}
+                        disabled={loading}
+                      >
+                        {loading
+                          ? t("profile.professional.saving")
+                          : t("profile.professional.save")}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Stats Card */}
+            {user.role === "interpreter" && (
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>
+                    {t("profile.stats.title")}
+                  </h3>
+                </div>
+
+                <div className={styles.cardContent}>
+                  <div className={styles.statsGrid}>
+                    <div className={styles.statItem}>
+                      <div className={styles.statIcon}>
+                        <FaStar />
+                      </div>
+                      <div className={styles.statInfo}>
+                        <h4>{userProfile?.rating || "0.0"}</h4>
+                        <p>{t("profile.stats.rating")}</p>
                       </div>
                     </div>
 
-                    <div className={styles.formGroup}>
-                      <label>{t("profile.professional.portfolio")}</label>
-                      <textarea
-                        value={professionalForm.portfolio}
-                        onChange={(e) =>
-                          setProfessionalForm({
-                            ...professionalForm,
-                            portfolio: e.target.value,
-                          })
-                        }
-                        rows={5}
-                        placeholder={t(
-                          "profile.professional.portfolioPlaceholder"
-                        )}
-                      />
+                    <div className={styles.statItem}>
+                      <div className={styles.statIcon}>✅</div>
+                      <div className={styles.statInfo}>
+                        <h4>{userProfile?.completedJobs || 0}</h4>
+                        <p>{t("profile.stats.totalJobs")}</p>
+                      </div>
                     </div>
 
-                    <button
-                      type="submit"
-                      className={styles.saveBtn}
-                      disabled={loading}
-                    >
-                      {loading
-                        ? t("profile.professional.saving")
-                        : t("profile.professional.save")}
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Stats Card */}
-          {user.role === "interpreter" && (
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>{t("profile.stats.title")}</h3>
-              </div>
-
-              <div className={styles.cardContent}>
-                <div className={styles.statsGrid}>
-                  <div className={styles.statItem}>
-                    <div className={styles.statIcon}>
-                      <FaStar />
-                    </div>
-                    <div className={styles.statInfo}>
-                      <h4>{userProfile?.rating || "0.0"}</h4>
-                      <p>{t("profile.stats.rating")}</p>
-                    </div>
-                  </div>
-
-                  <div className={styles.statItem}>
-                    <div className={styles.statIcon}>✅</div>
-                    <div className={styles.statInfo}>
-                      <h4>{userProfile?.completedJobs || 0}</h4>
-                      <p>{t("profile.stats.totalJobs")}</p>
-                    </div>
-                  </div>
-
-                  <div className={styles.statItem}>
-                    <div className={styles.statIcon}>📊</div>
-                    <div className={styles.statInfo}>
-                      <h4>{userProfile?.totalReviews || 0}</h4>
-                      <p>{t("profile.stats.completionRate")}</p>
+                    <div className={styles.statItem}>
+                      <div className={styles.statIcon}>📊</div>
+                      <div className={styles.statInfo}>
+                        <h4>{userProfile?.totalReviews || 0}</h4>
+                        <p>{t("profile.stats.completionRate")}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
         </div>
       </div>

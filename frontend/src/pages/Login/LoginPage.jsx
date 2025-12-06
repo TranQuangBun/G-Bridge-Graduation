@@ -1,79 +1,189 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ROUTES, LANGUAGES } from "../../constants";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../hooks/useToast";
 import { ToastContainer } from "../../components/Toast";
-import "./LoginPage.css";
-// Reuse header-style logo (no image file needed)
+import { ROUTES, LANGUAGES } from "../../constants";
+import {
+  FaEnvelope,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaGoogle,
+  FaFacebook,
+  FaUser,
+  FaBuilding,
+  FaBriefcase,
+} from "react-icons/fa";
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
+import "./LoginPage.css";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const { toasts, removeToast, showSuccess, showError } = useToast();
+  const { login, register } = useAuth();
+  const [activeTab, setActiveTab] = useState("login"); // "login" or "signup"
 
-  const [formData, setFormData] = useState({
+  // Login form state
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [loginErrors, setLoginErrors] = useState({});
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Register form state
+  const [registerData, setRegisterData] = useState({
+    fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
+    role: "",
+    companyName: "",
+    companyType: "corporation",
   });
+  const [registerErrors, setRegisterErrors] = useState({});
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const { toasts, showSuccess, showError, removeToast } = useToast();
+
+  // Language state
   const [language, setLanguage] = useState(
-    localStorage.getItem("language") || LANGUAGES.VI
+    () => localStorage.getItem("language") || LANGUAGES.VI
   );
-  const [showPassword, setShowPassword] = useState(false);
 
   const t = {
     vi: {
-      title: "Đăng nhập",
-      subtitle:
-        "Chào mừng bạn quay lại! Vui lòng đăng nhập vào tài khoản của bạn.",
-      email: "Địa chỉ email",
-      emailPlaceholder: "example@email.com",
+      // Tabs
+      loginTab: "Đăng nhập",
+      signupTab: "Đăng ký",
+
+      // Login
+      loginTitle: "Chào mừng trở lại",
+      loginSubtitle: "Đăng nhập để tiếp tục sử dụng dịch vụ",
+      email: "Email",
+      emailPlaceholder: "Nhập email của bạn",
       password: "Mật khẩu",
-      passwordPlaceholder: "Nhập mật khẩu của bạn",
+      passwordPlaceholder: "Nhập mật khẩu",
       remember: "Ghi nhớ đăng nhập",
       forgot: "Quên mật khẩu?",
-      login: "Đăng nhập",
+      loginButton: "Đăng nhập",
       loggingIn: "Đang đăng nhập...",
-      socialOr: "Hoặc đăng nhập với",
-      noAccount: "Chưa có tài khoản?",
-      registerFree: "Đăng ký miễn phí",
+
+      // Register
+      signupTitle: "Tạo tài khoản mới",
+      signupSubtitle: "Bắt đầu kết nối với thế giới",
+      chooseRole: "Chọn vai trò của bạn",
+      interpreter: "Phiên dịch viên",
+      interpreterDesc: "Tìm kiếm công việc phiên dịch",
+      company: "Công ty",
+      companyDesc: "Tuyển dụng phiên dịch viên",
+      fullName: "Họ và tên",
+      fullNamePlaceholder: "Nhập họ tên đầy đủ",
+      companyName: "Tên công ty",
+      companyNamePlaceholder: "Nhập tên công ty",
+      companyType: "Loại hình công ty",
+      corporation: "Công ty",
+      startup: "Startup",
+      nonprofit: "Phi lợi nhuận",
+      government: "Chính phủ",
+      healthcare: "Y tế",
+      education: "Giáo dục",
+      other: "Khác",
+      confirmPassword: "Xác nhận mật khẩu",
+      confirmPasswordPlaceholder: "Nhập lại mật khẩu",
+      signupButton: "Tạo tài khoản",
+      creatingAccount: "Đang tạo tài khoản...",
+
+      // Common
+      socialOr: "Hoặc tiếp tục với",
+
+      // Validation
       emailRequired: "Vui lòng nhập email",
       emailInvalid: "Email không hợp lệ",
       passwordRequired: "Vui lòng nhập mật khẩu",
-      switchHint: "Chuyển ngôn ngữ",
+      passwordLength: "Mật khẩu phải có ít nhất 6 ký tự",
+      passwordMatch: "Mật khẩu không khớp",
+      fullNameRequired: "Vui lòng nhập họ tên",
+      roleRequired: "Vui lòng chọn vai trò",
+      companyNameRequired: "Vui lòng nhập tên công ty",
+      confirmPasswordRequired: "Vui lòng xác nhận mật khẩu",
+
+      // Messages
+      loginSuccess: "Đăng nhập thành công!",
+      loginError: "Đăng nhập thất bại. Vui lòng kiểm tra lại.",
+      registerSuccess: "Đăng ký thành công!",
+      registerError: "Đăng ký thất bại. Vui lòng thử lại.",
+
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",
-      loginSuccess: "Đăng nhập thành công!",
-      loginError: "Đăng nhập thất bại",
+      switchHint: "Switch to English",
     },
     en: {
-      title: "Login",
-      subtitle: "Welcome back! Please sign in to your account.",
-      email: "Email address",
-      emailPlaceholder: "example@email.com",
+      // Tabs
+      loginTab: "Login",
+      signupTab: "Sign Up",
+
+      // Login
+      loginTitle: "Welcome back",
+      loginSubtitle: "Login to continue using our services",
+      email: "Email",
+      emailPlaceholder: "Enter your email",
       password: "Password",
       passwordPlaceholder: "Enter your password",
       remember: "Remember me",
       forgot: "Forgot password?",
-      login: "Login",
+      loginButton: "Login",
       loggingIn: "Logging in...",
-      socialOr: "Or login with",
-      noAccount: "Don't have an account?",
-      registerFree: "Register for free",
+
+      // Register
+      signupTitle: "Create new account",
+      signupSubtitle: "Start connecting with the world",
+      chooseRole: "Choose your role",
+      interpreter: "Interpreter",
+      interpreterDesc: "Find interpretation jobs",
+      company: "Company",
+      companyDesc: "Hire interpreters",
+      fullName: "Full Name",
+      fullNamePlaceholder: "Enter your full name",
+      companyName: "Company Name",
+      companyNamePlaceholder: "Enter company name",
+      companyType: "Company Type",
+      corporation: "Corporation",
+      startup: "Startup",
+      nonprofit: "Non-profit",
+      government: "Government",
+      healthcare: "Healthcare",
+      education: "Education",
+      other: "Other",
+      confirmPassword: "Confirm Password",
+      confirmPasswordPlaceholder: "Re-enter password",
+      signupButton: "Create Account",
+      creatingAccount: "Creating account...",
+
+      // Common
+      socialOr: "Or continue with",
+
+      // Validation
       emailRequired: "Please enter email",
       emailInvalid: "Invalid email",
       passwordRequired: "Please enter password",
-      switchHint: "Switch language",
+      passwordLength: "Password must be at least 6 characters",
+      passwordMatch: "Passwords do not match",
+      fullNameRequired: "Please enter full name",
+      roleRequired: "Please choose a role",
+      companyNameRequired: "Please enter company name",
+      confirmPasswordRequired: "Please confirm password",
+
+      // Messages
+      loginSuccess: "Login successful!",
+      loginError: "Login failed. Please check your credentials.",
+      registerSuccess: "Registration successful!",
+      registerError: "Registration failed. Please try again.",
+
       showPassword: "Show password",
       hidePassword: "Hide password",
-      loginSuccess: "Login successful!",
-      loginError: "Login failed",
+      switchHint: "Switch to Tiếng Việt",
     },
   }[language];
 
@@ -83,62 +193,95 @@ const LoginPage = () => {
     localStorage.setItem("language", newLang);
   };
 
-  const handleChange = (e) => {
+  // Login handlers
+  const handleLoginChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+    setLoginData((prev) => ({ ...prev, [name]: value }));
+    if (loginErrors[name]) {
+      setLoginErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  // Register handlers
+  const handleRegisterChange = (e) => {
+    const { name, value } = e.target;
+    setRegisterData((prev) => ({ ...prev, [name]: value }));
+    if (registerErrors[name]) {
+      setRegisterErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
 
-    if (!formData.email.trim()) {
+  const handleRoleSelect = (role) => {
+    setRegisterData((prev) => ({ ...prev, role }));
+    if (registerErrors.role) {
+      setRegisterErrors((prev) => ({ ...prev, role: "" }));
+    }
+  };
+
+  // Validation
+  const validateLogin = () => {
+    const newErrors = {};
+    if (!loginData.email.trim()) {
       newErrors.email = t.emailRequired;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(loginData.email)) {
       newErrors.email = t.emailInvalid;
     }
-    if (!formData.password) {
+    if (!loginData.password) {
       newErrors.password = t.passwordRequired;
     }
-
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
+  const validateRegister = () => {
+    const newErrors = {};
+    if (!registerData.fullName.trim()) {
+      newErrors.fullName = t.fullNameRequired;
+    }
+    if (!registerData.role) {
+      newErrors.role = t.roleRequired;
+    }
+    if (registerData.role === "client" && !registerData.companyName.trim()) {
+      newErrors.companyName = t.companyNameRequired;
+    }
+    if (!registerData.email.trim()) {
+      newErrors.email = t.emailRequired;
+    } else if (!/\S+@\S+\.\S+/.test(registerData.email)) {
+      newErrors.email = t.emailInvalid;
+    }
+    if (!registerData.password) {
+      newErrors.password = t.passwordRequired;
+    } else if (registerData.password.length < 6) {
+      newErrors.password = t.passwordLength;
+    }
+    if (!registerData.confirmPassword) {
+      newErrors.confirmPassword = t.confirmPasswordRequired;
+    } else if (registerData.password !== registerData.confirmPassword) {
+      newErrors.confirmPassword = t.passwordMatch;
+    }
+    return newErrors;
+  };
+
+  // Submit handlers
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validateForm();
+    const newErrors = validateLogin();
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+      setLoginErrors(newErrors);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Call login API
-      const result = await login(formData.email, formData.password);
+      const result = await login(loginData.email, loginData.password);
 
       if (result.success) {
-        // Show success message
         showSuccess(t.loginSuccess);
-
-        // Redirect to HOME after login
         setTimeout(() => {
           navigate(ROUTES.HOME);
         }, 500);
       } else {
-        // Show error
         showError(result.error || t.loginError);
       }
     } catch (error) {
@@ -149,167 +292,502 @@ const LoginPage = () => {
     }
   };
 
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = validateRegister();
+
+    if (Object.keys(newErrors).length > 0) {
+      setRegisterErrors(newErrors);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const registerPayload = {
+        fullName: registerData.fullName,
+        email: registerData.email,
+        password: registerData.password,
+        role: registerData.role,
+      };
+
+      if (registerData.role === "client") {
+        registerPayload.companyName = registerData.companyName;
+        registerPayload.companyType = registerData.companyType;
+      }
+
+      const result = await register(registerPayload);
+
+      if (result.success) {
+        showSuccess(t.registerSuccess);
+        setTimeout(() => {
+          navigate(ROUTES.HOME);
+        }, 500);
+      } else {
+        showError(result.error || t.registerError);
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      showError(t.registerError);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="auth-page">
+    <div className="modern-auth-page">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <div className="auth-background">
-        <div className="floating-shapes">
-          <div className="shape shape-1"></div>
-          <div className="shape shape-2"></div>
-          <div className="shape shape-3"></div>
-          <div className="shape shape-4"></div>
-        </div>
+      {/* Background */}
+      <div className="modern-auth-background">
+        <div className="gradient-orb orb-1"></div>
+        <div className="gradient-orb orb-2"></div>
+        <div className="gradient-orb orb-3"></div>
       </div>
 
-      <div className="auth-container">
-        <div className="auth-card">
-          <div className="brand-header">
-            <Link
-              to={ROUTES.HOME}
-              className="brand-link brand-link--inline"
-              aria-label="G-Bridge Home"
-            >
-              <div className="logo-icon">
-                <span className="logo-text">G</span>
+      {/* Auth Container */}
+      <div className="modern-auth-container">
+        <div className="modern-auth-card">
+          {/* Header with Logo and Language */}
+          <div className="modern-auth-header">
+            <Link to={ROUTES.HOME} className="logo-section">
+              <div className="logo-circle">
+                <span className="logo-letter">G</span>
               </div>
-              <span className="brand-name">G-Bridge</span>
+              <span className="logo-name">G-Bridge</span>
             </Link>
+
             <button
               type="button"
-              className="language-toggle"
+              className="language-switch-btn"
               onClick={handleLanguageSwitch}
               title={t.switchHint}
             >
               <img
                 src={language === LANGUAGES.VI ? VNFlag : USFlag}
                 alt={language === LANGUAGES.VI ? "Vietnamese" : "English"}
-                className="language-flag"
+                className="flag-icon"
               />
-              <span className="language-code">{language.toUpperCase()}</span>
+              <span className="lang-code">{language.toUpperCase()}</span>
             </button>
           </div>
-          <div className="auth-header">
-            <h1 className="auth-title-gradient">{t.title}</h1>
-            <p className="auth-subtitle-text">{t.subtitle}</p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="email">{t.email}</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder={t.emailPlaceholder}
-                className={errors.email ? "error" : ""}
-              />
-              {errors.email && (
-                <span className="error-message">{errors.email}</span>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">{t.password}</label>
-              <div className="password-input-wrapper">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder={t.passwordPlaceholder}
-                  className={errors.password ? "error" : ""}
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword((p) => !p)}
-                  aria-label={showPassword ? t.hidePassword : t.showPassword}
-                  title={showPassword ? t.hidePassword : t.showPassword}
-                >
-                  <span role="img" aria-hidden="true">
-                    {showPassword ? "🐵" : "🙈"}
-                  </span>
-                </button>
-              </div>
-              {errors.password && (
-                <span className="error-message">{errors.password}</span>
-              )}
-            </div>
-
-            <div className="form-options">
-              <label className="checkbox-container">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span className="checkmark"></span>
-                {t.remember}
-              </label>
-              <Link to="/forgot-password" className="forgot-password">
-                {t.forgot}
-              </Link>
-            </div>
-
+          {/* Tab Navigation */}
+          <div className="tab-navigation">
             <button
-              type="submit"
-              className={`auth-btn ${isLoading ? "loading" : ""}`}
-              disabled={isLoading}
+              type="button"
+              className={`tab-btn ${activeTab === "login" ? "active" : ""}`}
+              onClick={() => setActiveTab("login")}
             >
-              {isLoading ? t.loggingIn : t.login}
+              {t.loginTab}
             </button>
-          </form>
-
-          <div className="auth-footer">
-            <p>
-              {t.noAccount}
-              <Link to={ROUTES.REGISTER} className="auth-link">
-                {t.registerFree}
-              </Link>
-            </p>
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === "signup" ? "active" : ""}`}
+              onClick={() => setActiveTab("signup")}
+            >
+              {t.signupTab}
+            </button>
+            <div
+              className={`tab-indicator ${
+                activeTab === "signup" ? "right" : ""
+              }`}
+            ></div>
           </div>
 
-          <div className="social-login">
-            <div className="divider">
-              <span>{t.socialOr}</span>
+          {/* Login Form */}
+          {activeTab === "login" && (
+            <div className="auth-form-container">
+              <div className="form-title-section">
+                <h1 className="form-main-title">{t.loginTitle}</h1>
+                <p className="form-subtitle">{t.loginSubtitle}</p>
+              </div>
+
+              <form onSubmit={handleLoginSubmit} className="modern-auth-form">
+                <div className="input-group">
+                  <label htmlFor="login-email" className="input-label">
+                    {t.email}
+                  </label>
+                  <div className="input-with-icon">
+                    <FaEnvelope className="input-icon" />
+                    <input
+                      type="email"
+                      id="login-email"
+                      name="email"
+                      value={loginData.email}
+                      onChange={handleLoginChange}
+                      placeholder={t.emailPlaceholder}
+                      className={`modern-input ${
+                        loginErrors.email ? "error" : ""
+                      }`}
+                    />
+                  </div>
+                  {loginErrors.email && (
+                    <span className="error-text">{loginErrors.email}</span>
+                  )}
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="login-password" className="input-label">
+                    {t.password}
+                  </label>
+                  <div className="input-with-icon">
+                    <FaLock className="input-icon" />
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      id="login-password"
+                      name="password"
+                      value={loginData.password}
+                      onChange={handleLoginChange}
+                      placeholder={t.passwordPlaceholder}
+                      className={`modern-input ${
+                        loginErrors.password ? "error" : ""
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      title={
+                        showLoginPassword ? t.hidePassword : t.showPassword
+                      }
+                    >
+                      {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {loginErrors.password && (
+                    <span className="error-text">{loginErrors.password}</span>
+                  )}
+                </div>
+
+                <div className="form-options-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="checkbox-input"
+                    />
+                    <span className="checkbox-text">{t.remember}</span>
+                  </label>
+                  <a href="/forgot-password" className="forgot-link">
+                    {t.forgot}
+                  </a>
+                </div>
+
+                <button
+                  type="submit"
+                  className="submit-btn primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? t.loggingIn : t.loginButton}
+                </button>
+              </form>
+
+              <div className="social-login-section">
+                <div className="divider-with-text">
+                  <span>{t.socialOr}</span>
+                </div>
+                <div className="social-buttons-grid">
+                  <button type="button" className="social-btn google-btn">
+                    <FaGoogle />
+                    <span>Google</span>
+                  </button>
+                  <button type="button" className="social-btn facebook-btn">
+                    <FaFacebook />
+                    <span>Facebook</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="social-buttons">
-              <button className="social-btn google">
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                Google
-              </button>
-              <button className="social-btn facebook">
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <path
-                    fill="#1877F2"
-                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
-                  />
-                </svg>
-                Facebook
-              </button>
+          )}
+
+          {/* Register Form */}
+          {activeTab === "signup" && (
+            <div className="auth-form-container">
+              <div className="form-title-section">
+                <h1 className="form-main-title">{t.signupTitle}</h1>
+                <p className="form-subtitle">{t.signupSubtitle}</p>
+              </div>
+
+              {/* Role Selection */}
+              {!registerData.role ? (
+                <div className="role-selection-section">
+                  <h3 className="role-selection-title">{t.chooseRole}</h3>
+                  <div className="role-cards-grid">
+                    <button
+                      type="button"
+                      className="role-card"
+                      onClick={() => handleRoleSelect("interpreter")}
+                    >
+                      <div className="role-icon-wrapper interpreter-color">
+                        <FaUser />
+                      </div>
+                      <h4 className="role-card-title">{t.interpreter}</h4>
+                      <p className="role-card-desc">{t.interpreterDesc}</p>
+                    </button>
+                    <button
+                      type="button"
+                      className="role-card"
+                      onClick={() => handleRoleSelect("client")}
+                    >
+                      <div className="role-icon-wrapper company-color">
+                        <FaBuilding />
+                      </div>
+                      <h4 className="role-card-title">{t.company}</h4>
+                      <p className="role-card-desc">{t.companyDesc}</p>
+                    </button>
+                  </div>
+                  {registerErrors.role && (
+                    <span className="error-text center">
+                      {registerErrors.role}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleRegisterSubmit}
+                  className="modern-auth-form"
+                >
+                  {/* Selected Role Display */}
+                  <div className="selected-role-display">
+                    <div className="selected-role-badge">
+                      {registerData.role === "interpreter" ? (
+                        <>
+                          <FaUser /> {t.interpreter}
+                        </>
+                      ) : (
+                        <>
+                          <FaBuilding /> {t.company}
+                        </>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="change-role-btn"
+                      onClick={() =>
+                        setRegisterData((prev) => ({ ...prev, role: "" }))
+                      }
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  {/* Full Name */}
+                  <div className="input-group">
+                    <label htmlFor="signup-fullname" className="input-label">
+                      {t.fullName}
+                    </label>
+                    <div className="input-with-icon">
+                      <FaUser className="input-icon" />
+                      <input
+                        type="text"
+                        id="signup-fullname"
+                        name="fullName"
+                        value={registerData.fullName}
+                        onChange={handleRegisterChange}
+                        placeholder={t.fullNamePlaceholder}
+                        className={`modern-input ${
+                          registerErrors.fullName ? "error" : ""
+                        }`}
+                      />
+                    </div>
+                    {registerErrors.fullName && (
+                      <span className="error-text">
+                        {registerErrors.fullName}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Company Fields */}
+                  {registerData.role === "client" && (
+                    <>
+                      <div className="input-group">
+                        <label htmlFor="signup-company" className="input-label">
+                          {t.companyName}
+                        </label>
+                        <div className="input-with-icon">
+                          <FaBuilding className="input-icon" />
+                          <input
+                            type="text"
+                            id="signup-company"
+                            name="companyName"
+                            value={registerData.companyName}
+                            onChange={handleRegisterChange}
+                            placeholder={t.companyNamePlaceholder}
+                            className={`modern-input ${
+                              registerErrors.companyName ? "error" : ""
+                            }`}
+                          />
+                        </div>
+                        {registerErrors.companyName && (
+                          <span className="error-text">
+                            {registerErrors.companyName}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="input-group">
+                        <label
+                          htmlFor="signup-company-type"
+                          className="input-label"
+                        >
+                          {t.companyType}
+                        </label>
+                        <div className="input-with-icon">
+                          <FaBriefcase className="input-icon" />
+                          <select
+                            id="signup-company-type"
+                            name="companyType"
+                            value={registerData.companyType}
+                            onChange={handleRegisterChange}
+                            className="modern-input modern-select"
+                          >
+                            <option value="corporation">{t.corporation}</option>
+                            <option value="startup">{t.startup}</option>
+                            <option value="nonprofit">{t.nonprofit}</option>
+                            <option value="government">{t.government}</option>
+                            <option value="healthcare">{t.healthcare}</option>
+                            <option value="education">{t.education}</option>
+                            <option value="other">{t.other}</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Email */}
+                  <div className="input-group">
+                    <label htmlFor="signup-email" className="input-label">
+                      {t.email}
+                    </label>
+                    <div className="input-with-icon">
+                      <FaEnvelope className="input-icon" />
+                      <input
+                        type="email"
+                        id="signup-email"
+                        name="email"
+                        value={registerData.email}
+                        onChange={handleRegisterChange}
+                        placeholder={t.emailPlaceholder}
+                        className={`modern-input ${
+                          registerErrors.email ? "error" : ""
+                        }`}
+                      />
+                    </div>
+                    {registerErrors.email && (
+                      <span className="error-text">{registerErrors.email}</span>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div className="input-group">
+                    <label htmlFor="signup-password" className="input-label">
+                      {t.password}
+                    </label>
+                    <div className="input-with-icon">
+                      <FaLock className="input-icon" />
+                      <input
+                        type={showRegisterPassword ? "text" : "password"}
+                        id="signup-password"
+                        name="password"
+                        value={registerData.password}
+                        onChange={handleRegisterChange}
+                        placeholder={t.passwordPlaceholder}
+                        className={`modern-input ${
+                          registerErrors.password ? "error" : ""
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-btn"
+                        onClick={() =>
+                          setShowRegisterPassword(!showRegisterPassword)
+                        }
+                        title={
+                          showRegisterPassword ? t.hidePassword : t.showPassword
+                        }
+                      >
+                        {showRegisterPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    {registerErrors.password && (
+                      <span className="error-text">
+                        {registerErrors.password}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="input-group">
+                    <label
+                      htmlFor="signup-confirm-password"
+                      className="input-label"
+                    >
+                      {t.confirmPassword}
+                    </label>
+                    <div className="input-with-icon">
+                      <FaLock className="input-icon" />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        id="signup-confirm-password"
+                        name="confirmPassword"
+                        value={registerData.confirmPassword}
+                        onChange={handleRegisterChange}
+                        placeholder={t.confirmPasswordPlaceholder}
+                        className={`modern-input ${
+                          registerErrors.confirmPassword ? "error" : ""
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-btn"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        title={
+                          showConfirmPassword ? t.hidePassword : t.showPassword
+                        }
+                      >
+                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    {registerErrors.confirmPassword && (
+                      <span className="error-text">
+                        {registerErrors.confirmPassword}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="submit-btn primary"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? t.creatingAccount : t.signupButton}
+                  </button>
+                </form>
+              )}
+
+              {registerData.role && (
+                <div className="social-login-section">
+                  <div className="divider-with-text">
+                    <span>{t.socialOr}</span>
+                  </div>
+                  <div className="social-buttons-grid">
+                    <button type="button" className="social-btn google-btn">
+                      <FaGoogle />
+                      <span>Google</span>
+                    </button>
+                    <button type="button" className="social-btn facebook-btn">
+                      <FaFacebook />
+                      <span>Facebook</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

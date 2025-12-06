@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../constants";
+import { useLanguage } from "../../translet/LanguageContext";
 import "./Footer.css";
 
 // Import social media icons
@@ -10,7 +11,7 @@ import telegramIcon from "../../assets/images/socials/telegram.png";
 import tiktokIcon from "../../assets/images/socials/tiktok.png";
 
 const Footer = () => {
-  const [currentLanguage, setCurrentLanguage] = useState("vi");
+  const { lang } = useLanguage();
   const [email, setEmail] = useState("");
 
   // Handle newsletter form submission
@@ -83,15 +84,7 @@ const Footer = () => {
     },
   };
 
-  // Load saved language on component mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem("language");
-    if (savedLanguage && (savedLanguage === "vi" || savedLanguage === "en")) {
-      setCurrentLanguage(savedLanguage);
-    }
-  }, []);
-
-  const t = translations[currentLanguage];
+  const t = translations[lang];
 
   return (
     <footer className="modern-footer">
@@ -231,9 +224,7 @@ const Footer = () => {
                     type="email"
                     className="newsletter-input"
                     placeholder={
-                      currentLanguage === "vi"
-                        ? "Nhập email của bạn"
-                        : "Enter your email"
+                      lang === "vi" ? "Nhập email của bạn" : "Enter your email"
                     }
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
