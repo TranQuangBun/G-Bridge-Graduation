@@ -26,7 +26,18 @@ import {
   FaEnvelope,
   FaHeart,
   FaReply,
+  FaBookmark,
+  FaCamera,
+  FaGlobe,
+  FaMoon,
+  FaBell,
+  FaLock,
+  FaHistory,
+  FaTrash,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -35,6 +46,12 @@ const INTERPRETER_SIDEBAR_MENU = [
     id: "applications",
     icon: FaClipboardList,
     labelKey: "applications",
+    active: false,
+  },
+  {
+    id: "savedJobs",
+    icon: FaBookmark,
+    labelKey: "savedJobs",
     active: false,
   },
   {
@@ -55,6 +72,12 @@ const CLIENT_SIDEBAR_MENU = [
     id: "jobApplications",
     icon: FaClipboardList,
     labelKey: "jobApplications",
+    active: false,
+  },
+  {
+    id: "savedInterpreters",
+    icon: FaBookmark,
+    labelKey: "savedInterpreters",
     active: false,
   },
   {
@@ -114,6 +137,32 @@ function DashboardPage() {
     seconds: 0,
   });
 
+  // Settings state
+  const [settingsData, setSettingsData] = useState({
+    avatar: null,
+    name: user?.fullName || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    role: user?.role || "interpreter",
+  });
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [themeMode, setThemeMode] = useState("light");
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [smsNotifications, setSmsNotifications] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
   // Redirect to login if not authenticated
   useEffect(() => {
     // Đợi cho loading xong trước khi redirect
@@ -122,11 +171,15 @@ function DashboardPage() {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  // Check for section query parameter and set active menu
+  // Check for tab query parameter and set active menu
   useEffect(() => {
-    const section = searchParams.get("section");
-    if (section === "notifications") {
+    const tab = searchParams.get("tab");
+    if (tab === "notifications") {
       setActiveMenu("notifications");
+      // Remove the query parameter after setting the menu
+      setSearchParams({}, { replace: true });
+    } else if (tab === "settings") {
+      setActiveMenu("settings");
       // Remove the query parameter after setting the menu
       setSearchParams({}, { replace: true });
     }
@@ -262,11 +315,14 @@ function DashboardPage() {
             const jobsData = await jobService.getClientJobs();
             const jobs = jobsData.data || [];
             const allApplications = [];
-            
+
             // Fetch applications for each job
-            for (const job of jobs.slice(0, 5)) { // Limit to first 5 jobs for performance
+            for (const job of jobs.slice(0, 5)) {
+              // Limit to first 5 jobs for performance
               try {
-                const applicationsData = await jobService.getJobApplications(job.id);
+                const applicationsData = await jobService.getJobApplications(
+                  job.id
+                );
                 if (applicationsData?.data) {
                   const jobApps = applicationsData.data.map((app) => ({
                     ...app,
@@ -276,22 +332,29 @@ function DashboardPage() {
                   allApplications.push(...jobApps);
                 }
               } catch (error) {
-                console.error(`Error fetching applications for job ${job.id}:`, error);
+                console.error(
+                  `Error fetching applications for job ${job.id}:`,
+                  error
+                );
               }
             }
-            
+
             // Sort by createdAt and get latest 3
             const recentApplications = allApplications
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
               .slice(0, 3)
               .map((app) => ({
                 id: app.id,
-                company: app.interpreterProfile?.user?.fullName || app.interpreterProfile?.user?.email?.split("@")[0] || "Interpreter",
+                company:
+                  app.interpreterProfile?.user?.fullName ||
+                  app.interpreterProfile?.user?.email?.split("@")[0] ||
+                  "Interpreter",
                 logo: FaBuilding,
                 position: app.jobTitle || "Job",
                 jobType: "Application",
                 workType: app.status || "pending",
-                location: app.interpreterProfile?.user?.address || "Location TBD",
+                location:
+                  app.interpreterProfile?.user?.address || "Location TBD",
                 salary: "-",
                 dateApplied: app.createdAt || new Date().toISOString(),
                 status: app.status || "pending",
@@ -529,12 +592,17 @@ function DashboardPage() {
                     setActiveMenu(item.id);
                     if (item.id === "applications") {
                       navigate(ROUTES.MY_APPLICATIONS);
+                    } else if (item.id === "savedJobs") {
+                      navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
                       navigate(ROUTES.MY_JOBS); // For client: navigate to job management page
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS); // For client: shows applications to their posted jobs
+                    } else if (item.id === "savedInterpreters") {
+                      navigate(ROUTES.SAVED_INTERPRETERS);
                     } else if (item.id === "notifications") {
-                      setSearchParams({ section: "notifications" });
+                      // Stay on dashboard and show notifications section
+                      setSearchParams({ tab: "notifications" });
                     } else if (item.id === "profile") {
                       navigate(ROUTES.PROFILE);
                     } else if (item.id === "settings") {
@@ -884,7 +952,9 @@ function DashboardPage() {
                           <FaMagic />
                         </span>
                         <span className={styles.featureText}>
-                          Unlimited job applications
+                          {t(
+                            "dashboard.premiumFeatures.unlimitedApplications"
+                          ) || "Unlimited job applications"}
                         </span>
                       </div>
                       <div className={styles.featureItem}>
@@ -892,7 +962,8 @@ function DashboardPage() {
                           <FaRocket />
                         </span>
                         <span className={styles.featureText}>
-                          Priority in search results
+                          {t("dashboard.premiumFeatures.prioritySearch") ||
+                            "Priority in search results"}
                         </span>
                       </div>
                       <div className={styles.featureItem}>
@@ -900,7 +971,8 @@ function DashboardPage() {
                           <FaChartLine />
                         </span>
                         <span className={styles.featureText}>
-                          Advanced analytics
+                          {t("dashboard.premiumFeatures.advancedAnalytics") ||
+                            "Advanced analytics"}
                         </span>
                       </div>
                     </div>
@@ -918,202 +990,204 @@ function DashboardPage() {
               <div className={styles.twoColumnSection}>
                 {/* Recent Jobs/Applications */}
                 <section className={styles.recentJobsSection}>
-                    <div className={styles.sectionHeader}>
-                      <h2 className={styles.sectionTitle}>
-                        {t("dashboard.recentJobs.title")}
-                      </h2>
-                      <button
-                        className={styles.viewAllBtn}
-                        onClick={() => navigate(ROUTES.MY_APPLICATIONS)}
-                      >
-                        {t("dashboard.recentJobs.viewAll")}
-                      </button>
-                    </div>
+                  <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>
+                      {t("dashboard.recentJobs.title")}
+                    </h2>
+                    <button
+                      className={styles.viewAllBtn}
+                      onClick={() => navigate(ROUTES.MY_APPLICATIONS)}
+                    >
+                      {t("dashboard.recentJobs.viewAll")}
+                    </button>
+                  </div>
 
-                    <div className={styles.jobsList}>
-                      {dataLoading ? (
-                        <div style={{ padding: "20px", textAlign: "center" }}>
-                          {t("common.loading") || "Loading..."}
-                        </div>
-                      ) : recentJobs.length === 0 ? (
-                        <div style={{ padding: "20px", textAlign: "center" }}>
-                          {t("dashboard.recentJobs.noApplications") ||
-                            "No applications yet"}
-                        </div>
-                      ) : (
-                        recentJobs.map((job) => (
-                          <div key={job.id} className={styles.jobCard}>
-                            {/* Job Info Column */}
-                            <div className={styles.jobInfo}>
-                              <div className={styles.jobHeader}>
-                                <div className={styles.companyLogo}>
-                                  {typeof job.logo === "string" ? (
-                                    job.logo
-                                  ) : job.logo ? (
-                                    <job.logo />
-                                  ) : (
-                                    <FaBuilding />
-                                  )}
+                  <div className={styles.jobsList}>
+                    {dataLoading ? (
+                      <div style={{ padding: "20px", textAlign: "center" }}>
+                        {t("common.loading") || "Loading..."}
+                      </div>
+                    ) : recentJobs.length === 0 ? (
+                      <div style={{ padding: "20px", textAlign: "center" }}>
+                        {t("dashboard.recentJobs.noApplications") ||
+                          "No applications yet"}
+                      </div>
+                    ) : (
+                      recentJobs.map((job) => (
+                        <div key={job.id} className={styles.jobCard}>
+                          {/* Job Info Column */}
+                          <div className={styles.jobInfo}>
+                            <div className={styles.jobHeader}>
+                              <div className={styles.companyLogo}>
+                                {typeof job.logo === "string" ? (
+                                  job.logo
+                                ) : job.logo ? (
+                                  <job.logo />
+                                ) : (
+                                  <FaBuilding />
+                                )}
+                              </div>
+                              <div className={styles.jobDetails}>
+                                <h3 className={styles.jobTitle}>
+                                  {job.position}
+                                </h3>
+                                <p className={styles.companyName}>
+                                  {job.company}
+                                </p>
+                                <div className={styles.jobTags}>
+                                  <span className={styles.tag}>
+                                    {job.workType}
+                                  </span>
+                                  <span className={styles.tag}>
+                                    {job.jobType}
+                                  </span>
                                 </div>
-                                <div className={styles.jobDetails}>
-                                  <h3 className={styles.jobTitle}>
-                                    {job.position}
-                                  </h3>
-                                  <p className={styles.companyName}>
-                                    {job.company}
-                                  </p>
-                                  <div className={styles.jobTags}>
-                                    <span className={styles.tag}>
-                                      {job.workType}
-                                    </span>
-                                    <span className={styles.tag}>
-                                      {job.jobType}
-                                    </span>
-                                  </div>
-                                  <div className={styles.jobMeta}>
-                                    <span className={styles.location}>
-                                      <FaMapMarkerAlt /> {job.location}
-                                    </span>
-                                    <span className={styles.salary}>
-                                      <FaDollarSign /> {job.salary}
-                                    </span>
-                                  </div>
+                                <div className={styles.jobMeta}>
+                                  <span className={styles.location}>
+                                    <FaMapMarkerAlt /> {job.location}
+                                  </span>
+                                  <span className={styles.salary}>
+                                    <FaDollarSign /> {job.salary}
+                                  </span>
                                 </div>
                               </div>
-                            </div>
-
-                            {/* Date Applied Column */}
-                            <div className={styles.dateColumn}>
-                              <span className={styles.dateLabel}>
-                                {t("dashboard.recentJobs.dateApplied")}
-                              </span>
-                              <span className={styles.dateValue}>
-                                {formatDate(job.dateApplied)}
-                              </span>
-                            </div>
-
-                            {/* Status Column */}
-                            <div className={styles.statusColumn}>
-                              <span className={styles.statusLabel}>
-                                {t("dashboard.recentJobs.status")}
-                              </span>
-                              <div
-                                className={`${styles.statusBadge} ${getStatusClass(
-                                  job.status
-                                )}`}
-                              >
-                                <span className={styles.statusIcon}>●</span>
-                                <span className={styles.statusText}>
-                                  {getStatusText(job.status)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Action Column */}
-                            <div className={styles.actionColumn}>
-                              <button className={styles.viewDetailsBtn}>
-                                {t("dashboard.recentJobs.viewDetails")}
-                              </button>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </section>
+
+                          {/* Date Applied Column */}
+                          <div className={styles.dateColumn}>
+                            <span className={styles.dateLabel}>
+                              {t("dashboard.recentJobs.dateApplied")}
+                            </span>
+                            <span className={styles.dateValue}>
+                              {formatDate(job.dateApplied)}
+                            </span>
+                          </div>
+
+                          {/* Status Column */}
+                          <div className={styles.statusColumn}>
+                            <span className={styles.statusLabel}>
+                              {t("dashboard.recentJobs.status")}
+                            </span>
+                            <div
+                              className={`${
+                                styles.statusBadge
+                              } ${getStatusClass(job.status)}`}
+                            >
+                              <span className={styles.statusIcon}>●</span>
+                              <span className={styles.statusText}>
+                                {getStatusText(job.status)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action Column */}
+                          <div className={styles.actionColumn}>
+                            <button className={styles.viewDetailsBtn}>
+                              {t("dashboard.recentJobs.viewDetails")}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
 
                 {/* Notifications */}
                 <section className={styles.notificationsSection}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>
-                    {t("dashboard.notifications.title") ||
-                      t("common.notifications") ||
-                      "Notifications"}
-                  </h2>
-                  <div className={styles.notificationHeaderActions}>
-                    {unreadNotifications.length > 0 && (
-                      <button
-                        className={styles.markAllBtn}
-                        onClick={handleMarkAllNotifications}
-                        disabled={markingAllNotifications}
-                      >
-                        {markingAllNotifications
-                          ? t("common.loading") || "Loading..."
-                          : t("dashboard.notifications.markAll") ||
-                            "Mark all as read"}
-                      </button>
+                  <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>
+                      {t("dashboard.notifications.title") ||
+                        t("common.notifications") ||
+                        "Notifications"}
+                    </h2>
+                    <div className={styles.notificationHeaderActions}>
+                      {unreadNotifications.length > 0 && (
+                        <button
+                          className={styles.markAllBtn}
+                          onClick={handleMarkAllNotifications}
+                          disabled={markingAllNotifications}
+                        >
+                          {markingAllNotifications
+                            ? t("common.loading") || "Loading..."
+                            : t("dashboard.notifications.markAll") ||
+                              "Mark all as read"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.notificationsList}>
+                    {notificationsLoading ? (
+                      <div className={styles.notificationsEmpty}>
+                        {t("common.loading") || "Loading..."}
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className={styles.notificationsEmpty}>
+                        {t("dashboard.notifications.empty") ||
+                          "You're all caught up!"}
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`${styles.notificationCard} ${
+                            !notification.isRead
+                              ? styles.notificationUnread
+                              : ""
+                          }`}
+                        >
+                          <div className={styles.notificationContent}>
+                            <div className={styles.notificationTitleRow}>
+                              {!notification.isRead && (
+                                <span className={styles.unreadDot} />
+                              )}
+                              <h3 className={styles.notificationTitle}>
+                                {notification.title}
+                              </h3>
+                            </div>
+                            {notification.message && (
+                              <p className={styles.notificationMessage}>
+                                {notification.message}
+                              </p>
+                            )}
+                            <div className={styles.notificationMeta}>
+                              <span>
+                                {formatDateTime(notification.createdAt)}
+                              </span>
+                              {notification.metadata?.status && (
+                                <span className={styles.notificationTag}>
+                                  {notification.metadata.status}
+                                </span>
+                              )}
+                              {notification.type && (
+                                <span className={styles.notificationType}>
+                                  {getNotificationTypeLabel(notification.type)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {!notification.isRead && (
+                            <button
+                              className={styles.markReadBtn}
+                              onClick={() =>
+                                handleMarkNotificationRead(notification.id)
+                              }
+                              disabled={
+                                updatingNotificationId === notification.id
+                              }
+                            >
+                              {updatingNotificationId === notification.id
+                                ? t("common.loading") || "Loading..."
+                                : t("dashboard.notifications.markRead") ||
+                                  "Mark as read"}
+                            </button>
+                          )}
+                        </div>
+                      ))
                     )}
                   </div>
-                </div>
-
-                <div className={styles.notificationsList}>
-                  {notificationsLoading ? (
-                    <div className={styles.notificationsEmpty}>
-                      {t("common.loading") || "Loading..."}
-                    </div>
-                  ) : notifications.length === 0 ? (
-                    <div className={styles.notificationsEmpty}>
-                      {t("dashboard.notifications.empty") ||
-                        "You're all caught up!"}
-                    </div>
-                  ) : (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`${styles.notificationCard} ${
-                          !notification.isRead ? styles.notificationUnread : ""
-                        }`}
-                      >
-                        <div className={styles.notificationContent}>
-                          <div className={styles.notificationTitleRow}>
-                            {!notification.isRead && (
-                              <span className={styles.unreadDot} />
-                            )}
-                            <h3 className={styles.notificationTitle}>
-                              {notification.title}
-                            </h3>
-                          </div>
-                          {notification.message && (
-                            <p className={styles.notificationMessage}>
-                              {notification.message}
-                            </p>
-                          )}
-                          <div className={styles.notificationMeta}>
-                            <span>
-                              {formatDateTime(notification.createdAt)}
-                            </span>
-                            {notification.metadata?.status && (
-                              <span className={styles.notificationTag}>
-                                {notification.metadata.status}
-                              </span>
-                            )}
-                            {notification.type && (
-                              <span className={styles.notificationType}>
-                                {getNotificationTypeLabel(notification.type)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {!notification.isRead && (
-                          <button
-                            className={styles.markReadBtn}
-                            onClick={() =>
-                              handleMarkNotificationRead(notification.id)
-                            }
-                            disabled={
-                              updatingNotificationId === notification.id
-                            }
-                          >
-                            {updatingNotificationId === notification.id
-                              ? t("common.loading") || "Loading..."
-                              : t("dashboard.notifications.markRead") ||
-                                "Mark as read"}
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
+                </section>
               </div>
             </>
           )}

@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import interpreterService from "../../services/interpreterService";
+import savedInterpreterService from "../../services/savedInterpreterService";
 import { InterpreterModal } from "../../components/InterpreterModal";
 import { toast } from "react-toastify";
 import styles from "./FindInterpreterPage.module.css";
-import { FaStar, FaBriefcase, FaDollarSign, FaMapMarkerAlt } from "react-icons/fa";
+import {
+  FaStar,
+  FaBriefcase,
+  FaDollarSign,
+  FaMapMarkerAlt,
+  FaBookmark,
+  FaRegBookmark,
+} from "react-icons/fa";
 
 const FindInterpreterPage = () => {
   const { t } = useLanguage();
@@ -20,6 +28,8 @@ const FindInterpreterPage = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedInterpreterId, setSelectedInterpreterId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [savedInterpreters, setSavedInterpreters] = useState(new Set());
+  const [loadingSaved, setLoadingSaved] = useState(true);
 
   // Filter options
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -49,6 +59,29 @@ const FindInterpreterPage = () => {
     totalPages: 0,
   });
 
+  // Load saved interpreters function
+  const loadSavedInterpreters = useCallback(async () => {
+    try {
+      setLoadingSaved(true);
+      const result = await savedInterpreterService.getAllSavedInterpreters();
+      console.log("🔄 Loading saved interpreters:", result);
+
+      if (result.success && result.data && Array.isArray(result.data)) {
+        const savedIds = new Set(result.data.map((item) => item.id));
+        console.log("✅ Saved IDs loaded:", Array.from(savedIds));
+        setSavedInterpreters(savedIds);
+      } else {
+        console.log("⚠️ No saved data or invalid format");
+        setSavedInterpreters(new Set());
+      }
+    } catch (error) {
+      console.error("❌ Error loading saved interpreters:", error);
+      setSavedInterpreters(new Set());
+    } finally {
+      setLoadingSaved(false);
+    }
+  }, []);
+
   // Check authentication
   useEffect(() => {
     if (!user) {
@@ -57,12 +90,26 @@ const FindInterpreterPage = () => {
     }
   }, [user, navigate]);
 
-  // Fetch filter options on mount
+  // Load saved interpreters on mount and when page becomes visible
   useEffect(() => {
     if (user) {
-      fetchFilterOptions();
+      // fetchFilterOptions(); // Commented out due to backend error
+      loadSavedInterpreters();
     }
-  }, [user]);
+
+    // Reload saved interpreters when user returns to tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log("🔄 Page visible again, reloading saved interpreters");
+        loadSavedInterpreters();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user, loadSavedInterpreters]);
 
   // Fetch interpreters when filters change
   useEffect(() => {
@@ -71,7 +118,6 @@ const FindInterpreterPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.sortBy, filters.sortOrder, user]);
-
   const fetchFilterOptions = async () => {
     try {
       const [langsRes, specsRes] = await Promise.all([
@@ -162,6 +208,56 @@ const FindInterpreterPage = () => {
   const handlePageChange = (newPage) => {
     setFilters({ ...filters, page: newPage });
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleToggleSave = async (interpreterId, e) => {
+    e.stopPropagation();
+
+    const isSaved = savedInterpreters.has(interpreterId);
+    console.log(
+      `🔘 Toggle save for interpreter ${interpreterId}, currently saved: ${isSaved}`
+    );
+
+    // Optimistic UI update
+    setSavedInterpreters((prev) => {
+      const newSet = new Set(prev);
+      if (isSaved) {
+        newSet.delete(interpreterId);
+      } else {
+        newSet.add(interpreterId);
+      }
+      return newSet;
+    });
+
+    // Call API
+    const result = isSaved
+      ? await savedInterpreterService.unsaveInterpreter(interpreterId)
+      : await savedInterpreterService.saveInterpreter(interpreterId);
+
+    if (result.success) {
+      console.log(`✅ ${isSaved ? "Unsaved" : "Saved"} successfully`);
+      toast.success(
+        isSaved
+          ? "Interpreter removed from saved"
+          : "Interpreter saved successfully"
+      );
+    } else {
+      console.error(
+        `❌ Failed to ${isSaved ? "unsave" : "save"}:`,
+        result.message
+      );
+      // Rollback on error
+      setSavedInterpreters((prev) => {
+        const newSet = new Set(prev);
+        if (isSaved) {
+          newSet.add(interpreterId);
+        } else {
+          newSet.delete(interpreterId);
+        }
+        return newSet;
+      });
+      toast.error(result.message || "Failed to update saved status");
+    }
   };
 
   return (
@@ -393,7 +489,9 @@ const FindInterpreterPage = () => {
                           </div>
                         )}
                         {interpreter.profile?.rating >= 4.5 && (
-                          <div className={styles.badge}><FaStar /> Top Rated</div>
+                          <div className={styles.badge}>
+                            <FaStar /> Top Rated
+                          </div>
                         )}
                       </div>
                       <h3 className={styles.interpreterName}>
@@ -415,7 +513,9 @@ const FindInterpreterPage = () => {
                     {/* Info */}
                     <div className={styles.cardBody}>
                       <div className={styles.infoRow}>
-                        <span className={styles.icon}><FaBriefcase /></span>
+                        <span className={styles.icon}>
+                          <FaBriefcase />
+                        </span>
                         <span>
                           {interpreter.profile?.experience || 0} years
                           experience
@@ -423,7 +523,9 @@ const FindInterpreterPage = () => {
                       </div>
 
                       <div className={styles.infoRow}>
-                        <span className={styles.icon}><FaDollarSign /></span>
+                        <span className={styles.icon}>
+                          <FaDollarSign />
+                        </span>
                         <span>
                           $
                           {Number(interpreter.profile?.hourlyRate || 0).toFixed(
@@ -434,7 +536,9 @@ const FindInterpreterPage = () => {
                       </div>
 
                       <div className={styles.infoRow}>
-                        <span className={styles.icon}><FaMapMarkerAlt /></span>
+                        <span className={styles.icon}>
+                          <FaMapMarkerAlt />
+                        </span>
                         <span>
                           {interpreter.address || "Location not specified"}
                         </span>
@@ -481,6 +585,25 @@ const FindInterpreterPage = () => {
 
                     {/* Footer */}
                     <div className={styles.cardFooter}>
+                      <button
+                        className={`${styles.saveBtn} ${
+                          savedInterpreters.has(interpreter.id)
+                            ? styles.saveBtnSaved
+                            : ""
+                        }`}
+                        onClick={(e) => handleToggleSave(interpreter.id, e)}
+                        title={
+                          savedInterpreters.has(interpreter.id)
+                            ? "Unsave"
+                            : "Save"
+                        }
+                      >
+                        {savedInterpreters.has(interpreter.id) ? (
+                          <FaBookmark />
+                        ) : (
+                          <FaRegBookmark />
+                        )}
+                      </button>
                       <button
                         className={styles.viewProfileBtn}
                         onClick={() => handleViewProfile(interpreter.id)}

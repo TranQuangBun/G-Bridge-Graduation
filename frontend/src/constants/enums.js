@@ -8,6 +8,9 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   MY_APPLICATIONS: "/dashboard/applications",
   SAVED_JOBS: "/dashboard/saved-jobs",
+  SAVED_INTERPRETERS: "/dashboard/saved-interpreters",
+  JOB_APPLICATIONS: "/dashboard/job-applications",
+  SETTINGS: "/settings",
   JOB_ALERTS: "/dashboard/job-alerts",
   NOTIFICATIONS: "/dashboard/notifications",
   ADMIN_JOB_MODERATION: "/admin/jobs/moderation",
@@ -18,7 +21,6 @@ export const ROUTES = {
   LOGIN: "/login",
   REGISTER: "/register",
   JOB_DETAIL: "/job/:id",
-  APPLY_JOB: "/job/:id/apply",
   MESSAGES: "/messages",
 };
 

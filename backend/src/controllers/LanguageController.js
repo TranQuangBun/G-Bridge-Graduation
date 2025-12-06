@@ -7,7 +7,12 @@ const languageService = new LanguageService();
 export async function getAllLanguages(req, res) {
   try {
     const result = await languageService.getAllLanguages(req.query);
-    return sendPaginated(res, result.languages, result.pagination, "Languages fetched successfully");
+    return sendPaginated(
+      res,
+      result.languages,
+      result.pagination,
+      "Languages fetched successfully"
+    );
   } catch (error) {
     logError(error, "Fetching languages");
     return sendError(res, "Error fetching languages", 500, error);
@@ -57,7 +62,10 @@ export async function updateLanguage(req, res) {
 
     // Verify that the language belongs to the authenticated user
     const existingLanguage = await languageService.getLanguageById(id);
-    if (existingLanguage.userId !== parseInt(userId)) {
+    const languageOwnerId =
+      existingLanguage.user?.id || existingLanguage.userId;
+
+    if (languageOwnerId !== parseInt(userId)) {
       return sendError(res, "You can only update your own languages", 403);
     }
 
@@ -79,7 +87,10 @@ export async function deleteLanguage(req, res) {
 
     // Verify that the language belongs to the authenticated user
     const existingLanguage = await languageService.getLanguageById(id);
-    if (existingLanguage.userId !== parseInt(userId)) {
+    const languageOwnerId =
+      existingLanguage.user?.id || existingLanguage.userId;
+
+    if (languageOwnerId !== parseInt(userId)) {
       return sendError(res, "You can only delete your own languages", 403);
     }
 

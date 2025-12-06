@@ -10,6 +10,7 @@ import {
   FaUser,
   FaCog,
   FaBriefcase,
+  FaBookmark,
 } from "react-icons/fa";
 
 const INTERPRETER_MENU = [
@@ -24,6 +25,12 @@ const INTERPRETER_MENU = [
     path: "/dashboard/applications",
     icon: FaClipboardList,
     labelKey: "applications",
+  },
+  {
+    id: "savedJobs",
+    path: "/dashboard/saved-jobs",
+    icon: FaBookmark,
+    labelKey: "savedJobs",
   },
   { id: "profile", path: "/profile", icon: FaUser, labelKey: "profile" },
   {
@@ -52,6 +59,12 @@ const CLIENT_MENU = [
     path: "/dashboard/job-applications",
     icon: FaClipboardList,
     labelKey: "jobApplications",
+  },
+  {
+    id: "savedInterpreters",
+    path: "/dashboard/saved-interpreters",
+    icon: FaBookmark,
+    labelKey: "savedInterpreters",
   },
   {
     id: "profile",

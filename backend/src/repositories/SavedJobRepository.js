@@ -52,7 +52,16 @@ export class SavedJobRepository extends BaseRepository {
 
     return await this.repository.findAndCount({
       where: whereClause,
-      relations: ["user", "job"],
+      relations: [
+        "user",
+        "job",
+        "job.organization",
+        "job.workingMode",
+        "job.domains",
+        "job.domains.domain",
+        "job.requiredLanguages",
+        "job.requiredLanguages.language",
+      ],
       take: limit,
       skip: offset,
       order: { savedDate: "DESC" },
@@ -67,4 +76,3 @@ export class SavedJobRepository extends BaseRepository {
     return result.affected > 0;
   }
 }
-

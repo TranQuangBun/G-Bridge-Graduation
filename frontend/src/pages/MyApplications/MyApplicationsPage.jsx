@@ -19,6 +19,7 @@ import {
   FaPhone,
   FaCopy,
   FaCheck,
+  FaBookmark,
 } from "react-icons/fa";
 
 // Unused mock data - kept for reference
@@ -130,6 +131,12 @@ const INTERPRETER_SIDEBAR_MENU = [
     active: true,
   },
   {
+    id: "savedJobs",
+    icon: FaBookmark,
+    labelKey: "savedJobs",
+    active: false,
+  },
+  {
     id: "notifications",
     icon: FaEnvelope,
     labelKey: "notifications",
@@ -148,6 +155,12 @@ const CLIENT_SIDEBAR_MENU = [
     icon: FaClipboardList,
     labelKey: "jobApplications",
     active: true,
+  },
+  {
+    id: "savedInterpreters",
+    icon: FaBookmark,
+    labelKey: "savedInterpreters",
+    active: false,
   },
   {
     id: "notifications",
@@ -446,10 +459,14 @@ function MyApplicationsPage() {
   };
 
   const openEmailClient = (email, subject = "") => {
-    const subjectText = subject || (user?.role === "client" 
-      ? `Liên hệ về đơn ứng tuyển - ${selectedApplication?.position || ""}`
-      : `Liên hệ về công việc - ${selectedApplication?.position || ""}`);
-    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subjectText)}`;
+    const subjectText =
+      subject ||
+      (user?.role === "client"
+        ? `Liên hệ về đơn ứng tuyển - ${selectedApplication?.position || ""}`
+        : `Liên hệ về công việc - ${selectedApplication?.position || ""}`);
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(
+      subjectText
+    )}`;
   };
 
   const openPhoneDialer = (phone) => {
@@ -464,8 +481,10 @@ function MyApplicationsPage() {
 
     try {
       // Create conversation from application
-      const response = await messageService.createConversationFromApplication(application.id);
-      
+      const response = await messageService.createConversationFromApplication(
+        application.id
+      );
+
       if (response && response.data) {
         // Navigate to messages page with conversation ID
         navigate(`${ROUTES.MESSAGES}?conversation=${response.data.id}`);
@@ -473,7 +492,10 @@ function MyApplicationsPage() {
     } catch (error) {
       console.error("Error starting conversation:", error);
       const errorMessage = error.message || "Không thể tạo cuộc trò chuyện";
-      if (errorMessage.includes("approved") || errorMessage.includes("chấp nhận")) {
+      if (
+        errorMessage.includes("approved") ||
+        errorMessage.includes("chấp nhận")
+      ) {
         alert(errorMessage);
       } else {
         alert("Không thể tạo cuộc trò chuyện. " + errorMessage);
@@ -504,10 +526,14 @@ function MyApplicationsPage() {
                       navigate(ROUTES.DASHBOARD);
                     } else if (item.id === "applications") {
                       navigate(ROUTES.MY_APPLICATIONS);
+                    } else if (item.id === "savedJobs") {
+                      navigate(ROUTES.SAVED_JOBS);
                     } else if (item.id === "myJobs") {
                       navigate(ROUTES.MY_JOBS);
                     } else if (item.id === "jobApplications") {
                       navigate(ROUTES.MY_APPLICATIONS);
+                    } else if (item.id === "savedInterpreters") {
+                      navigate(ROUTES.SAVED_INTERPRETERS);
                     } else if (item.id === "notifications") {
                       navigate(ROUTES.DASHBOARD + "?section=notifications");
                     } else if (item.id === "profile") {
@@ -841,7 +867,9 @@ function MyApplicationsPage() {
                         <div className={styles.acceptedContactInfo}>
                           {selectedApplication.interpreter?.email && (
                             <div className={styles.acceptedContactItem}>
-                              <FaEnvelope className={styles.acceptedContactIcon} />
+                              <FaEnvelope
+                                className={styles.acceptedContactIcon}
+                              />
                               <span className={styles.acceptedContactLabel}>
                                 {t("applications.modal.applicantEmail")}:
                               </span>
@@ -850,14 +878,27 @@ function MyApplicationsPage() {
                               </span>
                               <button
                                 className={styles.acceptedContactAction}
-                                onClick={() => copyToClipboard(selectedApplication.interpreter.email, "email-accepted")}
+                                onClick={() =>
+                                  copyToClipboard(
+                                    selectedApplication.interpreter.email,
+                                    "email-accepted"
+                                  )
+                                }
                                 title={t("applications.modal.copyEmail")}
                               >
-                                {copiedField === "email-accepted" ? <FaCheck /> : <FaCopy />}
+                                {copiedField === "email-accepted" ? (
+                                  <FaCheck />
+                                ) : (
+                                  <FaCopy />
+                                )}
                               </button>
                               <button
                                 className={styles.acceptedContactAction}
-                                onClick={() => openEmailClient(selectedApplication.interpreter.email)}
+                                onClick={() =>
+                                  openEmailClient(
+                                    selectedApplication.interpreter.email
+                                  )
+                                }
                                 title={t("applications.modal.openEmail")}
                               >
                                 <FaEnvelope />
@@ -875,14 +916,27 @@ function MyApplicationsPage() {
                               </span>
                               <button
                                 className={styles.acceptedContactAction}
-                                onClick={() => copyToClipboard(selectedApplication.interpreter.phone, "phone-accepted")}
+                                onClick={() =>
+                                  copyToClipboard(
+                                    selectedApplication.interpreter.phone,
+                                    "phone-accepted"
+                                  )
+                                }
                                 title={t("applications.modal.copyPhone")}
                               >
-                                {copiedField === "phone-accepted" ? <FaCheck /> : <FaCopy />}
+                                {copiedField === "phone-accepted" ? (
+                                  <FaCheck />
+                                ) : (
+                                  <FaCopy />
+                                )}
                               </button>
                               <button
                                 className={styles.acceptedContactAction}
-                                onClick={() => openPhoneDialer(selectedApplication.interpreter.phone)}
+                                onClick={() =>
+                                  openPhoneDialer(
+                                    selectedApplication.interpreter.phone
+                                  )
+                                }
                                 title={t("applications.modal.call")}
                               >
                                 <FaPhone />
@@ -987,72 +1041,85 @@ function MyApplicationsPage() {
                 {user?.role === "client" ? (
                   <>
                     {/* Primary Actions - Only show when not approved/rejected */}
-                    {!isApplicationApproved(selectedApplication) && selectedApplication.status !== "rejected" && (
-                      <div className={styles.primaryActions}>
-                        <button
-                          className={styles.acceptBtn}
-                          onClick={() =>
-                            handleAcceptApplication(selectedApplication.id)
-                          }
-                          disabled={processingApplication === selectedApplication.id}
-                        >
-                          {processingApplication === selectedApplication.id
-                            ? t("applications.modal.processing")
-                            : t("applications.modal.accept")}
-                        </button>
-                        <button
-                          className={styles.rejectBtn}
-                          onClick={() =>
-                            handleRejectApplication(selectedApplication.id)
-                          }
-                          disabled={processingApplication === selectedApplication.id}
-                        >
-                          {processingApplication === selectedApplication.id
-                            ? t("applications.modal.processing")
-                            : t("applications.modal.reject")}
-                        </button>
-                      </div>
-                    )}
-                    
+                    {!isApplicationApproved(selectedApplication) &&
+                      selectedApplication.status !== "rejected" && (
+                        <div className={styles.primaryActions}>
+                          <button
+                            className={styles.acceptBtn}
+                            onClick={() =>
+                              handleAcceptApplication(selectedApplication.id)
+                            }
+                            disabled={
+                              processingApplication === selectedApplication.id
+                            }
+                          >
+                            {processingApplication === selectedApplication.id
+                              ? t("applications.modal.processing")
+                              : t("applications.modal.accept")}
+                          </button>
+                          <button
+                            className={styles.rejectBtn}
+                            onClick={() =>
+                              handleRejectApplication(selectedApplication.id)
+                            }
+                            disabled={
+                              processingApplication === selectedApplication.id
+                            }
+                          >
+                            {processingApplication === selectedApplication.id
+                              ? t("applications.modal.processing")
+                              : t("applications.modal.reject")}
+                          </button>
+                        </div>
+                      )}
+
                     {/* Secondary Actions - Show when approved */}
                     {isApplicationApproved(selectedApplication) && (
                       <div className={styles.secondaryActions}>
-                        <button 
+                        <button
                           className={styles.chatBtn}
-                          onClick={() => handleStartConversation(selectedApplication)}
+                          onClick={() =>
+                            handleStartConversation(selectedApplication)
+                          }
                           title="Nhắn tin với ứng viên"
                         >
                           💬 {t("common.startChat") || "Nhắn tin"}
                         </button>
                         {selectedApplication.resumeUrl && (
                           <button
-                            onClick={() => openResumeModal(selectedApplication.resumeUrl)}
+                            onClick={() =>
+                              openResumeModal(selectedApplication.resumeUrl)
+                            }
                             className={styles.iconBtn}
                             title={t("applications.modal.viewResume")}
                           >
                             <FaFileAlt />
                           </button>
                         )}
-                        <button 
+                        <button
                           className={styles.iconBtn}
                           onClick={openContactModal}
-                          disabled={!selectedApplication?.interpreter?.email && !selectedApplication?.interpreter?.phone}
+                          disabled={
+                            !selectedApplication?.interpreter?.email &&
+                            !selectedApplication?.interpreter?.phone
+                          }
                           title={t("applications.modal.contactApplicant")}
                         >
                           <FaEnvelope />
                         </button>
                       </div>
                     )}
-                    
                   </>
                 ) : (
                   <>
                     {/* Interpreter Actions */}
                     {isApplicationApproved(selectedApplication) ? (
                       <div className={styles.secondaryActions}>
-                        <button 
+                        <button
                           className={styles.chatBtn}
-                          onClick={() => handleStartConversation(selectedApplication)}
+                          onClick={() =>
+                            handleStartConversation(selectedApplication)
+                          }
                           title="Nhắn tin với nhà tuyển dụng"
                         >
                           💬 {t("common.startChat") || "Nhắn tin"}
@@ -1139,29 +1206,55 @@ function MyApplicationsPage() {
                   <>
                     {/* Client viewing interpreter contact info */}
                     <div className={styles.contactInfoSection}>
-                      <h3>{selectedApplication.interpreter?.fullName || t("applications.modal.applicantName")}</h3>
-                      
+                      <h3>
+                        {selectedApplication.interpreter?.fullName ||
+                          t("applications.modal.applicantName")}
+                      </h3>
+
                       {selectedApplication.interpreter?.email && (
                         <div className={styles.contactItemRow}>
                           <div className={styles.contactItemInfo}>
                             <FaEnvelope className={styles.contactIcon} />
-                            <span className={styles.contactLabel}>{t("applications.modal.applicantEmail")}:</span>
-                            <span className={styles.contactValue}>{selectedApplication.interpreter.email}</span>
+                            <span className={styles.contactLabel}>
+                              {t("applications.modal.applicantEmail")}:
+                            </span>
+                            <span className={styles.contactValue}>
+                              {selectedApplication.interpreter.email}
+                            </span>
                           </div>
                           <div className={styles.contactItemActions}>
                             <button
                               className={styles.copyBtn}
-                              onClick={() => copyToClipboard(selectedApplication.interpreter.email, "email")}
-                              title={t("applications.modal.copyEmail") || "Sao chép email"}
+                              onClick={() =>
+                                copyToClipboard(
+                                  selectedApplication.interpreter.email,
+                                  "email"
+                                )
+                              }
+                              title={
+                                t("applications.modal.copyEmail") ||
+                                "Sao chép email"
+                              }
                             >
-                              {copiedField === "email" ? <FaCheck /> : <FaCopy />}
+                              {copiedField === "email" ? (
+                                <FaCheck />
+                              ) : (
+                                <FaCopy />
+                              )}
                             </button>
                             <button
                               className={styles.emailBtn}
-                              onClick={() => openEmailClient(selectedApplication.interpreter.email)}
-                              title={t("applications.modal.openEmail") || "Mở email"}
+                              onClick={() =>
+                                openEmailClient(
+                                  selectedApplication.interpreter.email
+                                )
+                              }
+                              title={
+                                t("applications.modal.openEmail") || "Mở email"
+                              }
                             >
-                              <FaEnvelope /> {t("applications.modal.sendEmail") || "Gửi email"}
+                              <FaEnvelope />{" "}
+                              {t("applications.modal.sendEmail") || "Gửi email"}
                             </button>
                           </div>
                         </div>
@@ -1171,33 +1264,56 @@ function MyApplicationsPage() {
                         <div className={styles.contactItemRow}>
                           <div className={styles.contactItemInfo}>
                             <FaPhone className={styles.contactIcon} />
-                            <span className={styles.contactLabel}>{t("applications.modal.applicantPhone")}:</span>
-                            <span className={styles.contactValue}>{selectedApplication.interpreter.phone}</span>
+                            <span className={styles.contactLabel}>
+                              {t("applications.modal.applicantPhone")}:
+                            </span>
+                            <span className={styles.contactValue}>
+                              {selectedApplication.interpreter.phone}
+                            </span>
                           </div>
                           <div className={styles.contactItemActions}>
                             <button
                               className={styles.copyBtn}
-                              onClick={() => copyToClipboard(selectedApplication.interpreter.phone, "phone")}
-                              title={t("applications.modal.copyPhone") || "Sao chép số điện thoại"}
+                              onClick={() =>
+                                copyToClipboard(
+                                  selectedApplication.interpreter.phone,
+                                  "phone"
+                                )
+                              }
+                              title={
+                                t("applications.modal.copyPhone") ||
+                                "Sao chép số điện thoại"
+                              }
                             >
-                              {copiedField === "phone" ? <FaCheck /> : <FaCopy />}
+                              {copiedField === "phone" ? (
+                                <FaCheck />
+                              ) : (
+                                <FaCopy />
+                              )}
                             </button>
                             <button
                               className={styles.phoneBtn}
-                              onClick={() => openPhoneDialer(selectedApplication.interpreter.phone)}
+                              onClick={() =>
+                                openPhoneDialer(
+                                  selectedApplication.interpreter.phone
+                                )
+                              }
                               title={t("applications.modal.call") || "Gọi điện"}
                             >
-                              <FaPhone /> {t("applications.modal.call") || "Gọi"}
+                              <FaPhone />{" "}
+                              {t("applications.modal.call") || "Gọi"}
                             </button>
                           </div>
                         </div>
                       )}
 
-                      {!selectedApplication.interpreter?.email && !selectedApplication.interpreter?.phone && (
-                        <p className={styles.noContactInfo}>
-                          {t("applications.modal.noContactInfo") || "Ứng viên chưa cung cấp thông tin liên hệ."}
-                        </p>
-                      )}
+                      {!selectedApplication.interpreter?.email &&
+                        !selectedApplication.interpreter?.phone && (
+                          <p className={styles.noContactInfo}>
+                            {t("applications.modal.noContactInfo") ||
+                              "Ứng viên chưa cung cấp thông tin liên hệ."}
+                          </p>
+                        )}
                     </div>
                   </>
                 ) : (
@@ -1206,29 +1322,53 @@ function MyApplicationsPage() {
                     <div className={styles.contactInfoSection}>
                       <h3>{selectedApplication.company}</h3>
                       <p className={styles.contactNote}>
-                        {t("applications.modal.contactNote") || "Vui lòng liên hệ với công ty để biết thêm thông tin về công việc."}
+                        {t("applications.modal.contactNote") ||
+                          "Vui lòng liên hệ với công ty để biết thêm thông tin về công việc."}
                       </p>
                       {selectedApplication.job?.contactEmail && (
                         <div className={styles.contactItemRow}>
                           <div className={styles.contactItemInfo}>
                             <FaEnvelope className={styles.contactIcon} />
-                            <span className={styles.contactLabel}>{t("applications.modal.contactEmail")}:</span>
-                            <span className={styles.contactValue}>{selectedApplication.job.contactEmail}</span>
+                            <span className={styles.contactLabel}>
+                              {t("applications.modal.contactEmail")}:
+                            </span>
+                            <span className={styles.contactValue}>
+                              {selectedApplication.job.contactEmail}
+                            </span>
                           </div>
                           <div className={styles.contactItemActions}>
                             <button
                               className={styles.copyBtn}
-                              onClick={() => copyToClipboard(selectedApplication.job.contactEmail, "email")}
-                              title={t("applications.modal.copyEmail") || "Sao chép email"}
+                              onClick={() =>
+                                copyToClipboard(
+                                  selectedApplication.job.contactEmail,
+                                  "email"
+                                )
+                              }
+                              title={
+                                t("applications.modal.copyEmail") ||
+                                "Sao chép email"
+                              }
                             >
-                              {copiedField === "email" ? <FaCheck /> : <FaCopy />}
+                              {copiedField === "email" ? (
+                                <FaCheck />
+                              ) : (
+                                <FaCopy />
+                              )}
                             </button>
                             <button
                               className={styles.emailBtn}
-                              onClick={() => openEmailClient(selectedApplication.job.contactEmail)}
-                              title={t("applications.modal.openEmail") || "Mở email"}
+                              onClick={() =>
+                                openEmailClient(
+                                  selectedApplication.job.contactEmail
+                                )
+                              }
+                              title={
+                                t("applications.modal.openEmail") || "Mở email"
+                              }
                             >
-                              <FaEnvelope /> {t("applications.modal.sendEmail") || "Gửi email"}
+                              <FaEnvelope />{" "}
+                              {t("applications.modal.sendEmail") || "Gửi email"}
                             </button>
                           </div>
                         </div>
@@ -1237,23 +1377,44 @@ function MyApplicationsPage() {
                         <div className={styles.contactItemRow}>
                           <div className={styles.contactItemInfo}>
                             <FaPhone className={styles.contactIcon} />
-                            <span className={styles.contactLabel}>{t("applications.modal.contactPhone")}:</span>
-                            <span className={styles.contactValue}>{selectedApplication.job.contactPhone}</span>
+                            <span className={styles.contactLabel}>
+                              {t("applications.modal.contactPhone")}:
+                            </span>
+                            <span className={styles.contactValue}>
+                              {selectedApplication.job.contactPhone}
+                            </span>
                           </div>
                           <div className={styles.contactItemActions}>
                             <button
                               className={styles.copyBtn}
-                              onClick={() => copyToClipboard(selectedApplication.job.contactPhone, "phone")}
-                              title={t("applications.modal.copyPhone") || "Sao chép số điện thoại"}
+                              onClick={() =>
+                                copyToClipboard(
+                                  selectedApplication.job.contactPhone,
+                                  "phone"
+                                )
+                              }
+                              title={
+                                t("applications.modal.copyPhone") ||
+                                "Sao chép số điện thoại"
+                              }
                             >
-                              {copiedField === "phone" ? <FaCheck /> : <FaCopy />}
+                              {copiedField === "phone" ? (
+                                <FaCheck />
+                              ) : (
+                                <FaCopy />
+                              )}
                             </button>
                             <button
                               className={styles.phoneBtn}
-                              onClick={() => openPhoneDialer(selectedApplication.job.contactPhone)}
+                              onClick={() =>
+                                openPhoneDialer(
+                                  selectedApplication.job.contactPhone
+                                )
+                              }
                               title={t("applications.modal.call") || "Gọi điện"}
                             >
-                              <FaPhone /> {t("applications.modal.call") || "Gọi"}
+                              <FaPhone />{" "}
+                              {t("applications.modal.call") || "Gọi"}
                             </button>
                           </div>
                         </div>
@@ -1263,7 +1424,10 @@ function MyApplicationsPage() {
                 )}
               </div>
               <div className={styles.contactModalActions}>
-                <button className={styles.closeContactBtn} onClick={closeContactModal}>
+                <button
+                  className={styles.closeContactBtn}
+                  onClick={closeContactModal}
+                >
                   {t("common.close")}
                 </button>
               </div>

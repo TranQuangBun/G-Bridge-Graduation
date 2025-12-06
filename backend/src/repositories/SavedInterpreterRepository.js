@@ -30,7 +30,7 @@ export class SavedInterpreterRepository extends BaseRepository {
 
     return await this.repository.findAndCount({
       where: whereClause,
-      relations: ["user", "interpreter"],
+      relations: ["user", "interpreter", "interpreter.interpreterProfile"],
       take: limit,
       skip: offset,
       order: { savedDate: "DESC" },
@@ -45,4 +45,3 @@ export class SavedInterpreterRepository extends BaseRepository {
     return result.affected > 0;
   }
 }
-

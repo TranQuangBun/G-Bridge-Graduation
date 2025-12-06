@@ -545,10 +545,56 @@
 .cardFooter {
   padding: 16px 20px;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.saveBtn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: white;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.saveBtn:hover {
+  border-color: #0a65cc;
+  color: #0a65cc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 101, 204, 0.15);
+}
+
+.saveBtn svg {
+  transition: all 0.2s;
+}
+
+.saveBtn:hover svg {
+  transform: scale(1.1);
+}
+
+.saveBtnSaved {
+  background: linear-gradient(135deg, #0a65cc 0%, #3b82f6 100%);
+  color: white;
+  border-color: #0a65cc;
+}
+
+.saveBtnSaved:hover {
+  background: linear-gradient(135deg, #0850a8 0%, #2563eb 100%);
+  border-color: #0850a8;
 }
 
 .viewProfileBtn {
-  width: 100%;
+  flex: 1;
   padding: 12px;
   background: linear-gradient(135deg, #0a65cc 0%, #3b82f6 100%);
   color: white;

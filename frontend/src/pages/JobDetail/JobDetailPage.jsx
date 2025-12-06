@@ -48,6 +48,13 @@ export default function JobDetailPage() {
   const [loadingApplications, setLoadingApplications] = useState(false);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [applicationData, setApplicationData] = useState({
+    pdfFile: null,
+    introduction: "",
+    profileLink: "",
+  });
 
   const hasPremium = user?.isPremium || false;
 
@@ -73,10 +80,10 @@ export default function JobDetailPage() {
       try {
         setLoading(true);
         const response = await jobService.getJobById(id);
-        
+
         if (response && (response.success || response.data)) {
           const jobData = response.data?.job || response.data || {};
-          
+
           const transformedJob = {
             id: jobData.id,
             title: jobData.title,
@@ -84,8 +91,14 @@ export default function JobDetailPage() {
             location: jobData.province || jobData.address || "Location TBD",
             commune: jobData.commune || "",
             address: jobData.address || "",
-            category: jobData.domains?.[0]?.domain?.name || jobData.domains?.[0]?.name || "General",
-            allDomains: jobData.domains?.map((d) => d.domain?.name || d.name || "").filter(Boolean) || [],
+            category:
+              jobData.domains?.[0]?.domain?.name ||
+              jobData.domains?.[0]?.name ||
+              "General",
+            allDomains:
+              jobData.domains
+                ?.map((d) => d.domain?.name || d.name || "")
+                .filter(Boolean) || [],
             level: jobData.requiredLanguages?.[0]?.level?.name || "Mid",
             type: jobData.workingMode?.name || "Full-time",
             salary:
@@ -102,19 +115,32 @@ export default function JobDetailPage() {
             createdDate: jobData.createdDate || jobData.createdAt,
             statusOpenStop: jobData.statusOpenStop || "open",
             tags: [
-              ...(jobData.requiredLanguages?.map((rl) => rl.language?.name || "") || []),
-              ...(jobData.domains?.map((d) => d.domain?.name || d.name || "") || []),
+              ...(jobData.requiredLanguages?.map(
+                (rl) => rl.language?.name || ""
+              ) || []),
+              ...(jobData.domains?.map((d) => d.domain?.name || d.name || "") ||
+                []),
             ].filter(Boolean),
             desc: jobData.descriptions || "",
             fullDesc: jobData.descriptions || "",
             responsibility: jobData.responsibility || "",
-            requirements: jobData.requiredLanguages?.map((rl) => ({
-              language: rl.language?.name || "",
-              level: rl.level?.name || "",
-              fullText: `${rl.language?.name || ""} - ${rl.level?.name || ""}`,
-            })) || [],
-            requiredCertificates: jobData.requiredCertificates?.map((rc) => rc.certificate?.name || "").filter(Boolean) || [],
-            benefits: jobData.benefits ? (Array.isArray(jobData.benefits) ? jobData.benefits : [jobData.benefits]) : [],
+            requirements:
+              jobData.requiredLanguages?.map((rl) => ({
+                language: rl.language?.name || "",
+                level: rl.level?.name || "",
+                fullText: `${rl.language?.name || ""} - ${
+                  rl.level?.name || ""
+                }`,
+              })) || [],
+            requiredCertificates:
+              jobData.requiredCertificates
+                ?.map((rc) => rc.certificate?.name || "")
+                .filter(Boolean) || [],
+            benefits: jobData.benefits
+              ? Array.isArray(jobData.benefits)
+                ? jobData.benefits
+                : [jobData.benefits]
+              : [],
             contact: {
               email: jobData.organization?.email || jobData.contactEmail || "",
               phone: jobData.organization?.phone || jobData.contactPhone || "",
@@ -125,7 +151,7 @@ export default function JobDetailPage() {
             organization: jobData.organization || null,
             ownerUserId: jobData.organization?.ownerUserId || null,
           };
-          
+
           setJob(transformedJob);
         } else {
           showNotification("Job not found", "error");
@@ -156,10 +182,16 @@ export default function JobDetailPage() {
       try {
         const response = await jobService.getSavedJobs();
         const savedJobsData = response.data || [];
-        
-        if (response && (response.success !== false) && Array.isArray(savedJobsData)) {
+
+        if (
+          response &&
+          response.success !== false &&
+          Array.isArray(savedJobsData)
+        ) {
           const savedIds = new Set(
-            savedJobsData.map((saved) => saved.job?.id || saved.id).filter(Boolean)
+            savedJobsData
+              .map((saved) => saved.job?.id || saved.id)
+              .filter(Boolean)
           );
           setSavedJobIds(savedIds);
         }
@@ -174,10 +206,11 @@ export default function JobDetailPage() {
   // Handle save job
   async function handleSaveJob(e) {
     e.preventDefault();
-    
+
     if (!isAuthenticated || !user) {
       showNotification(
-        t("findJob.errors.loginRequired") || "Vui lòng đăng nhập để lưu việc làm",
+        t("findJob.errors.loginRequired") ||
+          "Vui lòng đăng nhập để lưu việc làm",
         "error"
       );
       return;
@@ -186,12 +219,13 @@ export default function JobDetailPage() {
     try {
       setSavingJobId(job.id);
       const currentlySaved = savedJobIds.has(job.id);
-      
+
       const response = await jobService.toggleSaveJob(job.id);
-      
+
       if (response && response.success !== false) {
-        const isSaved = response.data?.isSaved ?? response.isSaved ?? !currentlySaved;
-        
+        const isSaved =
+          response.data?.isSaved ?? response.isSaved ?? !currentlySaved;
+
         setSavedJobIds((prev) => {
           const newSet = new Set(prev);
           if (isSaved) {
@@ -203,16 +237,18 @@ export default function JobDetailPage() {
         });
 
         showNotification(
-          isSaved 
-            ? (t("findJob.saveJob.saved") || "Đã lưu việc làm")
-            : (t("findJob.saveJob.unsaved") || "Đã bỏ lưu việc làm"),
+          isSaved
+            ? t("findJob.saveJob.saved") || "Đã lưu việc làm"
+            : t("findJob.saveJob.unsaved") || "Đã bỏ lưu việc làm",
           "success"
         );
       }
     } catch (error) {
       console.error("Error saving job:", error);
       showNotification(
-        error.message || (t("findJob.errors.saveFailed") || "Không thể lưu việc làm"),
+        error.message ||
+          t("findJob.errors.saveFailed") ||
+          "Không thể lưu việc làm",
         "error"
       );
     } finally {
@@ -228,7 +264,101 @@ export default function JobDetailPage() {
       );
       return;
     }
-    navigate(ROUTES.APPLY_JOB.replace(':id', job.id));
+    setApplyModalOpen(true);
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file && file.type === "application/pdf") {
+      setApplicationData((prev) => ({
+        ...prev,
+        pdfFile: file,
+      }));
+    } else {
+      showNotification(
+        t("findJob.applicationModal.pdfOnlyError") || "Chỉ chấp nhận file PDF",
+        "error"
+      );
+    }
+  }
+
+  async function handleSubmitApplication(e) {
+    e.preventDefault();
+
+    // Validate required fields
+    if (!applicationData.pdfFile && !applicationData.introduction.trim()) {
+      showNotification(
+        t("findJob.applicationModal.validationError") ||
+          "Vui lòng điền đầy đủ thông tin",
+        "error"
+      );
+      return;
+    }
+
+    if (!applicationData.pdfFile) {
+      showNotification(
+        t("findJob.applicationModal.missingCV") || "Vui lòng upload CV",
+        "error"
+      );
+      return;
+    }
+
+    if (!applicationData.introduction.trim()) {
+      showNotification(
+        t("findJob.applicationModal.missingIntro") ||
+          "Vui lòng nhập giới thiệu",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const applicationPayload = {
+        coverLetter: applicationData.introduction,
+        pdfFile: applicationData.pdfFile,
+        resumeUrl: applicationData.profileLink || null,
+        resumeType: applicationData.pdfFile ? "pdf" : null,
+      };
+
+      const response = await jobService.applyForJob(id, applicationPayload);
+
+      if (response && response.success !== false) {
+        showNotification(
+          t("findJob.applicationModal.successMessage") ||
+            "Ứng tuyển thành công!",
+          "success"
+        );
+
+        setApplyModalOpen(false);
+        setApplicationData({
+          pdfFile: null,
+          introduction: "",
+          profileLink: "",
+        });
+
+        // Reload job details to update application status
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showNotification(
+          response.message || "Có lỗi xảy ra khi ứng tuyển",
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error submitting application:", error);
+      showNotification(
+        error.message ||
+          t("findJob.applicationModal.errorMessage") ||
+          "Không thể gửi đơn ứng tuyển",
+        "error"
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleUpgradeToPremium() {
@@ -247,16 +377,16 @@ export default function JobDetailPage() {
     try {
       const response = await jobService.acceptApplication(applicationId);
       if (response?.success) {
-        showNotification("Application accepted successfully", "success");
+        showNotification(t("jobDetail.acceptSuccess"), "success");
         // Refresh applications
         const appsResponse = await jobService.getJobApplications(job.id);
-        const applicationsData = Array.isArray(appsResponse.data) 
-          ? appsResponse.data 
+        const applicationsData = Array.isArray(appsResponse.data)
+          ? appsResponse.data
           : appsResponse.data?.applications || [];
         setApplications(applicationsData);
       }
     } catch (error) {
-      showNotification(error.message || "Error accepting application", "error");
+      showNotification(error.message || t("jobDetail.acceptError"), "error");
     }
   }
 
@@ -264,16 +394,16 @@ export default function JobDetailPage() {
     try {
       const response = await jobService.rejectApplication(applicationId);
       if (response?.success) {
-        showNotification("Application rejected successfully", "success");
+        showNotification(t("jobDetail.rejectSuccess"), "success");
         // Refresh applications
         const appsResponse = await jobService.getJobApplications(job.id);
-        const applicationsData = Array.isArray(appsResponse.data) 
-          ? appsResponse.data 
+        const applicationsData = Array.isArray(appsResponse.data)
+          ? appsResponse.data
           : appsResponse.data?.applications || [];
         setApplications(applicationsData);
       }
     } catch (error) {
-      showNotification(error.message || "Error rejecting application", "error");
+      showNotification(error.message || t("jobDetail.rejectError"), "error");
     }
   }
 
@@ -290,11 +420,11 @@ export default function JobDetailPage() {
       try {
         setLoadingApplications(true);
         const response = await jobService.getJobApplications(job.id);
-        const applicationsData = Array.isArray(response.data) 
-          ? response.data 
+        const applicationsData = Array.isArray(response.data)
+          ? response.data
           : response.data?.applications || [];
-        
-        if (response && (response.success !== false)) {
+
+        if (response && response.success !== false) {
           setApplications(applicationsData);
         }
       } catch (error) {
@@ -311,7 +441,9 @@ export default function JobDetailPage() {
     return (
       <MainLayout>
         <div className={styles.loadingContainer}>
-          <div className={styles.loading}>{t("common.loading") || "Loading..."}</div>
+          <div className={styles.loading}>
+            {t("common.loading") || "Loading..."}
+          </div>
         </div>
       </MainLayout>
     );
@@ -321,7 +453,9 @@ export default function JobDetailPage() {
     return (
       <MainLayout>
         <div className={styles.errorContainer}>
-          <div className={styles.error}>{t("common.notFound") || "Job not found"}</div>
+          <div className={styles.error}>
+            {t("common.notFound") || "Job not found"}
+          </div>
         </div>
       </MainLayout>
     );
@@ -333,15 +467,16 @@ export default function JobDetailPage() {
       {notification.show && (
         <div className={styles.notificationOverlay}>
           <div
-            className={`${styles.notification} ${
-              styles[notification.type]
-            }`}
+            className={`${styles.notification} ${styles[notification.type]}`}
           >
             <div className={styles.notificationContent}>
               <div className={styles.notificationMessage}>
                 {notification.message}
               </div>
-              <button onClick={hideNotification} className={styles.notificationClose}>
+              <button
+                onClick={hideNotification}
+                className={styles.notificationClose}
+              >
                 ×
               </button>
             </div>
@@ -351,8 +486,8 @@ export default function JobDetailPage() {
 
       <div className={styles.jobDetailRoot}>
         {/* Back Button */}
-        <button 
-          className={styles.backBtn} 
+        <button
+          className={styles.backBtn}
           onClick={() => {
             if (isJobOwner) {
               navigate(ROUTES.MY_JOBS);
@@ -371,69 +506,98 @@ export default function JobDetailPage() {
             <div className={styles.jobTitleRow}>
               <h1 className={styles.jobTitle}>{job.title}</h1>
               {job.reviewStatus && job.reviewStatus !== "approved" && (
-                <span className={`${styles.reviewBadge} ${
-                  job.reviewStatus === "pending" ? styles.reviewPending :
-                  job.reviewStatus === "rejected" ? styles.reviewRejected : ""
-                }`}>
+                <span
+                  className={`${styles.reviewBadge} ${
+                    job.reviewStatus === "pending"
+                      ? styles.reviewPending
+                      : job.reviewStatus === "rejected"
+                      ? styles.reviewRejected
+                      : ""
+                  }`}
+                >
                   {job.reviewStatus === "pending" ? (
-                    <><FaClock /> Pending Review</>
+                    <>
+                      <FaClock /> {t("jobDetail.pendingReview")}
+                    </>
                   ) : (
-                    <><FaTimesCircle /> Rejected</>
+                    <>
+                      <FaTimesCircle /> {t("jobDetail.rejected")}
+                    </>
                   )}
                 </span>
               )}
             </div>
             <p className={styles.company}>{job.company}</p>
             <div className={styles.meta}>
-              <span><FaMapMarkerAlt /> {job.location}</span>
-              {job.commune && <span><FaMapMarkerAlt /> {job.commune}</span>}
-              <span><FaBullseye /> {job.category}</span>
-              <span><FaBriefcase /> {job.type}</span>
-              <span><FaStar /> {job.level}</span>
-              <span><FaDollarSign /> {job.salary}</span>
-              {job.quantity > 1 && <span><FaUsers /> {job.quantity} positions</span>}
+              <span>
+                <FaMapMarkerAlt /> {job.location}
+              </span>
+              {job.commune && (
+                <span>
+                  <FaMapMarkerAlt /> {job.commune}
+                </span>
+              )}
+              <span>
+                <FaBullseye /> {job.category}
+              </span>
+              <span>
+                <FaBriefcase /> {job.type}
+              </span>
+              <span>
+                <FaStar /> {job.level}
+              </span>
+              <span>
+                <FaDollarSign /> {job.salary}
+              </span>
+              {job.quantity > 1 && (
+                <span>
+                  <FaUsers /> {job.quantity} {t("jobDetail.positions")}
+                </span>
+              )}
               {job.expirationDate && (
-                <span><FaCalendarAlt /> Expires: {new Date(job.expirationDate).toLocaleDateString()}</span>
+                <span>
+                  <FaCalendarAlt /> {t("jobDetail.expires")}:{" "}
+                  {new Date(job.expirationDate).toLocaleDateString()}
+                </span>
               )}
             </div>
             {job.reviewNotes && (
               <div className={styles.reviewNotesBanner}>
-                <strong>Review Notes:</strong> {job.reviewNotes}
+                <strong>{t("jobDetail.reviewNotes")}:</strong> {job.reviewNotes}
               </div>
             )}
           </div>
           <div className={styles.headerActions}>
             {isJobOwner ? (
               <>
-                <button
-                  className={styles.editBtn}
-                  onClick={handleEditJob}
-                >
-                  <FaEdit /> Edit Job
+                <button className={styles.editBtn} onClick={handleEditJob}>
+                  <FaEdit /> {t("jobDetail.editJob")}
                 </button>
-                <button
-                  className={styles.backBtn}
-                  onClick={handleBackToMyJobs}
-                >
-                  <FaArrowLeft /> Back to My Jobs
+                <button className={styles.backBtn} onClick={handleBackToMyJobs}>
+                  <FaArrowLeft /> {t("jobDetail.backToMyJobs")}
                 </button>
               </>
             ) : (
               <>
-                <button
-                  className={styles.applyBtn}
-                  onClick={handleApply}
-                >
+                <button className={styles.applyBtn} onClick={handleApply}>
                   {t("common.applyNow") || "Ứng tuyển ngay"}
                 </button>
-                <button 
-                  className={`${styles.saveBtn} ${savedJobIds.has(job.id) ? styles.savedBtn : ""}`}
+                <button
+                  className={`${styles.saveBtn} ${
+                    savedJobIds.has(job.id) ? styles.savedBtn : ""
+                  }`}
                   onClick={handleSaveJob}
                   disabled={savingJobId === job.id}
-                  title={savedJobIds.has(job.id) ? (t("findJob.saveJob.unsave") || "Bỏ lưu") : (t("findJob.saveJob.save") || "Lưu")}
+                  title={
+                    savedJobIds.has(job.id)
+                      ? t("findJob.saveJob.unsave") || "Bỏ lưu"
+                      : t("findJob.saveJob.save") || "Lưu"
+                  }
                 >
                   {savingJobId === job.id ? (
-                    <><FaClock /> {t("common.loading") || "Đang xử lý..."}</>
+                    <>
+                      <FaClock /> {t("common.loading") || "Đang xử lý..."}
+                    </>
                   ) : savedJobIds.has(job.id) ? (
                     <>
                       <FaBookmark /> {t("findJob.saveJob.saved") || "Đã lưu"}
@@ -455,13 +619,21 @@ export default function JobDetailPage() {
             {isJobOwner && (
               <>
                 <div className={styles.section}>
-                  <h2 className={styles.sectionTitle}>Job Management</h2>
+                  <h2 className={styles.sectionTitle}>
+                    {t("jobDetail.jobManagement")}
+                  </h2>
                   <div className={styles.ownerInfo}>
-                    <p><strong>Status:</strong> {job.statusOpenStop || "open"}</p>
-                    <p><strong>Review Status:</strong> {job.reviewStatus || "pending"}</p>
+                    <p>
+                      <strong>{t("jobDetail.status")}:</strong>{" "}
+                      {job.statusOpenStop || "open"}
+                    </p>
+                    <p>
+                      <strong>{t("jobDetail.reviewStatus")}:</strong>{" "}
+                      {job.reviewStatus || "pending"}
+                    </p>
                     {job.reviewNotes && (
                       <div className={styles.reviewNotesBox}>
-                        <strong>Review Notes:</strong>
+                        <strong>{t("jobDetail.reviewNotes")}:</strong>
                         <p>{job.reviewNotes}</p>
                       </div>
                     )}
@@ -470,10 +642,12 @@ export default function JobDetailPage() {
 
                 <div className={styles.section}>
                   <h2 className={styles.sectionTitle}>
-                    Applications ({applications.length})
+                    {t("jobDetail.applications")} ({applications.length})
                   </h2>
                   {loadingApplications ? (
-                    <div className={styles.loading}>Loading applications...</div>
+                    <div className={styles.loading}>
+                      {t("jobDetail.loadingApplications")}
+                    </div>
                   ) : applications.length > 0 ? (
                     <div className={styles.applicationsList}>
                       {applications.map((app) => (
@@ -481,34 +655,52 @@ export default function JobDetailPage() {
                           <div className={styles.applicationHeader}>
                             <div className={styles.applicationInfo}>
                               <div className={styles.applicationName}>
-                                <FaUser /> {app.interpreter?.fullName || app.interpreter?.email || "Interpreter"}
+                                <FaUser />{" "}
+                                {app.interpreter?.fullName ||
+                                  app.interpreter?.email ||
+                                  "Interpreter"}
                               </div>
                               <div className={styles.applicationDate}>
-                                Applied: {new Date(app.applicationDate || app.appliedAt || app.createdAt).toLocaleDateString()}
+                                {t("jobDetail.applied")}:{" "}
+                                {new Date(
+                                  app.applicationDate ||
+                                    app.appliedAt ||
+                                    app.createdAt
+                                ).toLocaleDateString()}
                               </div>
                             </div>
-                            <div className={`${styles.applicationStatus} ${
-                              app.status === "accepted" ? styles.statusAccepted :
-                              app.status === "rejected" ? styles.statusRejected :
-                              styles.statusPending
-                            }`}>
+                            <div
+                              className={`${styles.applicationStatus} ${
+                                app.status === "accepted"
+                                  ? styles.statusAccepted
+                                  : app.status === "rejected"
+                                  ? styles.statusRejected
+                                  : styles.statusPending
+                              }`}
+                            >
                               {app.status === "accepted" ? (
-                                <><FaCheckCircle /> Accepted</>
+                                <>
+                                  <FaCheckCircle /> {t("jobDetail.accepted")}
+                                </>
                               ) : app.status === "rejected" ? (
-                                <><FaTimesCircle /> Rejected</>
+                                <>
+                                  <FaTimesCircle /> {t("jobDetail.rejected")}
+                                </>
                               ) : (
-                                <><FaClock /> Pending</>
+                                <>
+                                  <FaClock /> {t("jobDetail.pending")}
+                                </>
                               )}
                             </div>
                           </div>
                           {app.coverLetter && (
                             <div className={styles.applicationCoverLetter}>
-                              <strong>Cover Letter:</strong>
+                              <strong>{t("jobDetail.coverLetter")}:</strong>
                               <p>{app.coverLetter}</p>
                             </div>
                           )}
                           <div className={styles.applicationResume}>
-                            <FaFileAlt /> 
+                            <FaFileAlt />
                             {app.resumeUrl ? (
                               <button
                                 onClick={() => {
@@ -531,13 +723,13 @@ export default function JobDetailPage() {
                                 className={styles.acceptBtn}
                                 onClick={() => handleAcceptApplication(app.id)}
                               >
-                                <FaCheck /> Accept
+                                <FaCheck /> {t("jobDetail.accept")}
                               </button>
                               <button
                                 className={styles.rejectBtn}
                                 onClick={() => handleRejectApplication(app.id)}
                               >
-                                <FaTimes /> Reject
+                                <FaTimes /> {t("jobDetail.reject")}
                               </button>
                             </div>
                           )}
@@ -546,21 +738,25 @@ export default function JobDetailPage() {
                     </div>
                   ) : (
                     <div className={styles.emptyApplications}>
-                      <p>No applications yet</p>
+                      <p>{t("jobDetail.noApplications")}</p>
                     </div>
                   )}
                 </div>
               </>
             )}
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Contact Information</h2>
+              <h2 className={styles.sectionTitle}>
+                {t("jobDetail.contactInformation")}
+              </h2>
               <div className={styles.contactInfo}>
                 <div
                   className={`${styles.contactItem} ${
                     !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
                   }`}
                 >
-                  <span className={styles.contactLabel}><FaEnvelope /> Email:</span>
+                  <span className={styles.contactLabel}>
+                    <FaEnvelope /> {t("jobDetail.email")}:
+                  </span>
                   <span className={styles.contactValue}>
                     {job.contact?.email || "N/A"}
                   </span>
@@ -570,7 +766,9 @@ export default function JobDetailPage() {
                     !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
                   }`}
                 >
-                  <span className={styles.contactLabel}><FaPhone /> Phone:</span>
+                  <span className={styles.contactLabel}>
+                    <FaPhone /> {t("jobDetail.phone")}:
+                  </span>
                   <span className={styles.contactValue}>
                     {job.contact?.phone || "N/A"}
                   </span>
@@ -580,7 +778,9 @@ export default function JobDetailPage() {
                     !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
                   }`}
                 >
-                  <span className={styles.contactLabel}><FaMapMarkerAlt /> Address:</span>
+                  <span className={styles.contactLabel}>
+                    <FaMapMarkerAlt /> {t("jobDetail.address")}:
+                  </span>
                   <span className={styles.contactValue}>
                     {job.contact?.address || "N/A"}
                   </span>
@@ -589,14 +789,12 @@ export default function JobDetailPage() {
 
               {(!user || (!hasPremium && !isJobOwner)) && (
                 <div className={styles.premiumNotice}>
-                  <p>
-                    🔒 Contact information is only available for premium members.
-                  </p>
+                  <p>{t("jobDetail.premiumNotice")}</p>
                   <button
                     className={styles.upgradeBtn}
                     onClick={handleUpgradeToPremium}
                   >
-                    Upgrade to Premium
+                    {t("jobDetail.upgradeToPremium")}
                   </button>
                 </div>
               )}
@@ -605,61 +803,84 @@ export default function JobDetailPage() {
 
           <div className={styles.rightColumn}>
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Job Description</h2>
-              <p className={styles.description}>{job.fullDesc || job.desc || "No description available"}</p>
+              <h2 className={styles.sectionTitle}>
+                {t("jobDetail.jobDescription")}
+              </h2>
+              <p className={styles.description}>
+                {job.fullDesc || job.desc || t("jobDetail.noDescription")}
+              </p>
             </div>
 
             {job.responsibility && (
               <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Responsibilities</h2>
-                <div className={styles.description} dangerouslySetInnerHTML={{ __html: job.responsibility.replace(/\n/g, '<br />') }} />
+                <h2 className={styles.sectionTitle}>
+                  {t("jobDetail.responsibilities")}
+                </h2>
+                <div
+                  className={styles.description}
+                  dangerouslySetInnerHTML={{
+                    __html: job.responsibility.replace(/\n/g, "<br />"),
+                  }}
+                />
               </div>
             )}
 
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Required Languages</h2>
+              <h2 className={styles.sectionTitle}>
+                {t("jobDetail.requiredLanguages")}
+              </h2>
               {job.requirements && job.requirements.length > 0 ? (
                 <ul className={styles.requirementsList}>
                   {job.requirements.map((req, index) => (
                     <li key={index}>
-                      <FaLanguage /> <strong>{req.language || req.fullText?.split(' - ')[0]}</strong> - Level: {req.level || req.fullText?.split(' - ')[1] || "N/A"}
+                      <FaLanguage />{" "}
+                      <strong>
+                        {req.language || req.fullText?.split(" - ")[0]}
+                      </strong>{" "}
+                      - {t("jobDetail.level")}:{" "}
+                      {req.level || req.fullText?.split(" - ")[1] || "N/A"}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p>No specific language requirements listed</p>
+                <p>{t("jobDetail.noLanguageRequirements")}</p>
               )}
             </div>
 
-            {job.requiredCertificates && job.requiredCertificates.length > 0 && (
-              <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Required Certificates</h2>
-                <ul className={styles.requirementsList}>
-                  {job.requiredCertificates.map((cert, index) => (
-                    <li key={index}>
-                      <FaCertificate /> {cert}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {job.requiredCertificates &&
+              job.requiredCertificates.length > 0 && (
+                <div className={styles.section}>
+                  <h2 className={styles.sectionTitle}>
+                    {t("jobDetail.requiredCertificates")}
+                  </h2>
+                  <ul className={styles.requirementsList}>
+                    {job.requiredCertificates.map((cert, index) => (
+                      <li key={index}>
+                        <FaCertificate /> {cert}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Benefits</h2>
+              <h2 className={styles.sectionTitle}>{t("jobDetail.benefits")}</h2>
               <ul className={styles.benefitsList}>
                 {job.benefits && job.benefits.length > 0 ? (
                   job.benefits.map((benefit, index) => (
                     <li key={index}>{benefit}</li>
                   ))
                 ) : (
-                  <li>Benefits to be discussed</li>
+                  <li>{t("jobDetail.benefitsDiscussed")}</li>
                 )}
               </ul>
             </div>
 
             {job.allDomains && job.allDomains.length > 0 && (
               <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Domains / Categories</h2>
+                <h2 className={styles.sectionTitle}>
+                  {t("jobDetail.domainsCategories")}
+                </h2>
                 <div className={styles.tags}>
                   {job.allDomains.map((domain, index) => (
                     <span key={index} className={styles.tag}>
@@ -671,7 +892,9 @@ export default function JobDetailPage() {
             )}
 
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Skills & Tags</h2>
+              <h2 className={styles.sectionTitle}>
+                {t("jobDetail.skillsTags")}
+              </h2>
               <div className={styles.tags}>
                 {job.tags && job.tags.length > 0 ? (
                   job.tags.map((tag, index) => (
@@ -680,43 +903,73 @@ export default function JobDetailPage() {
                     </span>
                   ))
                 ) : (
-                  <span>No tags available</span>
+                  <span>{t("jobDetail.noTags")}</span>
                 )}
               </div>
             </div>
 
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Job Information</h2>
+              <h2 className={styles.sectionTitle}>
+                {t("jobDetail.jobInformation")}
+              </h2>
               <div className={styles.infoGrid}>
                 <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}><FaBriefcase /> Working Mode:</span>
+                  <span className={styles.infoLabel}>
+                    <FaBriefcase /> {t("jobDetail.workingMode")}:
+                  </span>
                   <span className={styles.infoValue}>{job.type}</span>
                 </div>
                 <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}><FaDollarSign /> Salary Type:</span>
-                  <span className={styles.infoValue}>{job.salaryType === "NEGOTIABLE" ? "Negotiable" : job.salaryType === "FIXED" ? "Fixed" : "Range"}</span>
+                  <span className={styles.infoLabel}>
+                    <FaDollarSign /> {t("jobDetail.salaryType")}:
+                  </span>
+                  <span className={styles.infoValue}>
+                    {job.salaryType === "NEGOTIABLE"
+                      ? t("jobDetail.negotiable")
+                      : job.salaryType === "FIXED"
+                      ? t("jobDetail.fixed")
+                      : t("jobDetail.range")}
+                  </span>
                 </div>
                 {job.quantity > 1 && (
                   <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}><FaUsers /> Positions:</span>
+                    <span className={styles.infoLabel}>
+                      <FaUsers /> {t("jobDetail.positions")}:
+                    </span>
                     <span className={styles.infoValue}>{job.quantity}</span>
                   </div>
                 )}
                 {job.expirationDate && (
                   <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}><FaCalendarAlt /> Application Deadline:</span>
-                    <span className={styles.infoValue}>{new Date(job.expirationDate).toLocaleDateString()}</span>
+                    <span className={styles.infoLabel}>
+                      <FaCalendarAlt /> {t("jobDetail.applicationDeadline")}:
+                    </span>
+                    <span className={styles.infoValue}>
+                      {new Date(job.expirationDate).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
                 {job.createdDate && (
                   <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}><FaClock /> Posted:</span>
-                    <span className={styles.infoValue}>{new Date(job.createdDate).toLocaleDateString()}</span>
+                    <span className={styles.infoLabel}>
+                      <FaClock /> {t("jobDetail.posted")}:
+                    </span>
+                    <span className={styles.infoValue}>
+                      {new Date(job.createdDate).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
                 <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}><FaCheckCircle /> Status:</span>
-                  <span className={styles.infoValue}>{job.statusOpenStop === "open" ? "Open" : job.statusOpenStop === "closed" ? "Closed" : "Expired"}</span>
+                  <span className={styles.infoLabel}>
+                    <FaCheckCircle /> {t("jobDetail.status")}:
+                  </span>
+                  <span className={styles.infoValue}>
+                    {job.statusOpenStop === "open"
+                      ? t("jobDetail.open")
+                      : job.statusOpenStop === "closed"
+                      ? t("jobDetail.closed")
+                      : t("jobDetail.expired")}
+                  </span>
                 </div>
               </div>
             </div>
@@ -726,17 +979,26 @@ export default function JobDetailPage() {
 
       {/* Resume View Modal */}
       {resumeModalOpen && selectedResumeUrl && (
-        <div className={styles.modalOverlay} onClick={() => {
-          setResumeModalOpen(false);
-          setSelectedResumeUrl(null);
-        }}>
-          <div className={styles.resumeModalContent} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            setResumeModalOpen(false);
+            setSelectedResumeUrl(null);
+          }}
+        >
+          <div
+            className={styles.resumeModalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.resumeModalHeader}>
               <h2>{t("applications.modal.viewResume") || "Xem CV"}</h2>
-              <button className={styles.closeBtn} onClick={() => {
-                setResumeModalOpen(false);
-                setSelectedResumeUrl(null);
-              }}>
+              <button
+                className={styles.closeBtn}
+                onClick={() => {
+                  setResumeModalOpen(false);
+                  setSelectedResumeUrl(null);
+                }}
+              >
                 ×
               </button>
             </div>
@@ -753,12 +1015,16 @@ export default function JobDetailPage() {
                   rel="noopener noreferrer"
                   className={styles.downloadResumeBtn}
                 >
-                  <FaFileAlt /> {t("applications.downloadResume") || "Tải xuống"}
+                  <FaFileAlt />{" "}
+                  {t("applications.downloadResume") || "Tải xuống"}
                 </a>
-                <button className={styles.closeResumeBtn} onClick={() => {
-                  setResumeModalOpen(false);
-                  setSelectedResumeUrl(null);
-                }}>
+                <button
+                  className={styles.closeResumeBtn}
+                  onClick={() => {
+                    setResumeModalOpen(false);
+                    setSelectedResumeUrl(null);
+                  }}
+                >
                   {t("common.close") || "Đóng"}
                 </button>
               </div>
@@ -766,7 +1032,122 @@ export default function JobDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Apply Job Modal */}
+      {applyModalOpen && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setApplyModalOpen(false)}
+        >
+          <div
+            className={styles.applyModalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.applyModalHeader}>
+              <h2>
+                {t("findJob.applicationModal.title") || "Ứng tuyển"} -{" "}
+                {job.title}
+              </h2>
+              <button
+                className={styles.closeBtn}
+                onClick={() => setApplyModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <form
+              className={styles.applyModalBody}
+              onSubmit={handleSubmitApplication}
+            >
+              <div className={styles.formField}>
+                <label className={styles.fieldLabel}>
+                  {t("findJob.applicationModal.uploadCV") || "Upload CV"}{" "}
+                  <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.fileUploadWrapper}>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className={styles.fileInput}
+                    id="pdfFileInput"
+                  />
+                  <label htmlFor="pdfFileInput" className={styles.fileLabel}>
+                    <FaFileAlt />{" "}
+                    {applicationData.pdfFile
+                      ? applicationData.pdfFile.name
+                      : t("findJob.applicationModal.selectFile") ||
+                        "Chọn file PDF"}
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.fieldLabel}>
+                  {t("findJob.applicationModal.introduction") ||
+                    "Thư giới thiệu"}{" "}
+                  <span className={styles.required}>*</span>
+                </label>
+                <textarea
+                  className={styles.textarea}
+                  rows="6"
+                  value={applicationData.introduction}
+                  onChange={(e) =>
+                    setApplicationData((prev) => ({
+                      ...prev,
+                      introduction: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    t("findJob.applicationModal.introPlaceholder") ||
+                    "Giới thiệu bản thân và lý do ứng tuyển..."
+                  }
+                  required
+                />
+              </div>
+
+              <div className={styles.formField}>
+                <label className={styles.fieldLabel}>
+                  {t("findJob.applicationModal.profileLink") || "Link hồ sơ"} (
+                  {t("findJob.applicationModal.optional") || "Không bắt buộc"})
+                </label>
+                <input
+                  type="url"
+                  className={styles.input}
+                  value={applicationData.profileLink}
+                  onChange={(e) =>
+                    setApplicationData((prev) => ({
+                      ...prev,
+                      profileLink: e.target.value,
+                    }))
+                  }
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className={styles.applyModalActions}>
+                <button
+                  type="button"
+                  className={styles.cancelApplyBtn}
+                  onClick={() => setApplyModalOpen(false)}
+                  disabled={submitting}
+                >
+                  {t("common.close") || "Đóng"}
+                </button>
+                <button
+                  type="submit"
+                  className={styles.submitApplyBtn}
+                  disabled={submitting}
+                >
+                  {submitting
+                    ? t("findJob.applicationModal.submitting") || "Đang gửi..."
+                    : t("findJob.applicationModal.submit") || "Gửi đơn"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }
-

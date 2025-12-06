@@ -36,7 +36,10 @@ const Header = () => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
-      if (messageDropdownRef.current && !messageDropdownRef.current.contains(event.target)) {
+      if (
+        messageDropdownRef.current &&
+        !messageDropdownRef.current.contains(event.target)
+      ) {
         setIsMessageDropdownOpen(false);
       }
     };
@@ -53,35 +56,43 @@ const Header = () => {
       try {
         const [countResponse, conversationsResponse] = await Promise.all([
           messageService.getUnreadCount(),
-          messageService.getConversations(false, false) // Not archived, not deleted
+          messageService.getConversations(false, false), // Not archived, not deleted
         ]);
-        
+
         setUnreadMessageCount(countResponse.data?.unreadCount || 0);
-        
+
         // Filter conversations with unread messages
         const conversations = conversationsResponse.data || [];
         console.log("🔍 Loading conversations for dropdown:", conversations);
         console.log("🔍 User ID:", user?.id || user?.sub);
-        console.log("🔍 Unread count from API:", countResponse.data?.unreadCount);
-        
-        const unread = conversations.filter(conv => {
+        console.log(
+          "🔍 Unread count from API:",
+          countResponse.data?.unreadCount
+        );
+
+        const unread = conversations.filter((conv) => {
           let unreadCount = 0;
-          
+
           // Check if conversation has otherParticipant structure (transformed)
           if (conv.otherParticipant) {
             unreadCount = Number(conv.unreadCount) || 0;
-            console.log(`📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`);
+            console.log(
+              `📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`
+            );
           } else {
             // Fallback to raw structure
-            const isParticipant1 = conv.participant1Id === parseInt(user?.id || user?.sub);
+            const isParticipant1 =
+              conv.participant1Id === parseInt(user?.id || user?.sub);
             const rawUnread1 = conv.participant1UnreadCount;
             const rawUnread2 = conv.participant2UnreadCount;
-            unreadCount = isParticipant1 
-              ? (Number(rawUnread1) || 0)
-              : (Number(rawUnread2) || 0);
-            console.log(`📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`);
+            unreadCount = isParticipant1
+              ? Number(rawUnread1) || 0
+              : Number(rawUnread2) || 0;
+            console.log(
+              `📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`
+            );
           }
-          
+
           const hasUnread = unreadCount > 0;
           if (hasUnread) {
             console.log(`✅ Found unread conversation ${conv.id}:`, {
@@ -89,27 +100,34 @@ const Header = () => {
               unreadCount,
               lastMessage: conv.lastMessage,
               lastMessageAt: conv.lastMessageAt,
-              otherParticipant: conv.otherParticipant
+              otherParticipant: conv.otherParticipant,
             });
           } else if (conv.lastMessage) {
-            console.log(`⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`, {
-              id: conv.id,
-              unreadCount,
-              lastMessage: conv.lastMessage
-            });
+            console.log(
+              `⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`,
+              {
+                id: conv.id,
+                unreadCount,
+                lastMessage: conv.lastMessage,
+              }
+            );
           }
           return hasUnread;
         });
-        
-        console.log(`📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`);
+
+        console.log(
+          `📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`
+        );
         console.log("📋 Filtered unread conversations:", unread);
-        
+
         // If no unread but we have unread count > 0, show recent conversations with messages
         let conversationsToShow = unread;
         if (unread.length === 0 && countResponse.data?.unreadCount > 0) {
-          console.log("⚠️ No unread conversations found but unreadCount > 0, showing recent conversations with messages");
+          console.log(
+            "⚠️ No unread conversations found but unreadCount > 0, showing recent conversations with messages"
+          );
           conversationsToShow = conversations
-            .filter(conv => conv.lastMessage) // Has at least one message
+            .filter((conv) => conv.lastMessage) // Has at least one message
             .sort((a, b) => {
               const dateA = new Date(a.lastMessageAt || 0).getTime();
               const dateB = new Date(b.lastMessageAt || 0).getTime();
@@ -117,7 +135,7 @@ const Header = () => {
             })
             .slice(0, 5);
         }
-        
+
         // Sort by lastMessageAt (most recent first) and limit to 5
         const sorted = conversationsToShow
           .sort((a, b) => {
@@ -126,7 +144,7 @@ const Header = () => {
             return dateB - dateA;
           })
           .slice(0, 5);
-        
+
         console.log("✅ Final conversations to display:", sorted);
         setUnreadConversations(sorted);
       } catch (error) {
@@ -149,35 +167,46 @@ const Header = () => {
     e.stopPropagation();
     const willOpen = !isMessageDropdownOpen;
     setIsMessageDropdownOpen(willOpen);
-    
+
     // Reload conversations when opening dropdown
     if (willOpen && isAuthenticated) {
       try {
-        const conversationsResponse = await messageService.getConversations(false, false);
+        const conversationsResponse = await messageService.getConversations(
+          false,
+          false
+        );
         const conversations = conversationsResponse.data || [];
-        
-        console.log("🔍 All conversations when opening dropdown:", conversations);
+
+        console.log(
+          "🔍 All conversations when opening dropdown:",
+          conversations
+        );
         console.log("🔍 User ID:", user?.id || user?.sub);
-        
+
         // Filter conversations with unread messages
-        const unread = conversations.filter(conv => {
+        const unread = conversations.filter((conv) => {
           let unreadCount = 0;
-          
+
           // Check if conversation has otherParticipant structure (transformed)
           if (conv.otherParticipant) {
             unreadCount = Number(conv.unreadCount) || 0;
-            console.log(`📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`);
+            console.log(
+              `📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`
+            );
           } else {
             // Fallback to raw structure
-            const isParticipant1 = conv.participant1Id === parseInt(user?.id || user?.sub);
+            const isParticipant1 =
+              conv.participant1Id === parseInt(user?.id || user?.sub);
             const rawUnread1 = conv.participant1UnreadCount;
             const rawUnread2 = conv.participant2UnreadCount;
-            unreadCount = isParticipant1 
-              ? (Number(rawUnread1) || 0)
-              : (Number(rawUnread2) || 0);
-            console.log(`📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`);
+            unreadCount = isParticipant1
+              ? Number(rawUnread1) || 0
+              : Number(rawUnread2) || 0;
+            console.log(
+              `📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`
+            );
           }
-          
+
           const hasUnread = unreadCount > 0;
           if (hasUnread) {
             console.log(`✅ Found unread conversation ${conv.id}:`, {
@@ -185,27 +214,34 @@ const Header = () => {
               unreadCount,
               lastMessage: conv.lastMessage,
               lastMessageAt: conv.lastMessageAt,
-              otherParticipant: conv.otherParticipant
+              otherParticipant: conv.otherParticipant,
             });
           } else if (conv.lastMessage) {
-            console.log(`⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`, {
-              id: conv.id,
-              unreadCount,
-              lastMessage: conv.lastMessage
-            });
+            console.log(
+              `⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`,
+              {
+                id: conv.id,
+                unreadCount,
+                lastMessage: conv.lastMessage,
+              }
+            );
           }
           return hasUnread;
         });
-        
-        console.log(`📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`);
+
+        console.log(
+          `📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`
+        );
         console.log("📋 Filtered unread conversations:", unread);
-        
+
         // If no unread but we have unread count > 0, show recent conversations with messages
         let conversationsToShow = unread;
         if (unread.length === 0 && unreadMessageCount > 0) {
-          console.log("⚠️ No unread conversations found but unreadMessageCount > 0, showing recent conversations with messages");
+          console.log(
+            "⚠️ No unread conversations found but unreadMessageCount > 0, showing recent conversations with messages"
+          );
           conversationsToShow = conversations
-            .filter(conv => conv.lastMessage) // Has at least one message
+            .filter((conv) => conv.lastMessage) // Has at least one message
             .sort((a, b) => {
               const dateA = new Date(a.lastMessageAt || 0).getTime();
               const dateB = new Date(b.lastMessageAt || 0).getTime();
@@ -213,7 +249,7 @@ const Header = () => {
             })
             .slice(0, 5);
         }
-        
+
         // Sort by lastMessageAt (most recent first) and limit to 5
         const sorted = conversationsToShow
           .sort((a, b) => {
@@ -222,7 +258,7 @@ const Header = () => {
             return dateB - dateA;
           })
           .slice(0, 5);
-        
+
         console.log("✅ Final conversations to display:", sorted);
         setUnreadConversations(sorted);
       } catch (error) {
@@ -358,24 +394,31 @@ const Header = () => {
                   <NotificationDropdown />
 
                   {/* Messages Icon with Dropdown */}
-                  <div className="message-dropdown-container" ref={messageDropdownRef}>
+                  <div
+                    className="message-dropdown-container"
+                    ref={messageDropdownRef}
+                  >
                     <button
                       onClick={toggleMessageDropdown}
-                      className={`message-btn ${isActiveRoute(ROUTES.MESSAGES) ? "active" : ""} ${isMessageDropdownOpen ? "open" : ""}`}
+                      className={`message-btn ${
+                        isActiveRoute(ROUTES.MESSAGES) ? "active" : ""
+                      } ${isMessageDropdownOpen ? "open" : ""}`}
                       title={t("common.messages") || "Messages"}
                     >
                       <FaEnvelope />
                       {unreadMessageCount > 0 && (
-                        <span className="message-badge">{unreadMessageCount > 99 ? "99+" : unreadMessageCount}</span>
+                        <span className="message-badge">
+                          {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                        </span>
                       )}
                     </button>
-                    
+
                     {/* Message Dropdown Preview */}
                     {isMessageDropdownOpen && (
                       <div className="message-dropdown">
                         <div className="message-dropdown-header">
                           <h4>{t("common.messages") || "Messages"}</h4>
-                          <Link 
+                          <Link
                             to={ROUTES.MESSAGES}
                             onClick={() => setIsMessageDropdownOpen(false)}
                             className="view-all-link"
@@ -387,72 +430,110 @@ const Header = () => {
                           {unreadConversations.length === 0 ? (
                             <div className="message-dropdown-empty">
                               <FaEnvelope />
-                              <p>{lang === "vi" ? "Không có tin nhắn chưa đọc" : "No unread messages"}</p>
+                              <p>
+                                {lang === "vi"
+                                  ? "Không có tin nhắn chưa đọc"
+                                  : "No unread messages"}
+                              </p>
                             </div>
                           ) : (
                             unreadConversations.map((conv) => {
                               // Handle both transformed and raw conversation structures
                               let otherParticipant, unreadCount;
-                              
+
                               if (conv.otherParticipant) {
                                 // Transformed structure (from API)
                                 otherParticipant = conv.otherParticipant;
                                 unreadCount = Number(conv.unreadCount) || 0;
                               } else {
                                 // Raw structure (fallback)
-                                const isParticipant1 = conv.participant1Id === parseInt(user?.id || user?.sub);
-                                unreadCount = isParticipant1 
-                                  ? (Number(conv.participant1UnreadCount) || 0)
-                                  : (Number(conv.participant2UnreadCount) || 0);
-                                otherParticipant = isParticipant1 ? conv.participant2 : conv.participant1;
+                                const isParticipant1 =
+                                  conv.participant1Id ===
+                                  parseInt(user?.id || user?.sub);
+                                unreadCount = isParticipant1
+                                  ? Number(conv.participant1UnreadCount) || 0
+                                  : Number(conv.participant2UnreadCount) || 0;
+                                otherParticipant = isParticipant1
+                                  ? conv.participant2
+                                  : conv.participant1;
                               }
-                              
-                              console.log(`Rendering conversation ${conv.id}:`, {
-                                otherParticipant,
-                                unreadCount,
-                                lastMessage: conv.lastMessage
-                              });
-                              
+
+                              console.log(
+                                `Rendering conversation ${conv.id}:`,
+                                {
+                                  otherParticipant,
+                                  unreadCount,
+                                  lastMessage: conv.lastMessage,
+                                }
+                              );
+
                               return (
                                 <Link
                                   key={conv.id}
                                   to={`${ROUTES.MESSAGES}?conversation=${conv.id}`}
-                                  onClick={() => setIsMessageDropdownOpen(false)}
+                                  onClick={() =>
+                                    setIsMessageDropdownOpen(false)
+                                  }
                                   className="message-dropdown-item"
                                 >
                                   <div className="message-item-avatar">
                                     {otherParticipant?.avatar ? (
-                                      <img 
-                                        src={otherParticipant.avatar.startsWith("http") 
-                                          ? otherParticipant.avatar 
-                                          : `http://localhost:4000${otherParticipant.avatar}`} 
-                                        alt={otherParticipant.fullName} 
+                                      <img
+                                        src={
+                                          otherParticipant.avatar.startsWith(
+                                            "http"
+                                          )
+                                            ? otherParticipant.avatar
+                                            : `http://localhost:4000${otherParticipant.avatar}`
+                                        }
+                                        alt={otherParticipant.fullName}
                                       />
                                     ) : (
-                                      <span>{otherParticipant?.fullName?.charAt(0)?.toUpperCase() || otherParticipant?.email?.charAt(0)?.toUpperCase() || "?"}</span>
+                                      <span>
+                                        {otherParticipant?.fullName
+                                          ?.charAt(0)
+                                          ?.toUpperCase() ||
+                                          otherParticipant?.email
+                                            ?.charAt(0)
+                                            ?.toUpperCase() ||
+                                          "?"}
+                                      </span>
                                     )}
                                   </div>
                                   <div className="message-item-content">
                                     <div className="message-item-header">
                                       <span className="message-item-name">
-                                        {otherParticipant?.fullName || otherParticipant?.email || "User"}
+                                        {otherParticipant?.fullName ||
+                                          otherParticipant?.email ||
+                                          "User"}
                                       </span>
                                       {unreadCount > 0 && (
-                                        <span className="message-item-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+                                        <span className="message-item-badge">
+                                          {unreadCount > 99
+                                            ? "99+"
+                                            : unreadCount}
+                                        </span>
                                       )}
                                     </div>
                                     <p className="message-item-preview">
-                                      {conv.lastMessage?.content 
-                                        ? (conv.lastMessage.content.length > 50 
-                                            ? conv.lastMessage.content.substring(0, 50) + "..." 
-                                            : conv.lastMessage.content)
-                                        : (lang === "vi" ? "Không có tin nhắn" : "No message")}
+                                      {conv.lastMessage?.content
+                                        ? conv.lastMessage.content.length > 50
+                                          ? conv.lastMessage.content.substring(
+                                              0,
+                                              50
+                                            ) + "..."
+                                          : conv.lastMessage.content
+                                        : lang === "vi"
+                                        ? "Không có tin nhắn"
+                                        : "No message"}
                                     </p>
                                     {conv.lastMessageAt && (
                                       <span className="message-item-time">
-                                        {new Date(conv.lastMessageAt).toLocaleTimeString("vi-VN", {
+                                        {new Date(
+                                          conv.lastMessageAt
+                                        ).toLocaleTimeString("vi-VN", {
                                           hour: "2-digit",
-                                          minute: "2-digit"
+                                          minute: "2-digit",
                                         })}
                                       </span>
                                     )}
@@ -519,7 +600,14 @@ const Header = () => {
                               </p>
                               <p className="user-email">{user?.email}</p>
                               <span className="user-role-badge">
-                                {user?.role}
+                                {user?.role === "client"
+                                  ? t("header.roles.client") || "Client"
+                                  : user?.role === "interpreter"
+                                  ? t("header.roles.interpreter") ||
+                                    "Interpreter"
+                                  : user?.role === "admin"
+                                  ? t("header.roles.admin") || "Admin"
+                                  : user?.role}
                               </span>
                             </div>
                           </div>
@@ -597,7 +685,7 @@ const Header = () => {
                               className="dropdown-item"
                               onClick={() => {
                                 setIsUserMenuOpen(false);
-                                navigate("/saved-jobs");
+                                navigate("/dashboard/saved-jobs");
                               }}
                             >
                               <svg
@@ -614,6 +702,31 @@ const Header = () => {
                                 {lang === "vi"
                                   ? "Công việc đã lưu"
                                   : "Saved Jobs"}
+                              </span>
+                            </button>
+                          )}
+                          {user?.role === "client" && (
+                            <button
+                              className="dropdown-item"
+                              onClick={() => {
+                                setIsUserMenuOpen(false);
+                                navigate("/dashboard/saved-interpreters");
+                              }}
+                            >
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                              </svg>
+                              <span>
+                                {lang === "vi"
+                                  ? "Thông dịch viên đã lưu"
+                                  : "Saved Interpreters"}
                               </span>
                             </button>
                           )}
@@ -828,7 +941,9 @@ const Header = () => {
                         {t("common.messages") || "Messages"}
                         {unreadMessageCount > 0 && (
                           <span className="mobile-message-badge">
-                            {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                            {unreadMessageCount > 99
+                              ? "99+"
+                              : unreadMessageCount}
                           </span>
                         )}
                       </span>

@@ -11,12 +11,7 @@ export class SavedJobService {
   }
 
   async getAllSavedJobs(query) {
-    const {
-      page = 1,
-      limit = 20,
-      userId = "",
-      jobId = "",
-    } = query;
+    const { page = 1, limit = 20, userId = "", jobId = "" } = query;
 
     const filters = {};
     if (userId) filters.userId = userId;
@@ -57,13 +52,13 @@ export class SavedJobService {
       throw new Error("userId and jobId are required");
     }
 
-    // Check if already saved
+    // Check if already saved - return existing instead of throwing error
     const existing = await this.savedJobRepository.findByUserAndJob(
       userId,
       jobId
     );
     if (existing) {
-      throw new Error("Job already saved");
+      return existing; // Idempotent - return existing record
     }
 
     // Verify user and job exist
@@ -102,4 +97,3 @@ export class SavedJobService {
     return true;
   }
 }
-
