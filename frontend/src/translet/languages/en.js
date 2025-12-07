@@ -22,6 +22,13 @@ const en = {
     back: "Back",
     notFound: "Not found",
   },
+  header: {
+    roles: {
+      client: "Client",
+      interpreter: "Interpreter",
+      admin: "Admin",
+    },
+  },
   interpreterModal: {
     topRated: "Top Rated",
     years: "years",
