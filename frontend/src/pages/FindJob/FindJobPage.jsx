@@ -359,7 +359,7 @@ export default function FindJobPage() {
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
   const [level, setLevel] = useState("");
-  const [salaryRange, setSalaryRange] = useState("");
+  const [salaryRange, setSalaryRange] = useState([null, null]);
   const [sortBy, setSortBy] = useState("createdAt");
   const [page, setPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -588,26 +588,23 @@ export default function FindJobPage() {
       if (keyword) apiFilters.search = keyword;
       if (location) apiFilters.province = location;
       if (category) {
-        // Map category to domainId if needed
-        const domain = domains.find(
-          (d) => d.name === category || d.nameVi === category
-        );
-        if (domain) apiFilters.domainId = domain.id;
+        // Category is already an ID from the dropdown
+        apiFilters.domainId = parseInt(category);
       }
       if (level) {
-        // Map level to levelId if needed
-        const levelObj = levels.find(
-          (l) => l.name === level || l.nameVi === level
-        );
-        if (levelObj) apiFilters.levelId = levelObj.id;
+        // Level is already an ID from the dropdown
+        apiFilters.levelId = parseInt(level);
       }
       if (salaryRange) {
-        // Parse salary range
-        const [min, max] = salaryRange
-          .split("-")
-          .map((s) => s.replace(/\D/g, ""));
-        if (min) apiFilters.minSalary = min;
-        if (max) apiFilters.maxSalary = max;
+        // Handle both array format [min, max] and string format "min-max"
+        let min, max;
+        if (Array.isArray(salaryRange)) {
+          [min, max] = salaryRange;
+        } else if (typeof salaryRange === "string") {
+          [min, max] = salaryRange.split("-").map((s) => s.replace(/\D/g, ""));
+        }
+        if (min) apiFilters.minSalary = parseInt(min);
+        if (max) apiFilters.maxSalary = parseInt(max);
       }
 
       const response = await jobService.getJobs(apiFilters);
@@ -793,7 +790,7 @@ export default function FindJobPage() {
     setLocation("");
     setCategory("");
     setLevel("");
-    setSalaryRange("");
+    setSalaryRange([null, null]);
     setPage(1);
   }
 
@@ -1546,18 +1543,21 @@ export default function FindJobPage() {
 
         {/* Application Modal */}
         {isApplicationModalOpen && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.applicationModal}>
+          <div className={styles.modalOverlay} onClick={closeApplicationModal}>
+            <div
+              className={styles.applicationModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className={styles.closeBtn}
+                onClick={closeApplicationModal}
+              >
+                ×
+              </button>
               <div className={styles.applicationModalHeader}>
                 <h2>
                   {t("findJob.applicationModal.title")} {selectedJob?.title}
                 </h2>
-                <button
-                  className={styles.closeBtn}
-                  onClick={closeApplicationModal}
-                >
-                  ×
-                </button>
               </div>
 
               <div className={styles.applicationModalBody}>

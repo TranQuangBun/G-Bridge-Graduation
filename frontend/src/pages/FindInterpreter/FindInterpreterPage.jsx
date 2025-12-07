@@ -143,7 +143,15 @@ const FindInterpreterPage = () => {
 
       const response = await interpreterService.getInterpreters(queryFilters);
 
-      setInterpreters(response.data.interpreters || []);
+      // Map interpreterProfile to profile for consistency
+      const interpretersWithProfile = (response.data.interpreters || []).map(
+        (interpreter) => ({
+          ...interpreter,
+          profile: interpreter.interpreterProfile || interpreter.profile,
+        })
+      );
+
+      setInterpreters(interpretersWithProfile);
       setPagination(response.data.pagination || {});
     } catch (error) {
       console.error("Error fetching interpreters:", error);

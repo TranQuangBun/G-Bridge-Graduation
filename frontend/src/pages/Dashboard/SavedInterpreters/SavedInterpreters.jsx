@@ -92,7 +92,14 @@ const SavedInterpreters = () => {
       const result = await savedInterpreterService.getAllSavedInterpreters();
 
       if (result.success) {
-        setSavedInterpreters(result.data || []);
+        // Map interpreterProfile to profile for consistency
+        const interpretersWithProfile = (result.data || []).map(
+          (interpreter) => ({
+            ...interpreter,
+            profile: interpreter.interpreterProfile || interpreter.profile,
+          })
+        );
+        setSavedInterpreters(interpretersWithProfile);
       } else {
         console.error("Failed to fetch saved interpreters:", result.message);
         setSavedInterpreters([]);

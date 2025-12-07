@@ -197,6 +197,14 @@ const ProfilePage = () => {
   const [isAddingCertification, setIsAddingCertification] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
   // Form states
   const [basicInfoForm, setBasicInfoForm] = useState({
     fullName: "",
@@ -616,6 +624,32 @@ const ProfilePage = () => {
     }
   };
 
+  // Confirmation modal helpers
+  const showConfirmModal = (title, message, onConfirm) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+    });
+  };
+
+  const hideConfirmModal = () => {
+    setConfirmModal({
+      isOpen: false,
+      title: "",
+      message: "",
+      onConfirm: null,
+    });
+  };
+
+  const handleConfirm = () => {
+    if (confirmModal.onConfirm) {
+      confirmModal.onConfirm();
+    }
+    hideConfirmModal();
+  };
+
   // Handle add language
   const handleAddLanguage = async (e) => {
     e.preventDefault();
@@ -680,21 +714,31 @@ const ProfilePage = () => {
 
   // Handle remove language
   const handleRemoveLanguage = async (languageId) => {
-    setLoading(true);
+    showConfirmModal(
+      lang === "vi" ? "Xác nhận xóa" : "Confirm Delete",
+      lang === "vi"
+        ? "Bạn có chắc chắn muốn xóa ngôn ngữ này?"
+        : "Are you sure you want to delete this language?",
+      async () => {
+        setLoading(true);
 
-    try {
-      if (languageId) {
-        await languageService.deleteLanguage(languageId);
-        await refreshUser();
-        toast.success(t("profile.languages.success.removed"));
-      } else {
-        toast.error(t("profile.languages.errors.cannotRemove"));
+        try {
+          if (languageId) {
+            await languageService.deleteLanguage(languageId);
+            await refreshUser();
+            toast.success(t("profile.languages.success.removed"));
+          } else {
+            toast.error(t("profile.languages.errors.cannotRemove"));
+          }
+        } catch (error) {
+          toast.error(
+            error.message || t("profile.languages.errors.removeFailed")
+          );
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      toast.error(error.message || t("profile.languages.errors.removeFailed"));
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   // Handle add certification
@@ -754,26 +798,34 @@ const ProfilePage = () => {
 
   // Handle remove certification
   const handleRemoveCertification = async (index) => {
-    setLoading(true);
+    showConfirmModal(
+      lang === "vi" ? "Xác nhận xóa" : "Confirm Delete",
+      lang === "vi"
+        ? "Bạn có chắc chắn muốn xóa chứng chỉ này?"
+        : "Are you sure you want to delete this certification?",
+      async () => {
+        setLoading(true);
 
-    try {
-      const certificationToRemove = certifications[index];
-      if (certificationToRemove?.id) {
-        await certificationService.deleteCertification(
-          certificationToRemove.id
-        );
-        await refreshUser();
-        toast.success(t("profile.certifications.success.removed"));
-      } else {
-        toast.error(t("profile.certifications.errors.cannotRemove"));
+        try {
+          const certificationToRemove = certifications[index];
+          if (certificationToRemove?.id) {
+            await certificationService.deleteCertification(
+              certificationToRemove.id
+            );
+            await refreshUser();
+            toast.success(t("profile.certifications.success.removed"));
+          } else {
+            toast.error(t("profile.certifications.errors.cannotRemove"));
+          }
+        } catch (error) {
+          toast.error(
+            error.message || t("profile.certifications.errors.removeFailed")
+          );
+        } finally {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      toast.error(
-        error.message || t("profile.certifications.errors.removeFailed")
-      );
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   // Handle add specialization
@@ -2168,6 +2220,37 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className={styles.modalOverlay} onClick={hideConfirmModal}>
+          <div
+            className={styles.confirmModal}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.confirmModalHeader}>
+              <h3>{confirmModal.title}</h3>
+            </div>
+            <div className={styles.confirmModalBody}>
+              <p>{confirmModal.message}</p>
+            </div>
+            <div className={styles.confirmModalFooter}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={hideConfirmModal}
+              >
+                {lang === "vi" ? "Hủy" : "Cancel"}
+              </button>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={handleConfirm}
+              >
+                {lang === "vi" ? "Xóa" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 };

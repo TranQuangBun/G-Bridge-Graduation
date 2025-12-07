@@ -1234,27 +1234,28 @@
 
 .closeBtn {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background: none;
+  top: 24px;
+  right: 24px;
+  background: #f1f5f9;
   border: none;
   font-size: 2rem;
   cursor: pointer;
-  color: var(--fj-muted);
+  color: #64748b;
   width: 40px;
   height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: 0.3s ease;
+  transition: all 0.3s ease;
   z-index: 1001;
   flex-shrink: 0;
 }
 
 .closeBtn:hover {
-  background: #f1f5f9;
+  background: #e2e8f0;
   color: var(--fj-text);
+  transform: rotate(90deg);
 }
 
 .modalHeader {
@@ -1669,16 +1670,25 @@
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUpModal 0.3s ease-out;
+}
+
+@keyframes slideUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .applicationModalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 32px;
+  padding: 32px 60px 24px 32px;
   border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
   border-radius: 16px 16px 0 0;
 }
 
@@ -1687,6 +1697,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--fj-text);
+  line-height: 1.4;
 }
 
 .applicationModalBody {
@@ -1771,42 +1782,48 @@
 
 .cancelBtn {
   padding: 12px 24px;
-  border: 1px solid #cbd5e1;
+  border: 2px solid #cbd5e1;
   background: #fff;
   color: var(--fj-text);
   border-radius: 8px;
   font-weight: 500;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .cancelBtn:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
   border-color: #94a3b8;
 }
 
 .submitBtn {
-  padding: 12px 24px;
-  background: linear-gradient(
-    135deg,
-    var(--fj-primary),
-    var(--fj-primary-light)
-  );
-  color: #fff;
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #0369a1, #0ea5e9);
+  color: #ffffff;
   border: none;
   border-radius: 8px;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.2);
+  line-height: 1.5;
 }
 
 .submitBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.35);
+}
+
+.submitBtn:active {
+  transform: translateY(0);
 }
 
 .submitBtn:disabled {
-  opacity: 0.6;
+  background: #cbd5e1;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
