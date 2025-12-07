@@ -32,11 +32,12 @@ export class InterpreterService {
 
     const queryBuilder = AppDataSource.getRepository(User)
       .createQueryBuilder("user")
-      .innerJoinAndSelect("user.interpreterProfile", "profile")
+      .leftJoinAndSelect("user.interpreterProfile", "profile")
       .leftJoinAndSelect("user.languages", "languages")
       .leftJoinAndSelect("user.certifications", "certifications")
       .where("user.role = :role", { role: "interpreter" })
-      .andWhere("user.isActive = :isActive", { isActive: true });
+      .andWhere("user.isActive = :isActive", { isActive: true })
+      .andWhere("profile.id IS NOT NULL"); // Ensure profile exists
 
     if (search) {
       queryBuilder.andWhere(
@@ -46,9 +47,12 @@ export class InterpreterService {
     }
 
     if (verificationStatus) {
-      queryBuilder.andWhere("profile.verificationStatus = :verificationStatus", {
-        verificationStatus,
-      });
+      queryBuilder.andWhere(
+        "profile.verificationStatus = :verificationStatus",
+        {
+          verificationStatus,
+        }
+      );
     }
 
     if (isAvailable !== "") {
@@ -69,7 +73,9 @@ export class InterpreterService {
 
     if (languages) {
       const languageIds = languages.split(",").map((id) => parseInt(id));
-      queryBuilder.andWhere("languages.id IN (:...languageIds)", { languageIds });
+      queryBuilder.andWhere("languages.id IN (:...languageIds)", {
+        languageIds,
+      });
     }
 
     queryBuilder
@@ -79,6 +85,17 @@ export class InterpreterService {
       .take(parseInt(limit));
 
     const [interpreters, count] = await queryBuilder.getManyAndCount();
+
+    // Debug log
+    console.log("📊 Interpreters found:", interpreters.length);
+    if (interpreters.length > 0) {
+      console.log("📝 First interpreter profile:", {
+        name: interpreters[0].fullName,
+        hasProfile: !!interpreters[0].interpreterProfile,
+        rating: interpreters[0].interpreterProfile?.rating,
+        totalReviews: interpreters[0].interpreterProfile?.totalReviews,
+      });
+    }
 
     return {
       interpreters,
@@ -94,11 +111,7 @@ export class InterpreterService {
   async getInterpreterById(id) {
     const user = await AppDataSource.getRepository(User).findOne({
       where: { id: parseInt(id), role: "interpreter" },
-      relations: [
-        "interpreterProfile",
-        "languages",
-        "certifications",
-      ],
+      relations: ["interpreterProfile", "languages", "certifications"],
     });
 
     if (!user || !user.interpreterProfile) {
@@ -149,4 +162,3 @@ export async function getAvailableLanguagesForFilter() {
 export async function getAvailableSpecializationsForFilter() {
   return await interpreterService.getAvailableSpecializationsForFilter();
 }
-
