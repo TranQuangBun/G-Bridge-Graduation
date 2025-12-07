@@ -6,7 +6,10 @@ import { Domain } from "../entities/Domain.js";
 import { JobDomain } from "../entities/JobDomain.js";
 import { JobRequiredLanguage } from "../entities/JobRequiredLanguage.js";
 import { JobRequiredCertificate } from "../entities/JobRequiredCertificate.js";
-import { JobApplication, ApplicationStatusEnum } from "../entities/JobApplication.js";
+import {
+  JobApplication,
+  ApplicationStatusEnum,
+} from "../entities/JobApplication.js";
 import { ApplicationStatus } from "../entities/ApplicationStatus.js";
 import { SavedJob } from "../entities/SavedJob.js";
 import { Language } from "../entities/Language.js";
@@ -17,7 +20,10 @@ import { LessThan } from "typeorm";
 import { logError, AppError } from "../utils/Errors.js";
 import { sendSuccess, sendError, sendPaginated } from "../utils/Response.js";
 import { JobService } from "../services/JobService.js";
-import { validateCreateJob, validateUpdateJob } from "../validators/JobValidators.js";
+import {
+  validateCreateJob,
+  validateUpdateJob,
+} from "../validators/JobValidators.js";
 import { NotificationService } from "../services/NotificationService.js";
 import { NotificationType } from "../entities/Notification.js";
 
@@ -32,6 +38,7 @@ export async function getJobs(req, res) {
       search = "",
       province = "",
       domainId = "",
+      levelId = "",
       workingModeId = "",
       minSalary = "",
       maxSalary = "",
@@ -63,73 +70,101 @@ export async function getJobs(req, res) {
       .leftJoinAndSelect("job.requiredCertificates", "requiredCertificates")
       .leftJoinAndSelect("requiredCertificates.certificate", "certificate");
 
+    // Always start with a base WHERE clause to avoid andWhere issues
+    let hasWhere = false;
+
     if (search) {
       queryBuilder.where("job.title LIKE :search", { search: `%${search}%` });
+      hasWhere = true;
     }
 
     if (province) {
-      if (search) {
-        queryBuilder.andWhere("job.province = :province", { province });
-      } else {
-        queryBuilder.where("job.province = :province", { province });
-      }
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("job.province = :province", { province });
+      hasWhere = true;
     }
 
     if (workingModeId) {
-      const condition = search || province ? "andWhere" : "where";
+      const condition = hasWhere ? "andWhere" : "where";
       queryBuilder[condition]("job.workingModeId = :workingModeId", {
         workingModeId: parseInt(workingModeId),
       });
+      hasWhere = true;
     }
 
     if (minSalary) {
-      const condition = search || province || workingModeId ? "andWhere" : "where";
-      queryBuilder[condition]("job.minSalary >= :minSalary", {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("job.maxSalary >= :minSalary", {
         minSalary: parseFloat(minSalary),
       });
+      hasWhere = true;
     }
 
     if (maxSalary) {
-      const condition =
-        search || province || workingModeId || minSalary ? "andWhere" : "where";
-      queryBuilder[condition]("job.maxSalary <= :maxSalary", {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("job.minSalary <= :maxSalary", {
         maxSalary: parseFloat(maxSalary),
       });
+      hasWhere = true;
     }
 
     if (status) {
-      const condition =
-        search || province || workingModeId || minSalary || maxSalary
-          ? "andWhere"
-          : "where";
+      const condition = hasWhere ? "andWhere" : "where";
       queryBuilder[condition]("job.statusOpenStop = :status", { status });
+      hasWhere = true;
     }
 
     if (domainId) {
-      queryBuilder.andWhere("domains.id = :domainId", {
-        domainId: parseInt(domainId),
+      const condition = hasWhere ? "andWhere" : "where";
+      // Use EXISTS subquery for many-to-many relation
+      queryBuilder[condition](
+        `EXISTS (
+          SELECT 1 FROM job_has_domains jhd 
+          WHERE jhd.jobId = job.id 
+          AND jhd.domainId = :domainId
+        )`,
+        { domainId: parseInt(domainId) }
+      );
+      hasWhere = true;
+    }
+
+    if (levelId) {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("level.id = :levelId", {
+        levelId: parseInt(levelId),
       });
+      hasWhere = true;
     }
 
     if (reviewStatus) {
-      queryBuilder.andWhere("job.reviewStatus = :reviewStatus", {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("job.reviewStatus = :reviewStatus", {
         reviewStatus,
       });
+      hasWhere = true;
     }
 
+    // Map sortBy field names
+    const sortField = sortBy === "createdAt" ? "createdDate" : sortBy;
+
     queryBuilder
-      .orderBy(`job.${sortBy}`, sortOrder.toUpperCase())
+      .orderBy(`job.${sortField}`, sortOrder.toUpperCase())
       .take(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
     const [jobs, count] = await queryBuilder.getManyAndCount();
 
-    return sendPaginated(res, jobs, {
-      total: count,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(count / parseInt(limit)),
-    }, "Jobs fetched successfully");
+    return sendPaginated(
+      res,
+      jobs,
+      {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+      "Jobs fetched successfully"
+    );
   } catch (error) {
     logError(error, "Fetching jobs");
     return sendError(res, "Error fetching jobs", 500, error);
@@ -139,7 +174,7 @@ export async function getJobs(req, res) {
 export async function getJobById(req, res) {
   try {
     const { id } = req.params;
-    
+
     // Validate job ID
     if (!id) {
       return sendError(res, "Job ID is required", 400);
@@ -148,7 +183,7 @@ export async function getJobById(req, res) {
     if (isNaN(parsedJobId) || parsedJobId <= 0) {
       return sendError(res, "Invalid job ID", 400);
     }
-    
+
     const jobRepository = AppDataSource.getRepository(Job);
 
     const relations = [
@@ -180,41 +215,46 @@ export async function getJobById(req, res) {
     if (req.user) {
       const userId = req.user.sub || req.user.id;
       const parsedUserId = userId ? Number(userId) : null;
-      
+
       // Only check saved/applied if userId is valid
       if (parsedUserId && Number.isInteger(parsedUserId) && parsedUserId > 0) {
-          const savedJobRepository = AppDataSource.getRepository(SavedJob);
-          const savedJob = await savedJobRepository.findOne({
+        const savedJobRepository = AppDataSource.getRepository(SavedJob);
+        const savedJob = await savedJobRepository.findOne({
+          where: {
+            userId: parsedUserId,
+            jobId: parsedJobId,
+          },
+        });
+        isSaved = !!savedJob;
+
+        // Check if user has applied
+        if (job.applications) {
+          hasApplied = job.applications.some(
+            (app) => app.interpreterId === parsedUserId
+          );
+        } else {
+          const jobApplicationRepository =
+            AppDataSource.getRepository(JobApplication);
+          const application = await jobApplicationRepository.findOne({
             where: {
-              userId: parsedUserId,
               jobId: parsedJobId,
+              interpreterId: parsedUserId,
             },
           });
-          isSaved = !!savedJob;
-
-          // Check if user has applied
-          if (job.applications) {
-            hasApplied = job.applications.some(
-              (app) => app.interpreterId === parsedUserId
-            );
-          } else {
-            const jobApplicationRepository = AppDataSource.getRepository(JobApplication);
-            const application = await jobApplicationRepository.findOne({
-              where: {
-                jobId: parsedJobId,
-                interpreterId: parsedUserId,
-              },
-            });
-            hasApplied = !!application;
-          }
+          hasApplied = !!application;
+        }
       }
     }
 
-    return sendSuccess(res, {
-      ...job,
-      isSaved,
-      hasApplied,
-    }, "Job fetched successfully");
+    return sendSuccess(
+      res,
+      {
+        ...job,
+        isSaved,
+        hasApplied,
+      },
+      "Job fetched successfully"
+    );
   } catch (error) {
     if (error instanceof AppError || error.message === "Job not found") {
       return sendError(res, error.message, error.statusCode || 404);
@@ -253,8 +293,11 @@ export async function createJob(req, res) {
 
     const jobRepository = AppDataSource.getRepository(Job);
     const jobDomainRepository = AppDataSource.getRepository(JobDomain);
-    const jobRequiredLanguageRepository = AppDataSource.getRepository(JobRequiredLanguage);
-    const jobRequiredCertificateRepository = AppDataSource.getRepository(JobRequiredCertificate);
+    const jobRequiredLanguageRepository =
+      AppDataSource.getRepository(JobRequiredLanguage);
+    const jobRequiredCertificateRepository = AppDataSource.getRepository(
+      JobRequiredCertificate
+    );
 
     const job = jobRepository.create({
       organizationId,
@@ -294,21 +337,21 @@ export async function createJob(req, res) {
       const Language = (await import("../entities/Language.js")).Language;
       const languageRepository = AppDataSource.getRepository(Language);
       const currentUserId = req.user?.id || req.user?.sub || 1; // Use current user or default to 1
-      
+
       const languageRecords = await Promise.all(
         requiredLanguages.map(async (lang) => {
           let languageId = lang.languageId ? parseInt(lang.languageId) : null;
-          
+
           // If languageName is provided instead of languageId, find or create language
           if (lang.languageName && !languageId) {
             // Try to find existing language by name (prefer from current user, then any user)
             let language = await languageRepository.findOne({
-              where: { 
+              where: {
                 name: lang.languageName,
-                userId: currentUserId 
+                userId: currentUserId,
               },
             });
-            
+
             // If not found for current user, try to find from any user
             if (!language) {
               language = await languageRepository
@@ -317,7 +360,7 @@ export async function createJob(req, res) {
                 .orderBy("language.id", "ASC")
                 .getOne();
             }
-            
+
             // If still not found, create a new language entry for current user
             if (!language) {
               language = languageRepository.create({
@@ -330,9 +373,12 @@ export async function createJob(req, res) {
             }
             languageId = language.id;
           } else if (!languageId) {
-            throw new AppError(`Language ID or name is required for language requirement`, 400);
+            throw new AppError(
+              `Language ID or name is required for language requirement`,
+              400
+            );
           }
-          
+
           return jobRequiredLanguageRepository.create({
             jobId: savedJob.id,
             languageId: languageId,
@@ -367,16 +413,20 @@ export async function createJob(req, res) {
 export async function updateJob(req, res) {
   try {
     const { id } = req.params;
-    
+
     // Validate job ID
     if (!id) {
       return sendError(res, "Job ID is required", 400);
     }
     const parsedJobId = Number(id);
-    if (!Number.isInteger(parsedJobId) || parsedJobId <= 0 || isNaN(parsedJobId)) {
+    if (
+      !Number.isInteger(parsedJobId) ||
+      parsedJobId <= 0 ||
+      isNaN(parsedJobId)
+    ) {
       return sendError(res, "Invalid job ID", 400);
     }
-    
+
     // Validate input
     validateUpdateJob(req.body);
 
@@ -405,8 +455,11 @@ export async function updateJob(req, res) {
 
     const jobRepository = AppDataSource.getRepository(Job);
     const jobDomainRepository = AppDataSource.getRepository(JobDomain);
-    const jobRequiredLanguageRepository = AppDataSource.getRepository(JobRequiredLanguage);
-    const jobRequiredCertificateRepository = AppDataSource.getRepository(JobRequiredCertificate);
+    const jobRequiredLanguageRepository =
+      AppDataSource.getRepository(JobRequiredLanguage);
+    const jobRequiredCertificateRepository = AppDataSource.getRepository(
+      JobRequiredCertificate
+    );
 
     const job = await jobRepository.findOne({ where: { id: parsedJobId } });
 
@@ -433,7 +486,11 @@ export async function updateJob(req, res) {
     // Validate organizationId
     if (organizationId !== undefined && organizationId !== null) {
       const parsedOrgId = Number(organizationId);
-      if (Number.isInteger(parsedOrgId) && parsedOrgId > 0 && !isNaN(parsedOrgId)) {
+      if (
+        Number.isInteger(parsedOrgId) &&
+        parsedOrgId > 0 &&
+        !isNaN(parsedOrgId)
+      ) {
         updateData.organizationId = parsedOrgId;
       } else {
         return sendError(res, "Invalid organization ID", 400);
@@ -443,7 +500,11 @@ export async function updateJob(req, res) {
     // Validate workingModeId
     if (workingModeId !== undefined && workingModeId !== null) {
       const parsedWorkingModeId = Number(workingModeId);
-      if (Number.isInteger(parsedWorkingModeId) && parsedWorkingModeId > 0 && !isNaN(parsedWorkingModeId)) {
+      if (
+        Number.isInteger(parsedWorkingModeId) &&
+        parsedWorkingModeId > 0 &&
+        !isNaN(parsedWorkingModeId)
+      ) {
         updateData.workingModeId = parsedWorkingModeId;
       } else {
         return sendError(res, "Invalid working mode ID", 400);
@@ -453,7 +514,11 @@ export async function updateJob(req, res) {
     // Validate quantity
     if (quantity !== undefined && quantity !== null) {
       const parsedQuantity = Number(quantity);
-      if (Number.isInteger(parsedQuantity) && parsedQuantity > 0 && !isNaN(parsedQuantity)) {
+      if (
+        Number.isInteger(parsedQuantity) &&
+        parsedQuantity > 0 &&
+        !isNaN(parsedQuantity)
+      ) {
         updateData.quantity = parsedQuantity;
       } else {
         return sendError(res, "Invalid quantity", 400);
@@ -489,10 +554,12 @@ export async function updateJob(req, res) {
         const validDomainIds = domains
           .map((domainId) => {
             const parsed = Number(domainId);
-            return Number.isInteger(parsed) && parsed > 0 && !isNaN(parsed) ? parsed : null;
+            return Number.isInteger(parsed) && parsed > 0 && !isNaN(parsed)
+              ? parsed
+              : null;
           })
           .filter((id) => id !== null);
-        
+
         if (validDomainIds.length > 0) {
           const domainRecords = validDomainIds.map((domainId) =>
             jobDomainRepository.create({
@@ -510,28 +577,32 @@ export async function updateJob(req, res) {
       if (requiredLanguages.length > 0) {
         const languageRepository = AppDataSource.getRepository(Language);
         const currentUserId = req.user?.id || req.user?.sub || 1;
-        
+
         const languageRecords = await Promise.all(
           requiredLanguages.map(async (lang) => {
             let languageId = lang.languageId ? Number(lang.languageId) : null;
-            
+
             // Validate languageId if provided
             if (languageId !== null) {
-              if (!Number.isInteger(languageId) || languageId <= 0 || isNaN(languageId)) {
+              if (
+                !Number.isInteger(languageId) ||
+                languageId <= 0 ||
+                isNaN(languageId)
+              ) {
                 languageId = null;
               }
             }
-            
+
             // If languageName is provided instead of languageId, find or create language
             if (lang.languageName && !languageId) {
               // Try to find existing language by name (prefer from current user, then any user)
               let language = await languageRepository.findOne({
-                where: { 
+                where: {
                   name: lang.languageName,
-                  userId: currentUserId 
+                  userId: currentUserId,
                 },
               });
-              
+
               // If not found for current user, try to find from any user
               if (!language) {
                 language = await languageRepository
@@ -540,7 +611,7 @@ export async function updateJob(req, res) {
                   .orderBy("language.id", "ASC")
                   .getOne();
               }
-              
+
               // If still not found, create a new language entry for current user
               if (!language) {
                 language = languageRepository.create({
@@ -556,13 +627,17 @@ export async function updateJob(req, res) {
               // Skip this language requirement if neither ID nor name is valid
               return null;
             }
-            
+
             // Validate levelId
             const parsedLevelId = Number(lang.levelId);
-            if (!Number.isInteger(parsedLevelId) || parsedLevelId <= 0 || isNaN(parsedLevelId)) {
+            if (
+              !Number.isInteger(parsedLevelId) ||
+              parsedLevelId <= 0 ||
+              isNaN(parsedLevelId)
+            ) {
               return null;
             }
-            
+
             return jobRequiredLanguageRepository.create({
               jobId: parsedJobId,
               languageId: languageId,
@@ -571,9 +646,11 @@ export async function updateJob(req, res) {
             });
           })
         );
-        
+
         // Filter out null values and save
-        const validLanguageRecords = languageRecords.filter((record) => record !== null);
+        const validLanguageRecords = languageRecords.filter(
+          (record) => record !== null
+        );
         if (validLanguageRecords.length > 0) {
           await jobRequiredLanguageRepository.save(validLanguageRecords);
         }
@@ -586,7 +663,10 @@ export async function updateJob(req, res) {
         // Validate certificate IDs
         const validCertRecords = requiredCertificates
           .map((cert) => {
-            if (cert.certificateId !== undefined && cert.certificateId !== null) {
+            if (
+              cert.certificateId !== undefined &&
+              cert.certificateId !== null
+            ) {
               const parsed = Number(cert.certificateId);
               if (Number.isInteger(parsed) && parsed > 0 && !isNaN(parsed)) {
                 return {
@@ -639,19 +719,25 @@ export async function applyForJob(req, res) {
     const { jobId } = req.params;
     const { coverLetter, resumeUrl, resumeType } = req.body;
     const userId = req.user?.sub || req.user?.id;
-    
+
     // Handle file upload if present
     let finalResumeUrl = resumeUrl;
     let finalResumeType = resumeType;
-    
+
     if (req.file) {
       try {
         // Upload file to ImgBB
-        const { uploadMulterFileToImgbb } = await import("../utils/ImgbbService.js");
+        const { uploadMulterFileToImgbb } = await import(
+          "../utils/ImgbbService.js"
+        );
         const uploadResult = await uploadMulterFileToImgbb(req.file, "resumes");
         finalResumeUrl = uploadResult.url;
-        finalResumeType = req.file.mimetype === "application/pdf" ? "pdf" : 
-                         req.file.mimetype.includes("word") ? "doc" : "pdf";
+        finalResumeType =
+          req.file.mimetype === "application/pdf"
+            ? "pdf"
+            : req.file.mimetype.includes("word")
+            ? "doc"
+            : "pdf";
       } catch (uploadError) {
         logError(uploadError, "uploading resume file");
         // Fallback: save locally if ImgBB fails
@@ -662,27 +748,45 @@ export async function applyForJob(req, res) {
           if (!fs.existsSync(req.file.path)) {
             throw new Error("File was deleted before fallback could save it");
           }
-          
-          const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 4000}`;
+
+          const baseUrl =
+            process.env.BACKEND_URL ||
+            `http://localhost:${process.env.PORT || 4000}`;
           const fileUrl = `${baseUrl}/uploads/resumes/${req.file.filename}`;
           finalResumeUrl = fileUrl;
-          finalResumeType = req.file.mimetype === "application/pdf" ? "pdf" : 
-                           req.file.mimetype.includes("word") ? "doc" : "pdf";
-          console.warn("ImgBB upload failed, using local storage:", uploadError.message);
+          finalResumeType =
+            req.file.mimetype === "application/pdf"
+              ? "pdf"
+              : req.file.mimetype.includes("word")
+              ? "doc"
+              : "pdf";
+          console.warn(
+            "ImgBB upload failed, using local storage:",
+            uploadError.message
+          );
           console.log("Local file saved at:", req.file.path);
         } catch (fallbackError) {
           logError(fallbackError, "fallback resume storage");
-          return sendError(res, "Failed to upload resume file", 500, uploadError);
+          return sendError(
+            res,
+            "Failed to upload resume file",
+            500,
+            uploadError
+          );
         }
       }
     }
-    
+
     // Validate userId
     if (!userId) {
       return sendError(res, "User ID is required", 401);
     }
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       return sendError(res, "Invalid user ID", 400);
     }
 
@@ -697,20 +801,26 @@ export async function applyForJob(req, res) {
     }
 
     if (job.statusOpenStop !== "open") {
-      return sendError(res, "This job is no longer accepting applications", 400);
+      return sendError(
+        res,
+        "This job is no longer accepting applications",
+        400
+      );
     }
 
     if (new Date() > new Date(job.expirationDate)) {
       return sendError(res, "Application deadline has passed", 400);
     }
 
-    const jobApplicationRepository = AppDataSource.getRepository(JobApplication);
-    const applicationStatusRepository = AppDataSource.getRepository(ApplicationStatus);
+    const jobApplicationRepository =
+      AppDataSource.getRepository(JobApplication);
+    const applicationStatusRepository =
+      AppDataSource.getRepository(ApplicationStatus);
     const parsedJobId = parseInt(jobId);
     if (isNaN(parsedJobId)) {
       return sendError(res, "Invalid job ID", 400);
     }
-    
+
     const existingApplication = await jobApplicationRepository.findOne({
       where: {
         jobId: parsedJobId,
@@ -728,8 +838,15 @@ export async function applyForJob(req, res) {
     });
 
     if (!pendingStatus) {
-      logError(new Error("Pending application status not found in database"), "applying for job");
-      return sendError(res, "System error: Application status not configured", 500);
+      logError(
+        new Error("Pending application status not found in database"),
+        "applying for job"
+      );
+      return sendError(
+        res,
+        "System error: Application status not configured",
+        500
+      );
     }
 
     const application = jobApplicationRepository.create({
@@ -762,7 +879,12 @@ export async function applyForJob(req, res) {
       }
     }
 
-    return sendSuccess(res, application, "Application submitted successfully", 201);
+    return sendSuccess(
+      res,
+      application,
+      "Application submitted successfully",
+      201
+    );
   } catch (error) {
     logError(error, "applying for job");
     return sendError(res, "Error submitting application", 500, error);
@@ -773,13 +895,17 @@ export async function toggleSaveJob(req, res) {
   try {
     const { jobId } = req.params;
     const userId = req.user?.sub || req.user?.id;
-    
+
     // Validate userId
     if (!userId) {
       return sendError(res, "User ID is required", 401);
     }
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       return sendError(res, "Invalid user ID", 400);
     }
 
@@ -796,7 +922,7 @@ export async function toggleSaveJob(req, res) {
     if (isNaN(parsedJobId)) {
       return sendError(res, "Invalid job ID", 400);
     }
-    
+
     const savedJobRepository = AppDataSource.getRepository(SavedJob);
     const savedJob = await savedJobRepository.findOne({
       where: {
@@ -807,7 +933,11 @@ export async function toggleSaveJob(req, res) {
 
     if (savedJob) {
       await savedJobRepository.remove(savedJob);
-      return sendSuccess(res, { isSaved: false }, "Job removed from saved list");
+      return sendSuccess(
+        res,
+        { isSaved: false },
+        "Job removed from saved list"
+      );
     } else {
       const newSavedJob = savedJobRepository.create({
         userId: parsedUserId,
@@ -833,7 +963,11 @@ export async function getSavedJobs(req, res) {
       return sendError(res, "User ID is required", 401);
     }
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       return sendError(res, "Invalid user ID", 400);
     }
 
@@ -888,12 +1022,17 @@ export async function getSavedJobs(req, res) {
       order: { savedDate: "DESC" },
     });
 
-    return sendPaginated(res, savedJobs, {
-      total: count,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(count / parseInt(limit)),
-    }, "Saved jobs fetched successfully");
+    return sendPaginated(
+      res,
+      savedJobs,
+      {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+      "Saved jobs fetched successfully"
+    );
   } catch (error) {
     logError(error, "fetching saved jobs");
     return sendError(res, "Error fetching saved jobs", 500, error);
@@ -911,12 +1050,17 @@ export async function getMyApplications(req, res) {
       return sendError(res, "User ID is required", 401);
     }
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       return sendError(res, "Invalid user ID", 400);
     }
 
-    const jobApplicationRepository = AppDataSource.getRepository(JobApplication);
-    
+    const jobApplicationRepository =
+      AppDataSource.getRepository(JobApplication);
+
     // Build query based on user role
     let queryBuilder = jobApplicationRepository
       .createQueryBuilder("application")
@@ -936,7 +1080,9 @@ export async function getMyApplications(req, res) {
         .leftJoinAndSelect("application.interpreter", "interpreter");
     } else {
       // For interpreter: get their own applications
-      queryBuilder.where("application.interpreterId = :userId", { userId: parsedUserId });
+      queryBuilder.where("application.interpreterId = :userId", {
+        userId: parsedUserId,
+      });
     }
 
     if (status) {
@@ -952,12 +1098,17 @@ export async function getMyApplications(req, res) {
 
     const [applications, count] = await queryBuilder.getManyAndCount();
 
-    return sendPaginated(res, applications, {
-      total: count,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(count / parseInt(limit)),
-    }, "My applications fetched successfully");
+    return sendPaginated(
+      res,
+      applications,
+      {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+      "My applications fetched successfully"
+    );
   } catch (error) {
     logError(error, "fetching applications");
     return sendError(res, "Error fetching applications", 500, error);
@@ -976,7 +1127,11 @@ export async function acceptApplication(req, res) {
       return sendError(res, "User ID is required", 401);
     }
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       return sendError(res, "Invalid user ID", 400);
     }
 
@@ -994,7 +1149,8 @@ export async function acceptApplication(req, res) {
       return sendError(res, "Only employers can accept applications", 403);
     }
 
-    const jobApplicationRepository = AppDataSource.getRepository(JobApplication);
+    const jobApplicationRepository =
+      AppDataSource.getRepository(JobApplication);
     const application = await jobApplicationRepository.findOne({
       where: { id: parsedApplicationId },
       relations: ["job", "job.organization", "interpreter"],
@@ -1006,7 +1162,11 @@ export async function acceptApplication(req, res) {
 
     // Verify that the user owns the job (via organization)
     if (application.job?.organization?.ownerUserId !== parsedUserId) {
-      return sendError(res, "You don't have permission to accept this application", 403);
+      return sendError(
+        res,
+        "You don't have permission to accept this application",
+        403
+      );
     }
 
     // Update application status
@@ -1056,7 +1216,11 @@ export async function rejectApplication(req, res) {
       return sendError(res, "User ID is required", 401);
     }
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       return sendError(res, "Invalid user ID", 400);
     }
 
@@ -1074,7 +1238,8 @@ export async function rejectApplication(req, res) {
       return sendError(res, "Only employers can reject applications", 403);
     }
 
-    const jobApplicationRepository = AppDataSource.getRepository(JobApplication);
+    const jobApplicationRepository =
+      AppDataSource.getRepository(JobApplication);
     const application = await jobApplicationRepository.findOne({
       where: { id: parsedApplicationId },
       relations: ["job", "job.organization", "interpreter"],
@@ -1086,7 +1251,11 @@ export async function rejectApplication(req, res) {
 
     // Verify that the user owns the job (via organization)
     if (application.job?.organization?.ownerUserId !== parsedUserId) {
-      return sendError(res, "You don't have permission to reject this application", 403);
+      return sendError(
+        res,
+        "You don't have permission to reject this application",
+        403
+      );
     }
 
     // Update application status
@@ -1200,7 +1369,11 @@ export async function getMyJobs(req, res) {
     }
 
     const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || isNaN(parsedUserId)) {
+    if (
+      !Number.isInteger(parsedUserId) ||
+      parsedUserId <= 0 ||
+      isNaN(parsedUserId)
+    ) {
       logError(
         new Error(`Invalid userId: ${userId}, parsed: ${parsedUserId}`),
         "getMyJobs - userId validation failed"
@@ -1235,27 +1408,31 @@ export async function getMyJobs(req, res) {
     }
 
     if (reviewStatus) {
-      queryBuilder.andWhere("job.reviewStatus = :reviewStatus", { reviewStatus });
+      queryBuilder.andWhere("job.reviewStatus = :reviewStatus", {
+        reviewStatus,
+      });
     }
 
     // Apply pagination with validation
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 12)); // Max 100 items per page
     const skip = (pageNum - 1) * limitNum;
-    
-    queryBuilder
-      .skip(skip)
-      .take(limitNum)
-      .orderBy("job.createdDate", "DESC");
+
+    queryBuilder.skip(skip).take(limitNum).orderBy("job.createdDate", "DESC");
 
     const [jobs, count] = await queryBuilder.getManyAndCount();
 
-    return sendPaginated(res, jobs, {
-      total: count,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(count / limitNum),
-    }, "My jobs fetched successfully");
+    return sendPaginated(
+      res,
+      jobs,
+      {
+        total: count,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(count / limitNum),
+      },
+      "My jobs fetched successfully"
+    );
   } catch (error) {
     logError(error, "fetching my jobs");
     return sendError(res, "Error fetching my jobs", 500, error);
