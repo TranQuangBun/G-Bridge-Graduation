@@ -1,6 +1,7 @@
 import { CertificationRepository } from "../repositories/CertificationRepository.js";
 import { NotFoundError } from "../utils/Errors.js";
 import { updateProfileCompleteness } from "../utils/ProfileCompleteness.js";
+import { CertificationStatus } from "../entities/Certification.js";
 
 export class CertificationService {
   constructor() {
@@ -15,6 +16,7 @@ export class CertificationService {
       userId = "",
       verificationStatus = "",
       isActive = "",
+      enforceInterpreterRole = true,
     } = filters;
 
     const queryBuilder = this.certificationRepository.repository
@@ -38,7 +40,13 @@ export class CertificationService {
         "user.id",
         "user.fullName",
         "user.email",
+        "user.role",
       ]);
+
+    // Only return certifications of interpreters unless disabled (e.g., admin)
+    if (enforceInterpreterRole) {
+      queryBuilder.andWhere("user.role = :interpreterRole", { interpreterRole: "interpreter" });
+    }
 
     if (search) {
       queryBuilder.where(
@@ -111,8 +119,28 @@ export class CertificationService {
   }
 
   async createCertification(data) {
-    const certification = this.certificationRepository.repository.create(data);
+    // Ensure verificationStatus is set to pending for new certifications
+    const certificationData = {
+      ...data,
+      verificationStatus: data.verificationStatus || CertificationStatus.PENDING,
+    };
+    
+    console.log("🔧 [CERTIFICATION SERVICE] Creating certification with data:", {
+      ...certificationData,
+      passwordHash: certificationData.passwordHash ? "[HIDDEN]" : undefined,
+    });
+    
+    const certification = this.certificationRepository.repository.create(certificationData);
     const saved = await this.certificationRepository.repository.save(certification);
+    
+    console.log("✅ [CERTIFICATION SERVICE] Certification created:", {
+      id: saved.id,
+      name: saved.name,
+      imageUrl: saved.imageUrl,
+      credentialUrl: saved.credentialUrl,
+      verificationStatus: saved.verificationStatus,
+      userId: saved.userId,
+    });
     
     // Update profile completeness if user is interpreter
     if (data.userId) {
@@ -164,17 +192,54 @@ export class CertificationService {
   }
 
   async updateCertificationImage(userId, certificationId, imageUrl) {
+    console.log("🔧 [CERTIFICATION SERVICE] Updating certification image:", {
+      userId,
+      certificationId,
+      imageUrl,
+    });
+
     const certification = await this.certificationRepository.repository.findOne({
       where: { id: parseInt(certificationId), userId: parseInt(userId) },
     });
 
     if (!certification) {
+      console.error("❌ [CERTIFICATION SERVICE] Certification not found:", {
+        id: certificationId,
+        userId,
+      });
       throw new NotFoundError("Certification");
     }
 
+    console.log("📋 [CERTIFICATION SERVICE] Found certification before update:", {
+      id: certification.id,
+      currentImageUrl: certification.imageUrl,
+      currentCredentialUrl: certification.credentialUrl,
+      verificationStatus: certification.verificationStatus,
+    });
+
     certification.imageUrl = imageUrl;
     certification.verificationStatus = "pending";
-    return await this.certificationRepository.repository.save(certification);
+    
+    const saved = await this.certificationRepository.repository.save(certification);
+    
+    console.log("✅ [CERTIFICATION SERVICE] Certification updated:", {
+      id: saved.id,
+      newImageUrl: saved.imageUrl,
+      credentialUrl: saved.credentialUrl,
+      verificationStatus: saved.verificationStatus,
+    });
+
+    // Verify the save worked
+    const verify = await this.certificationRepository.repository.findOne({
+      where: { id: parseInt(certificationId) },
+    });
+    console.log("🔍 [CERTIFICATION SERVICE] Verification query result:", {
+      id: verify?.id,
+      imageUrl: verify?.imageUrl,
+      credentialUrl: verify?.credentialUrl,
+    });
+
+    return saved;
   }
 }
 

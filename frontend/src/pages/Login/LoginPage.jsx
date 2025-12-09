@@ -279,7 +279,12 @@ const LoginPage = () => {
       if (result.success) {
         showSuccess(t.loginSuccess);
         setTimeout(() => {
-          navigate(ROUTES.HOME);
+          // Redirect based on user role
+          if (result.data?.user?.role === "admin") {
+            navigate(ROUTES.ADMIN_DASHBOARD);
+          } else {
+            navigate(ROUTES.HOME);
+          }
         }, 500);
       } else {
         showError(result.error || t.loginError);

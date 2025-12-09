@@ -16,45 +16,35 @@ export class UserRepository extends BaseRepository {
     const offset = (page - 1) * limit;
     const queryBuilder = this.repository.createQueryBuilder("user");
 
+    // Build WHERE conditions properly
+    const conditions = [];
+    const parameters = {};
+
     if (search) {
-      queryBuilder.where(
-        "(user.fullName LIKE :search OR user.email LIKE :search)",
-        { search: `%${search}%` }
-      );
+      conditions.push("(user.fullName LIKE :search OR user.email LIKE :search)");
+      parameters.search = `%${search}%`;
     }
 
-    if (role) {
-      if (search) {
-        queryBuilder.andWhere("user.role = :role", { role });
-      } else {
-        queryBuilder.where("user.role = :role", { role });
-      }
+    if (role && role !== "") {
+      conditions.push("user.role = :role");
+      parameters.role = role;
     }
 
     if (isActive !== undefined && isActive !== "") {
       const isActiveValue = isActive === "true" || isActive === true;
-      if (search || role) {
-        queryBuilder.andWhere("user.isActive = :isActive", {
-          isActive: isActiveValue,
-        });
-      } else {
-        queryBuilder.where("user.isActive = :isActive", {
-          isActive: isActiveValue,
-        });
-      }
+      conditions.push("user.isActive = :isActive");
+      parameters.isActive = isActiveValue;
     }
 
     if (isVerified !== undefined && isVerified !== "") {
       const isVerifiedValue = isVerified === "true" || isVerified === true;
-      if (search || role || (isActive !== undefined && isActive !== "")) {
-        queryBuilder.andWhere("user.isVerified = :isVerified", {
-          isVerified: isVerifiedValue,
-        });
-      } else {
-        queryBuilder.where("user.isVerified = :isVerified", {
-          isVerified: isVerifiedValue,
-        });
-      }
+      conditions.push("user.isVerified = :isVerified");
+      parameters.isVerified = isVerifiedValue;
+    }
+
+    // Apply all conditions at once
+    if (conditions.length > 0) {
+      queryBuilder.where(conditions.join(" AND "), parameters);
     }
 
     queryBuilder

@@ -61,7 +61,7 @@ services:
       - FRONTEND_URL=http://localhost:3000
       
       # ImgBB API Configuration (for file uploads)
-      - IMGBB_API_KEY=608d854aebb411657d9684305ae89fa6
+      - IMGBB_API_KEY=939449e3cf45737142bb725ae88320a5
       
       # VNPay Configuration (Payment Gateway)
       # Lưu ý: Cần đăng ký tài khoản VNPay sandbox tại https://sandbox.vnpayment.vn/

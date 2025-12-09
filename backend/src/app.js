@@ -31,6 +31,7 @@ import jobRequiredLanguageRoutes from "./routes/JobRequiredLanguageRoutes.js";
 import jobRequiredCertificateRoutes from "./routes/JobRequiredCertificateRoutes.js";
 import notificationRoutes from "./routes/NotificationRoutes.js";
 import messageRoutes from "./routes/MessageRoutes.js";
+import adminRoutes from "./routes/AdminRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +92,7 @@ const createApp = async () => {
   app.use("/api/job-required-certificates", jobRequiredCertificateRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/messages", messageRoutes);
+  app.use("/api/admin", adminRoutes);
 
   // Health check endpoint - Check database connection
   app.get("/health", async (_, res) => {

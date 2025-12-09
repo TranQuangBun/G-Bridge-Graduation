@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MainLayout } from "../../layouts";
+import { AdminLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService";
@@ -132,14 +132,14 @@ const AdminJobModerationPage = () => {
 
   if (authLoading) {
     return (
-      <MainLayout>
+      <AdminLayout>
         <div className={styles.loading}>{t("common.loading")}</div>
-      </MainLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <MainLayout>
+    <AdminLayout>
       <div className={styles.moderationPage}>
         <header className={styles.pageHeader}>
           <h1>{t("adminModeration.title") || "Job Moderation"}</h1>
@@ -372,7 +372,7 @@ const AdminJobModerationPage = () => {
           </div>
         )}
       </div>
-    </MainLayout>
+    </AdminLayout>
   );
 };
 

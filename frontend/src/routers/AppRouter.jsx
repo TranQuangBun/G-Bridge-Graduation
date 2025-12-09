@@ -13,6 +13,11 @@ import {
   MyJobsPage,
   ProfilePage,
   AdminJobModerationPage,
+  AdminDashboardPage,
+  AdminRegisterPage,
+  CertificateApprovalPage,
+  OrganizationApprovalPage,
+  SystemNotificationsPage,
   PostJobPage,
   JobDetailPage,
   MessagesPage,
@@ -133,6 +138,10 @@ const router = createBrowserRouter([
     element: <RegisterPage />,
   },
   {
+    path: ROUTES.ADMIN_REGISTER,
+    element: <AdminRegisterPage />,
+  },
+  {
     path: ROUTES.PRICING,
     element: <PricingPage />,
   },
@@ -153,6 +162,38 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["admin"]}>
         <AdminJobModerationPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_DASHBOARD,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <AdminDashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_CERTIFICATIONS,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <CertificateApprovalPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_ORGANIZATIONS,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <OrganizationApprovalPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_NOTIFICATIONS,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <SystemNotificationsPage />
       </ProtectedRoute>
     ),
   },
