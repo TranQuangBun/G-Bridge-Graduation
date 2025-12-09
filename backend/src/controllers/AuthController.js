@@ -1,5 +1,11 @@
 import { registerUser, loginUser } from "../services/AuthService.js";
-import { getUserById, updateUserBasicInfo, updateInterpreterProfileData, updateUserAvatar, toggleUserActiveStatus } from "../services/UserProfileService.js";
+import {
+  getUserById,
+  updateUserBasicInfo,
+  updateInterpreterProfileData,
+  updateUserAvatar,
+  toggleUserActiveStatus,
+} from "../services/UserProfileService.js";
 import { validateRegistration, validateLogin } from "../validators/AuthValidators.js";
 import { sendSuccess, sendError } from "../utils/Response.js";
 import { AppError } from "../utils/Errors.js";
@@ -9,6 +15,11 @@ export async function register(req, res) {
   try {
     // Validate input
     validateRegistration(req.body);
+
+    // Prevent admin registration through normal registration
+    if (req.body.role === "admin") {
+      return sendError(res, "Admin registration is not allowed through this endpoint. Please use /api/auth/register-admin", 403);
+    }
 
     // Register user
     const result = await registerUser(req.body);
@@ -23,6 +34,30 @@ export async function register(req, res) {
       logger.error("Registration failed", err);
     }
     return sendError(res, "Server error during registration", 500, err);
+  }
+}
+
+export async function registerAdmin(req, res) {
+  try {
+    // Validate input
+    validateRegistration(req.body);
+
+    // Ensure role is admin
+    req.body.role = "admin";
+    
+    // Register admin user
+    const result = await registerUser({
+      ...req.body,
+      isVerified: true, // Admin accounts are auto-verified
+    });
+
+    return sendSuccess(res, result, "Admin registration successful", 201);
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, err.message, err.statusCode, err);
+    }
+    logger.error("Admin registration failed", err);
+    return sendError(res, "Server error during admin registration", 500, err);
   }
 }
 
@@ -107,12 +142,16 @@ export async function uploadAvatar(req, res) {
       return sendError(res, "No file uploaded", 400);
     }
 
-    const { uploadMulterFileToImgbb } = await import("../utils/ImgbbService.js");
-    const result = await uploadMulterFileToImgbb(req.file, "avatars");
-    
-    const user = await updateUserAvatar(req.user.sub || req.user.id, result.url);
+    // Build absolute URL served from /uploads
+    const relativeUrl = `/uploads/avatars/${req.file.filename}`;
+    const baseUrl =
+      process.env.API_BASE_URL?.replace(/\/$/, "") ||
+      `${req.protocol}://${req.get("host")}`;
+    const avatarUrl = `${baseUrl}${relativeUrl}`;
 
-    return sendSuccess(res, { avatar: result.url, user }, "Avatar uploaded successfully");
+    const user = await updateUserAvatar(req.user.sub || req.user.id, avatarUrl);
+
+    return sendSuccess(res, { avatar: avatarUrl, user }, "Avatar uploaded successfully");
   } catch (err) {
     if (err instanceof AppError) {
       return sendError(res, err.message, err.statusCode, err);

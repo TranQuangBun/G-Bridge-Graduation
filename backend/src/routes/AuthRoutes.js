@@ -1,6 +1,7 @@
 import express from "express";
 import {
   register,
+  registerAdmin,
   login,
   me,
   updateUserProfile,
@@ -14,6 +15,7 @@ import { uploadAvatar as uploadAvatarMiddleware } from "../middleware/Upload.js"
 const router = express.Router();
 
 router.post("/register", register);
+router.post("/register-admin", registerAdmin);
 router.post("/login", login);
 router.get("/me", authRequired, me);
 router.put("/profile", authRequired, updateUserProfile);

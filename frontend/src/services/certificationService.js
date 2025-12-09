@@ -61,12 +61,16 @@ const certificationService = {
    */
   addCertification: async (certificationData) => {
     try {
+      console.log("🌐 [API] POST /certifications - Request:", certificationData);
       const response = await apiClient.post(
         "/certifications",
         certificationData
       );
+      console.log("🌐 [API] POST /certifications - Response:", response.data);
       return response.data;
     } catch (error) {
+      console.error("🌐 [API] POST /certifications - Error:", error);
+      console.error("🌐 [API] Error response:", error.response?.data);
       throw error.response?.data || { message: "Failed to add certification" };
     }
   },
@@ -99,9 +103,17 @@ const certificationService = {
    */
   uploadCertificationImage: async (id, file) => {
     try {
+      console.log("🌐 [API] POST /certifications/:id/upload-image - Request:", {
+        id,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
+
       const formData = new FormData();
       formData.append("image", file);
 
+      console.log("🌐 [API] FormData created, sending request...");
       const response = await apiClient.post(
         `/certifications/${id}/upload-image`,
         formData,
@@ -111,8 +123,18 @@ const certificationService = {
           },
         }
       );
+
+      console.log("🌐 [API] POST /certifications/:id/upload-image - Response:", {
+        success: response.data.success,
+        imageUrl: response.data.data?.imageUrl || response.data.imageUrl,
+        certification: response.data.data?.certification || response.data.certification,
+        fullResponse: response.data,
+      });
+
       return response.data;
     } catch (error) {
+      console.error("🌐 [API] POST /certifications/:id/upload-image - Error:", error);
+      console.error("🌐 [API] Error response:", error.response?.data);
       throw error.response?.data || { message: "Failed to upload image" };
     }
   },

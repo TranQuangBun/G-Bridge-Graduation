@@ -241,6 +241,9 @@ const ProfilePage = () => {
     score: "",
     year: "",
     organization: "",
+  credentialId: "",
+  description: "",
+  expiryYear: "",
     certificationImage: null,
   });
 
@@ -700,10 +703,31 @@ const ProfilePage = () => {
       organization: suggestion.organization,
       score: "",
       year: "",
+    credentialId: "",
+    description: "",
+    expiryYear: "",
       certificationImage: null,
     });
     setIsAddingCertification(true);
     setShowSuggestedCerts(false);
+  };
+
+  const resetCertificationForm = () => {
+    setCertificationForm({
+      name: "",
+      score: "",
+      year: "",
+      organization: "",
+      credentialId: "",
+      description: "",
+      expiryYear: "",
+      certificationImage: null,
+    });
+  };
+
+  const closeCertificationModal = () => {
+    setIsAddingCertification(false);
+    resetCertificationForm();
   };
 
   // Handle dismiss suggestions
@@ -747,8 +771,62 @@ const ProfilePage = () => {
     setLoading(true);
 
     try {
+      const errors = [];
+      if (!certificationForm.name?.trim()) {
+        errors.push(t("profile.certifications.errors.nameRequired") || "Vui lòng nhập tên chứng chỉ");
+      }
+      if (!certificationForm.organization?.trim()) {
+        errors.push(t("profile.certifications.errors.organizationRequired") || "Vui lòng nhập tổ chức cấp");
+      }
+      if (certificationForm.year && !/^\d{4}$/.test(String(certificationForm.year))) {
+        errors.push(t("profile.certifications.errors.yearInvalid") || "Năm cấp phải là số gồm 4 chữ số");
+      }
+      if (certificationForm.expiryYear && !/^\d{4}$/.test(String(certificationForm.expiryYear))) {
+        errors.push("Năm hết hạn phải là số gồm 4 chữ số");
+      }
+      if (!certificationForm.certificationImage) {
+        errors.push(t("profile.certifications.errors.uploadRequired") || "Vui lòng chọn file chứng chỉ (ảnh/PDF)");
+      } else {
+        const file = certificationForm.certificationImage;
+        const validTypes = [
+          "image/jpeg",
+          "image/jpg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "application/pdf",
+        ];
+        if (!validTypes.includes(file.type)) {
+          errors.push("File phải là ảnh hoặc PDF");
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          errors.push("Kích thước file tối đa 10MB");
+        }
+      }
+
+      if (errors.length > 0) {
+        errors.forEach((msg) => toast.error(msg));
+        setLoading(false);
+        return;
+      }
+
+      console.log("📝 [FRONTEND] Starting add certification process");
+      console.log("📝 [FRONTEND] Certification form data:", {
+        name: certificationForm.name,
+        score: certificationForm.score,
+        year: certificationForm.year,
+        organization: certificationForm.organization,
+        hasImage: !!certificationForm.certificationImage,
+        imageFile: certificationForm.certificationImage ? {
+          name: certificationForm.certificationImage.name,
+          type: certificationForm.certificationImage.type,
+          size: certificationForm.certificationImage.size,
+        } : null,
+      });
+
       // Validate image upload is required
       if (!certificationForm.certificationImage) {
+        console.error("❌ [FRONTEND] No image file provided");
         toast.error(t("profile.certifications.errors.uploadRequired"));
         setLoading(false);
         return;
@@ -762,32 +840,91 @@ const ProfilePage = () => {
           ? `${certificationForm.year}-01-01`
           : null,
         issuingOrganization: certificationForm.organization || "",
+        credentialId: certificationForm.credentialId || null,
+        description: certificationForm.description || "",
+        expiryDate: certificationForm.expiryYear
+          ? `${certificationForm.expiryYear}-01-01`
+          : null,
       };
+
+      console.log("🔄 [FRONTEND] Step 1: Creating certification with data:", certificationData);
 
       // Step 1: Create certification
       const result = await certificationService.addCertification(
         certificationData
       );
 
+      console.log("✅ [FRONTEND] Step 1 completed. Certification created:", {
+        result,
+        fullResult: JSON.stringify(result, null, 2),
+        certification: result.data || result.certification || result,
+        certificationId: result.data?.id || result.certification?.id || result.id,
+      });
+
       // Step 2: Upload image (this will change status to "pending")
-      if (result.certification && result.certification.id) {
-        await certificationService.uploadCertificationImage(
-          result.certification.id,
+      // Try multiple possible response structures
+      const certId = result.data?.id || 
+                     result.certification?.id || 
+                     result.id ||
+                     (result.data && typeof result.data === 'object' && result.data.id ? result.data.id : null);
+      
+      console.log("🔍 [FRONTEND] Extracted certification ID:", certId);
+      
+      if (certId) {
+        console.log("🔄 [FRONTEND] Step 2: Uploading image for certification ID:", certId);
+        console.log("🔄 [FRONTEND] Image file details:", {
+          name: certificationForm.certificationImage.name,
+          type: certificationForm.certificationImage.type,
+          size: certificationForm.certificationImage.size,
+        });
+
+        const uploadResult = await certificationService.uploadCertificationImage(
+          certId,
           certificationForm.certificationImage
         );
+
+        console.log("✅ [FRONTEND] Step 2 completed. Image uploaded:", {
+          uploadResult,
+          fullUploadResult: JSON.stringify(uploadResult, null, 2),
+          imageUrl: uploadResult.data?.imageUrl || 
+                   uploadResult.data?.certification?.imageUrl || 
+                   uploadResult.imageUrl ||
+                   uploadResult.certification?.imageUrl,
+          certification: uploadResult.data?.certification || uploadResult.certification,
+        });
+      } else {
+        console.error("❌ [FRONTEND] No certification ID returned from create:", {
+          result,
+          resultKeys: Object.keys(result || {}),
+          resultData: result.data,
+          resultCertification: result.certification,
+        });
       }
 
+      console.log("🔄 [FRONTEND] Refreshing user data...");
       await refreshUser();
+      
       setIsAddingCertification(false);
       setCertificationForm({
         name: "",
         score: "",
         year: "",
         organization: "",
+        credentialId: "",
+        credentialUrl: "",
+        description: "",
+        expiryYear: "",
         certificationImage: null,
       });
+      console.log("✅ [FRONTEND] Certification added successfully");
       toast.success(t("profile.certifications.success.added"));
     } catch (error) {
+      console.error("❌ [FRONTEND] Error adding certification:", error);
+      console.error("❌ [FRONTEND] Error details:", {
+        message: error.message,
+        response: error.response,
+        data: error.response?.data,
+      });
       toast.error(
         error.message || t("profile.certifications.errors.addFailed")
       );
@@ -1451,10 +1588,7 @@ const ProfilePage = () => {
                     )}
 
                     {isAddingCertification && (
-                      <form
-                        onSubmit={handleAddCertification}
-                        className={styles.addForm}
-                      >
+                      <form onSubmit={handleAddCertification} className={styles.addForm}>
                         <div className={styles.formGroup}>
                           <label>{t("profile.certifications.name")} *</label>
                           <input
@@ -1466,33 +1600,29 @@ const ProfilePage = () => {
                                 name: e.target.value,
                               })
                             }
-                            placeholder={t(
-                              "profile.certifications.namePlaceholder"
-                            )}
+                            placeholder={t("profile.certifications.namePlaceholder")}
                             required
                           />
                         </div>
 
-                        <div className={styles.formGroup}>
-                          <label>
-                            {t("profile.certifications.organization")}
-                          </label>
-                          <input
-                            type="text"
-                            value={certificationForm.organization}
-                            onChange={(e) =>
-                              setCertificationForm({
-                                ...certificationForm,
-                                organization: e.target.value,
-                              })
-                            }
-                            placeholder={t(
-                              "profile.certifications.organizationPlaceholder"
-                            )}
-                          />
+                        <div className={styles.formGrid2}>
+                          <div className={styles.formGroup}>
+                            <label>{t("profile.certifications.organization")}</label>
+                            <input
+                              type="text"
+                              value={certificationForm.organization}
+                              onChange={(e) =>
+                                setCertificationForm({
+                                  ...certificationForm,
+                                  organization: e.target.value,
+                                })
+                              }
+                              placeholder={t("profile.certifications.organizationPlaceholder")}
+                            />
+                          </div>
                         </div>
 
-                        <div className={styles.formRow}>
+                        <div className={styles.formGrid3}>
                           <div className={styles.formGroup}>
                             <label>{t("profile.certifications.score")}</label>
                             <input
@@ -1504,9 +1634,7 @@ const ProfilePage = () => {
                                   score: e.target.value,
                                 })
                               }
-                              placeholder={t(
-                                "profile.certifications.scorePlaceholder"
-                              )}
+                              placeholder={t("profile.certifications.scorePlaceholder")}
                             />
                           </div>
 
@@ -1521,17 +1649,60 @@ const ProfilePage = () => {
                                   year: e.target.value,
                                 })
                               }
-                              placeholder={t(
-                                "profile.certifications.yearPlaceholder"
-                              )}
+                              placeholder={t("profile.certifications.yearPlaceholder")}
+                            />
+                          </div>
+
+                          <div className={styles.formGroup}>
+                            <label>Năm hết hạn</label>
+                            <input
+                              type="text"
+                              value={certificationForm.expiryYear}
+                              onChange={(e) =>
+                                setCertificationForm({
+                                  ...certificationForm,
+                                  expiryYear: e.target.value,
+                                })
+                              }
+                              placeholder="VD: 2026"
                             />
                           </div>
                         </div>
 
+                        <div className={styles.formGrid2}>
+                          <div className={styles.formGroup}>
+                            <label>Mã chứng chỉ</label>
+                            <input
+                              type="text"
+                              value={certificationForm.credentialId}
+                              onChange={(e) =>
+                                setCertificationForm({
+                                  ...certificationForm,
+                                  credentialId: e.target.value,
+                                })
+                              }
+                              placeholder="VD: ABC-12345"
+                            />
+                          </div>
+                        </div>
+
+                        <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+                          <label>Mô tả</label>
+                          <textarea
+                            rows={3}
+                            value={certificationForm.description}
+                            onChange={(e) =>
+                              setCertificationForm({
+                                ...certificationForm,
+                                description: e.target.value,
+                              })
+                            }
+                            placeholder="Mô tả ngắn về chứng chỉ"
+                          />
+                        </div>
+
                         <div className={styles.formGroup}>
-                          <label>
-                            {t("profile.certifications.uploadImage")}
-                          </label>
+                          <label>{t("profile.certifications.uploadImage")}</label>
                           <input
                             type="file"
                             id="certification-image-input"
@@ -1540,7 +1711,6 @@ const ProfilePage = () => {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                // Validate file type
                                 const validTypes = [
                                   "image/jpeg",
                                   "image/jpg",
@@ -1551,20 +1721,17 @@ const ProfilePage = () => {
                                 ];
                                 if (!validTypes.includes(file.type)) {
                                   toast.error(
-                                    t(
-                                      "profile.certifications.errors.invalidFileType"
-                                    ) || "Please select an image or PDF file"
+                                    t("profile.certifications.errors.invalidFileType") ||
+                                      "Please select an image or PDF file"
                                   );
                                   e.target.value = "";
                                   return;
                                 }
 
-                                // Check file size (max 10MB)
                                 if (file.size > 10 * 1024 * 1024) {
                                   toast.error(
-                                    t(
-                                      "profile.certifications.errors.fileSizeLimit"
-                                    ) || "File size must be less than 10MB"
+                                    t("profile.certifications.errors.fileSizeLimit") ||
+                                      "File size must be less than 10MB"
                                   );
                                   e.target.value = "";
                                   return;
@@ -1584,8 +1751,7 @@ const ProfilePage = () => {
                           />
                           {certificationForm.certificationImage && (
                             <small className={styles.fileInfo}>
-                              {t("profile.certifications.fileSelected") ||
-                                "Selected"}{" "}
+                              {t("profile.certifications.fileSelected") || "Selected"}{" "}
                               {certificationForm.certificationImage.name}
                             </small>
                           )}
@@ -1595,16 +1761,7 @@ const ProfilePage = () => {
                           <button
                             type="button"
                             className={styles.cancelBtn}
-                            onClick={() => {
-                              setIsAddingCertification(false);
-                              setCertificationForm({
-                                name: "",
-                                score: "",
-                                year: "",
-                                organization: "",
-                                certificationImage: null,
-                              });
-                            }}
+                            onClick={closeCertificationModal}
                           >
                             {t("profile.modal.cancel")}
                           </button>

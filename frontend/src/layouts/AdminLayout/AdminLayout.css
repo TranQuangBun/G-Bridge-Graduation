@@ -1,0 +1,12 @@
+.admin-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f7fa;
+}
+
+.admin-main-content {
+  flex: 1;
+  padding-top: 70px; /* Space for fixed header */
+}
+

@@ -14,7 +14,7 @@ export class AuthService {
   }
 
   async registerUser(userData) {
-    const { email, password, fullName, role, phone, address } = userData;
+    const { email, password, fullName, role, phone, address, isVerified } = userData;
 
     const existing = await this.userRepository.findByEmail(email);
     if (existing) {
@@ -31,7 +31,7 @@ export class AuthService {
       phone,
       address,
       isActive: true,
-      isVerified: false,
+      isVerified: isVerified !== undefined ? isVerified : false,
     });
 
     if (role === "interpreter") {

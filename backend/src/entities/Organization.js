@@ -2,6 +2,12 @@ import { EntitySchema } from "typeorm";
 import { Job } from "./Job.js";
 import { User } from "./User.js";
 
+export const OrganizationStatus = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+};
+
 export class Organization {
   id;
   ownerUserId;
@@ -14,6 +20,8 @@ export class Organization {
   address;
   province;
   isActive;
+  approvalStatus;
+  rejectionReason;
   createdAt;
   updatedAt;
   jobs;
@@ -76,6 +84,15 @@ export const OrganizationSchema = new EntitySchema({
     isActive: {
       type: "boolean",
       default: true,
+    },
+    approvalStatus: {
+      type: "enum",
+      enum: Object.values(OrganizationStatus),
+      default: OrganizationStatus.PENDING,
+    },
+    rejectionReason: {
+      type: "text",
+      nullable: true,
     },
     createdAt: {
       type: "datetime",

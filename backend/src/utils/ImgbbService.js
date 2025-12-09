@@ -6,7 +6,7 @@ import { convertPdfFirstPageToImageBuffer } from "./PdfToImageConverter.js";
 
 dotenv.config();
 
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY || "608d854aebb411657d9684305ae89fa6";
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
 console.log("ImgBB API Key loaded:", IMGBB_API_KEY ? IMGBB_API_KEY.substring(0, 10) + "..." : "NOT SET");
 const IMGBB_API_URL = "https://api.imgbb.com/1/upload";
 
