@@ -75,7 +75,7 @@ export default function PricingPage() {
   const [openPlan, setOpenPlan] = useState(null); // plan key for payment modal
   const [purchased, setPurchased] = useState({}); // { planKey: true }
   const [showMethodModal, setShowMethodModal] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState(null); // 'paypal' or 'vnpay'
+  const [selectedMethod, setSelectedMethod] = useState(null); // 'paypal', 'vnpay', or 'momo'
   const [processing, setProcessing] = useState(false);
   const [, setError] = useState("");
 
@@ -168,6 +168,14 @@ export default function PricingPage() {
           window.location.href = response.data.paymentUrl;
         } else {
           throw new Error("Failed to create VNPay payment URL");
+        }
+      } else if (paymentMethod === "momo") {
+        const response = await paymentService.createMoMoPayment(planId);
+        if (response.success && response.data?.paymentUrl) {
+          // Redirect to MoMo payment page
+          window.location.href = response.data.paymentUrl;
+        } else {
+          throw new Error("Failed to create MoMo payment URL");
         }
       } else if (paymentMethod === "paypal") {
         const response = await paymentService.createPayPalPayment(planId);
@@ -438,6 +446,41 @@ export default function PricingPage() {
                     <div className={styles.methodInfo}>
                       <h4>VNPay</h4>
                       <p>Ví điện tử, ATM, QR Code</p>
+                    </div>
+                  </button>
+
+                  <button
+                    className={styles.methodCard}
+                    onClick={() => selectPaymentMethod("momo")}
+                  >
+                    <div className={styles.methodIcon}>
+                      <svg viewBox="0 0 200 80" fill="none">
+                        <rect width="200" height="80" rx="8" fill="#A50064" />
+                        <text
+                          x="100"
+                          y="35"
+                          fontSize="24"
+                          fontWeight="bold"
+                          fill="white"
+                          textAnchor="middle"
+                        >
+                          MOMO
+                        </text>
+                        <text
+                          x="100"
+                          y="55"
+                          fontSize="12"
+                          fill="white"
+                          textAnchor="middle"
+                          opacity="0.9"
+                        >
+                          Ví điện tử MoMo
+                        </text>
+                      </svg>
+                    </div>
+                    <div className={styles.methodInfo}>
+                      <h4>MoMo</h4>
+                      <p>Ví điện tử MoMo, QR Code</p>
                     </div>
                   </button>
                 </div>

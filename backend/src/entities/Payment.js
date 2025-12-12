@@ -32,6 +32,12 @@ export class Payment {
   paypalPayerId;
   paypalPaymentId;
   paypalCaptureId;
+  momoTransId;
+  momoRequestId;
+  momoOrderInfo;
+  momoPayType;
+  momoResultCode;
+  momoMessage;
   transactionId;
   paymentData;
   ipAddress;
@@ -125,6 +131,34 @@ export const PaymentSchema = new EntitySchema({
       length: 100,
       nullable: true,
     },
+    momoTransId: {
+      type: "varchar",
+      length: 100,
+      nullable: true,
+    },
+    momoRequestId: {
+      type: "varchar",
+      length: 100,
+      nullable: true,
+    },
+    momoOrderInfo: {
+      type: "text",
+      nullable: true,
+    },
+    momoPayType: {
+      type: "varchar",
+      length: 50,
+      nullable: true,
+    },
+    momoResultCode: {
+      type: "varchar",
+      length: 10,
+      nullable: true,
+    },
+    momoMessage: {
+      type: "text",
+      nullable: true,
+    },
     paypalPayerId: {
       type: "varchar",
       length: 100,
@@ -216,6 +250,14 @@ export const PaymentSchema = new EntitySchema({
     {
       name: "IDX_payments_paypalOrderId",
       columns: ["paypalOrderId"],
+    },
+    {
+      name: "IDX_payments_momoTransId",
+      columns: ["momoTransId"],
+    },
+    {
+      name: "IDX_payments_momoRequestId",
+      columns: ["momoRequestId"],
     },
     {
       name: "IDX_payments_userId_status",

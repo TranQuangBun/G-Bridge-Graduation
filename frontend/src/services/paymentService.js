@@ -35,6 +35,17 @@ const paymentService = {
     }
   },
 
+  // Create MoMo payment
+  createMoMoPayment: async (planId) => {
+    try {
+      const response = await apiClient.post("/payments/momo/create", { planId });
+      return response.data;
+    } catch (error) {
+      console.error("Error creating MoMo payment:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
   // Verify VNPay payment
   verifyVNPayPayment: async (queryParams) => {
     try {
@@ -54,6 +65,18 @@ const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error verifying PayPal payment:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Verify MoMo payment
+  verifyMoMoPayment: async (queryParams) => {
+    try {
+      const params = new URLSearchParams(queryParams);
+      const response = await apiClient.get(`/payments/momo/verify?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error verifying MoMo payment:", error);
       throw new Error(getErrorMessage(error));
     }
   },
