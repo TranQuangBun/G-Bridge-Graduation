@@ -10,6 +10,7 @@ export const PaymentStatus = {
 export const PaymentMethodType = {
   VNPAY: "vnpay",
   PAYPAL: "paypal",
+  MOMO: "momo",
   CREDIT_CARD: "credit_card",
   BANK_TRANSFER: "bank_transfer",
 };
@@ -17,5 +18,6 @@ export const PaymentMethodType = {
 export const PaymentGateway = {
   VNPAY: "vnpay",
   PAYPAL: "paypal",
+  MOMO: "momo",
 };
 

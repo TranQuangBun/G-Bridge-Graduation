@@ -150,6 +150,10 @@ const router = createBrowserRouter([
     element: <PaymentCallback />,
   },
   {
+    path: "/payment/momo/callback",
+    element: <PaymentCallback />,
+  },
+  {
     path: ROUTES.POST_JOB,
     element: (
       <ProtectedRoute allowedRoles={["client", "admin"]}>

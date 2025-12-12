@@ -4,7 +4,7 @@ import { UserSubscriptionService } from "../services/UserSubscriptionService.js"
 import { PaymentWebhookService } from "../services/PaymentWebhookService.js";
 import { logError, AppError } from "../utils/Errors.js";
 import { sendSuccess, sendError, sendPaginated } from "../utils/Response.js";
-import { vnpayConfig, vnpayHelpers, paypalConfig, convertCurrency } from "../config/Payment.js";
+import { vnpayConfig, vnpayHelpers, paypalConfig, momoConfig, momoHelpers, convertCurrency } from "../config/Payment.js";
 import { PaymentGateway, PaymentStatus } from "../entities/PaymentConstants.js";
 import { NotificationService } from "../services/NotificationService.js";
 import { NotificationType } from "../entities/Notification.js";
@@ -629,6 +629,413 @@ export async function handlePayPalWebhook(req, res) {
     return sendSuccess(res, { received: true }, "Webhook received", 200);
   } catch (error) {
     logError(error, "Handling PayPal webhook");
+    return sendError(res, "Error handling webhook", 500, error);
+  }
+}
+
+export async function createMoMoPayment(req, res) {
+  try {
+    const { planId } = req.body;
+    const userId = req.user.sub; // JWT payload uses 'sub' for user ID
+
+    if (!planId) {
+      return sendError(res, "planId is required", 400);
+    }
+
+    const plan = await subscriptionPlanService.getSubscriptionPlanById(planId);
+    if (!plan) {
+      return sendError(res, "Subscription plan not found", 404);
+    }
+
+    // Convert amount from USD to VND for MoMo
+    const amountUSD = parseFloat(plan.price);
+    const amountVND = convertCurrency(amountUSD, plan.currency || "USD", "VND");
+    const currency = "VND";
+
+    // Create payment record first to get payment ID
+    // Use temporary orderId, will update after creating MoMo order
+    const tempOrderId = `MOMO_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const payment = await paymentService.createPayment({
+      userId,
+      planId,
+      amount: amountVND,
+      currency,
+      paymentGateway: PaymentGateway.MOMO,
+      orderId: tempOrderId,
+      description: `Payment for ${plan.name}`,
+    });
+
+    // Create orderId in Laravel format: order_id_timestamp
+    // Format similar to Laravel: $order->order_id . "_" . time()
+    const orderId = `${payment.id}_${Math.floor(Date.now() / 1000)}`;
+    const requestId = orderId; // Use same as orderId for MoMo
+
+    // Update payment with final orderId
+    await paymentService.updatePayment(payment.id, { orderId });
+
+    // Build MoMo payment request
+    // Format similar to Laravel: "SUDESPHONE #" . $order->order_id
+    const orderInfo = `G-Bridge #${payment.id}`;
+    const extraData = ""; // Can be used for additional data
+
+    const requestData = {
+      partnerCode: momoConfig.partnerCode,
+      partnerRefId: orderId,
+      amount: momoHelpers.formatAmount(amountVND),
+      orderInfo,
+      returnUrl: momoConfig.returnUrl,
+      notifyUrl: momoConfig.notifyUrl,
+      extraData,
+      requestType: "payWithATM", // Use ATM/Credit card payment instead of QR code
+    };
+
+    // Create signature
+    const signature = momoHelpers.createSignature(requestData);
+
+    // Build request body for MoMo API
+    // MoMo API v2 requires "signature" field, not "hash"
+    const requestBody = {
+      partnerCode: momoConfig.partnerCode,
+      partnerRefId: orderId,
+      customerNumber: userId.toString(),
+      appData: "",
+      signature: signature, // MoMo API v2 uses "signature" field
+      description: orderInfo,
+      extraData,
+      amount: momoHelpers.formatAmount(amountVND),
+      orderId,
+      orderInfo,
+      requestId,
+      requestType: requestData.requestType, // Use payWithATM for credit/debit card payment
+      redirectUrl: momoConfig.returnUrl,
+      ipnUrl: momoConfig.notifyUrl,
+    };
+
+    console.log("=== MoMo Payment Request ===");
+    console.log("MoMo Config - Partner Code:", momoConfig.partnerCode);
+    console.log("MoMo Config - Access Key:", momoConfig.accessKey ? "***SET***" : "NOT SET");
+    console.log("MoMo Config - Secret Key:", momoConfig.secretKey ? "***SET***" : "NOT SET");
+    console.log("Order ID:", orderId);
+    console.log("Request ID:", requestId);
+    console.log("Amount USD:", amountUSD);
+    console.log("Amount VND:", amountVND);
+    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+
+    // Make API call to MoMo
+    try {
+      const response = await fetch(momoConfig.apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const responseData = await response.json();
+
+      console.log("MoMo API Response:", JSON.stringify(responseData, null, 2));
+
+      if (responseData.resultCode === 0 && responseData.payUrl) {
+        // Update payment with request ID
+        await paymentService.updatePayment(payment.id, {
+          momoRequestId: requestId,
+          momoOrderInfo: orderInfo,
+        });
+
+        return sendSuccess(
+          res,
+          { paymentUrl: responseData.payUrl, paymentId: payment.id, orderId, requestId },
+          "MoMo payment URL created successfully",
+          201
+        );
+      } else {
+        // Payment creation failed
+        await paymentService.updatePayment(payment.id, {
+          status: PaymentStatus.FAILED,
+          momoMessage: responseData.message || "Payment creation failed",
+          momoResultCode: responseData.resultCode?.toString() || "ERROR",
+        });
+
+        return sendError(
+          res,
+          responseData.message || "Failed to create MoMo payment",
+          400
+        );
+      }
+    } catch (apiError) {
+      logError(apiError, "Calling MoMo API");
+      await paymentService.updatePayment(payment.id, {
+        status: PaymentStatus.FAILED,
+        momoMessage: "API call failed",
+      });
+      return sendError(res, "Error calling MoMo API", 500, apiError);
+    }
+  } catch (error) {
+    if (error instanceof AppError) {
+      return sendError(res, error.message, error.statusCode);
+    }
+    logError(error, "Creating MoMo payment");
+    return sendError(res, "Error creating MoMo payment", 500, error);
+  }
+}
+
+export async function verifyMoMoPayment(req, res) {
+  try {
+    const queryParams = req.query;
+    const {
+      partnerCode,
+      orderId,
+      requestId,
+      amount,
+      orderInfo,
+      orderType,
+      transId,
+      resultCode,
+      message,
+      payType,
+      responseTime,
+      extraData,
+      signature,
+    } = queryParams;
+
+    if (!orderId) {
+      return sendError(res, "Missing order ID", 400);
+    }
+
+    if (!signature) {
+      return sendError(res, "Missing signature", 400);
+    }
+
+    // Verify signature
+    const callbackData = {
+      partnerCode,
+      orderId,
+      requestId,
+      amount,
+      orderInfo,
+      orderType,
+      transId,
+      resultCode,
+      message,
+      payType,
+      responseTime,
+      extraData: extraData || "",
+    };
+
+    const isValidSignature = momoHelpers.verifySignature(callbackData, signature);
+
+    if (!isValidSignature) {
+      return sendError(res, "Invalid signature", 400);
+    }
+
+    // Find payment by orderId
+    const payment = await paymentService.getPaymentByOrderId(orderId);
+    if (!payment) {
+      return sendError(res, "Payment not found", 404);
+    }
+
+    // Check if already processed
+    if (payment.status === PaymentStatus.COMPLETED) {
+      return sendSuccess(
+        res,
+        { payment, message: "Payment already processed" },
+        "Payment already verified"
+      );
+    }
+
+    // Update payment based on result code
+    // MoMo resultCode: 0 = success, others = failure
+    const isSuccess = resultCode === "0" || resultCode === 0;
+
+    const updateData = {
+      status: isSuccess ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
+      momoTransId: transId || null,
+      momoRequestId: requestId || null,
+      momoOrderInfo: orderInfo || null,
+      momoPayType: payType || null,
+      momoResultCode: resultCode?.toString() || null,
+      momoMessage: message || null,
+      paidAt: isSuccess ? new Date() : null,
+    };
+
+    const updatedPayment = await paymentService.updatePayment(
+      payment.id,
+      updateData
+    );
+
+    // If payment successful, create subscription
+    if (isSuccess && payment.planId) {
+      try {
+        const plan = await subscriptionPlanService.getSubscriptionPlanById(
+          payment.planId
+        );
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + plan.duration);
+
+        await userSubscriptionService.createUserSubscription({
+          userId: payment.userId,
+          planId: payment.planId,
+          paymentId: payment.id,
+          startDate,
+          endDate,
+          autoRenew: false,
+        });
+
+        await notificationService.createNotification({
+          recipientId: payment.userId,
+          actorId: null,
+          type: NotificationType.PAYMENT_SUCCESS,
+          title: `Payment successful for ${plan.name}`,
+          message: `Your ${
+            plan.name
+          } plan is now active until ${endDate.toLocaleDateString()}`,
+          metadata: {
+            paymentId: payment.id,
+            planId: plan.id,
+            endDate,
+          },
+        });
+      } catch (subError) {
+        logError(subError, "Creating subscription after MoMo payment");
+        // Don't fail the payment verification if subscription creation fails
+      }
+    }
+
+    return sendSuccess(
+      res,
+      { payment: updatedPayment, redirect: isSuccess ? "/pricing?success=true" : "/pricing?error=true" },
+      isSuccess ? "MoMo payment verified successfully" : "MoMo payment failed"
+    );
+  } catch (error) {
+    if (error instanceof AppError || error.message === "Payment not found") {
+      return sendError(res, error.message, error.statusCode || 404);
+    }
+    logError(error, "Verifying MoMo payment");
+    return sendError(res, "Error verifying MoMo payment", 500, error);
+  }
+}
+
+export async function handleMoMoWebhook(req, res) {
+  try {
+    const webhookData = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+
+    const {
+      partnerCode,
+      orderId,
+      requestId,
+      amount,
+      orderInfo,
+      orderType,
+      transId,
+      resultCode,
+      message,
+      payType,
+      responseTime,
+      extraData,
+      signature,
+    } = webhookData;
+
+    // Create webhook record
+    await paymentWebhookService.createPaymentWebhook(
+      {
+        gateway: "momo",
+        eventType: resultCode === "0" ? "payment.success" : "payment.failed",
+        orderId: orderId || null,
+        transactionId: transId || null,
+        status: resultCode === "0" ? "success" : "failed",
+        rawData: webhookData,
+      },
+      ipAddress
+    );
+
+    // Verify signature
+    const callbackData = {
+      partnerCode,
+      orderId,
+      requestId,
+      amount,
+      orderInfo,
+      orderType,
+      transId,
+      resultCode,
+      message,
+      payType,
+      responseTime,
+      extraData: extraData || "",
+    };
+
+    const isValidSignature = momoHelpers.verifySignature(callbackData, signature);
+
+    if (!isValidSignature) {
+      logError(new Error("Invalid MoMo webhook signature"), "MoMo webhook verification");
+      return sendError(res, "Invalid signature", 400);
+    }
+
+    // Process webhook (update payment status, etc.)
+    if (orderId) {
+      try {
+        const payment = await paymentService.getPaymentByOrderId(orderId);
+        if (payment) {
+          const isSuccess = resultCode === "0" || resultCode === 0;
+          await paymentService.updatePayment(payment.id, {
+            status: isSuccess ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
+            momoTransId: transId || null,
+            momoRequestId: requestId || null,
+            momoOrderInfo: orderInfo || null,
+            momoPayType: payType || null,
+            momoResultCode: resultCode?.toString() || null,
+            momoMessage: message || null,
+            paidAt: isSuccess ? new Date() : null,
+          });
+
+          // If payment successful, create subscription
+          if (isSuccess && payment.planId) {
+            try {
+              const plan = await subscriptionPlanService.getSubscriptionPlanById(
+                payment.planId
+              );
+              const startDate = new Date();
+              const endDate = new Date();
+              endDate.setMonth(endDate.getMonth() + plan.duration);
+
+              await userSubscriptionService.createUserSubscription({
+                userId: payment.userId,
+                planId: payment.planId,
+                paymentId: payment.id,
+                startDate,
+                endDate,
+                autoRenew: false,
+              });
+
+              await notificationService.createNotification({
+                recipientId: payment.userId,
+                actorId: null,
+                type: NotificationType.PAYMENT_SUCCESS,
+                title: `Payment successful for ${plan.name}`,
+                message: `Your ${
+                  plan.name
+                } plan is now active until ${endDate.toLocaleDateString()}`,
+                metadata: {
+                  paymentId: payment.id,
+                  planId: plan.id,
+                  endDate,
+                },
+              });
+            } catch (subError) {
+              logError(subError, "Creating subscription after MoMo webhook");
+            }
+          }
+        }
+      } catch (paymentError) {
+        logError(paymentError, "Processing MoMo webhook payment update");
+      }
+    }
+
+    return sendSuccess(res, { received: true }, "Webhook received", 200);
+  } catch (error) {
+    logError(error, "Handling MoMo webhook");
     return sendError(res, "Error handling webhook", 500, error);
   }
 }

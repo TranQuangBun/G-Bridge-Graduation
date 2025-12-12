@@ -16,35 +16,62 @@ export default function PaymentCallback() {
       try {
         // Get query parameters
         const queryParams = new URLSearchParams(location.search);
-        const vnp_TxnRef = queryParams.get("vnp_TxnRef");
-
-        if (!vnp_TxnRef) {
-          setStatus("failed");
-          setMessage("Không tìm thấy thông tin giao dịch");
-          return;
-        }
-
+        
         // Convert URLSearchParams to object
         const paramsObj = {};
         for (const [key, value] of queryParams.entries()) {
           paramsObj[key] = value;
         }
 
-        // Verify payment with backend
-        const response = await paymentService.verifyVNPayPayment(paramsObj);
+        // Detect payment gateway based on query parameters
+        const vnp_TxnRef = queryParams.get("vnp_TxnRef");
+        const orderId = queryParams.get("orderId");
+        const partnerCode = queryParams.get("partnerCode");
+        
+        let response;
+        
+        if (vnp_TxnRef) {
+          // VNPay callback
+          if (!vnp_TxnRef) {
+            setStatus("failed");
+            setMessage("Không tìm thấy thông tin giao dịch");
+            return;
+          }
+          response = await paymentService.verifyVNPayPayment(paramsObj);
+        } else if (orderId || partnerCode) {
+          // MoMo callback
+          if (!orderId) {
+            setStatus("failed");
+            setMessage("Không tìm thấy thông tin giao dịch");
+            return;
+          }
+          response = await paymentService.verifyMoMoPayment(paramsObj);
+        } else {
+          setStatus("failed");
+          setMessage("Không tìm thấy thông tin giao dịch");
+          return;
+        }
 
-        if (response.success && response.data?.success) {
+        // Check if payment was successful
+        const isSuccess = response.success && (
+          response.data?.payment?.status === "completed" ||
+          response.data?.success === true ||
+          (response.data?.payment && response.data.payment.status !== "failed")
+        );
+
+        if (isSuccess) {
           setStatus("success");
           setMessage("Thanh toán thành công! Đang chuyển hướng...");
           toast.success("Thanh toán thành công!");
 
-          // Redirect to pricing page after 3 seconds
+          // Redirect based on response or default to pricing
+          const redirectPath = response.data?.redirect || "/pricing";
           setTimeout(() => {
-            navigate("/pricing");
+            navigate(redirectPath);
           }, 3000);
         } else {
           setStatus("failed");
-          setMessage(response.data?.message || "Thanh toán thất bại");
+          setMessage(response.data?.message || response.data?.payment?.momoMessage || "Thanh toán thất bại");
           toast.error("Thanh toán thất bại");
         }
       } catch (error) {
