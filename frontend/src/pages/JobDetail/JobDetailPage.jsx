@@ -1040,57 +1040,54 @@ export default function JobDetailPage() {
           onClick={() => setApplyModalOpen(false)}
         >
           <div
-            className={styles.applyModalContent}
+            className={styles.applicationModal}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={styles.applyModalHeader}>
-              <h2>
-                {t("findJob.applicationModal.title") || "Ứng tuyển"} -{" "}
-                {job.title}
-              </h2>
-              <button
-                className={styles.closeBtn}
-                onClick={() => setApplyModalOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-            <form
-              className={styles.applyModalBody}
-              onSubmit={handleSubmitApplication}
+            <button
+              className={styles.closeBtn}
+              onClick={() => setApplyModalOpen(false)}
             >
+              ×
+            </button>
+            <div className={styles.applicationModalHeader}>
+              <h2>
+                {t("findJob.applicationModal.title") || "Ứng tuyển"} {job.title}
+              </h2>
+            </div>
+
+            <div className={styles.applicationModalBody}>
               <div className={styles.formField}>
                 <label className={styles.fieldLabel}>
                   {t("findJob.applicationModal.uploadCV") || "Upload CV"}{" "}
-                  <span className={styles.required}>*</span>
+                  <span className={styles.required}>
+                    {t("findJob.applicationModal.required") || "*"}
+                  </span>
                 </label>
-                <div className={styles.fileUploadWrapper}>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className={styles.fileInput}
-                    id="pdfFileInput"
-                  />
-                  <label htmlFor="pdfFileInput" className={styles.fileLabel}>
-                    <FaFileAlt />{" "}
-                    {applicationData.pdfFile
-                      ? applicationData.pdfFile.name
-                      : t("findJob.applicationModal.selectFile") ||
-                        "Chọn file PDF"}
-                  </label>
-                </div>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className={styles.fileInput}
+                />
+                {applicationData.pdfFile && (
+                  <div className={styles.filePreview}>
+                    📄{" "}
+                    {t("findJob.applicationModal.fileSelected") ||
+                      "File selected:"}{" "}
+                    {applicationData.pdfFile.name}
+                  </div>
+                )}
               </div>
 
               <div className={styles.formField}>
                 <label className={styles.fieldLabel}>
                   {t("findJob.applicationModal.introduction") ||
                     "Thư giới thiệu"}{" "}
-                  <span className={styles.required}>*</span>
+                  <span className={styles.required}>
+                    {t("findJob.applicationModal.required") || "*"}
+                  </span>
                 </label>
                 <textarea
-                  className={styles.textarea}
-                  rows="6"
                   value={applicationData.introduction}
                   onChange={(e) =>
                     setApplicationData((prev) => ({
@@ -1102,18 +1099,17 @@ export default function JobDetailPage() {
                     t("findJob.applicationModal.introPlaceholder") ||
                     "Giới thiệu bản thân và lý do ứng tuyển..."
                   }
-                  required
+                  className={styles.textArea}
+                  rows={5}
                 />
               </div>
 
               <div className={styles.formField}>
                 <label className={styles.fieldLabel}>
-                  {t("findJob.applicationModal.profileLink") || "Link hồ sơ"} (
-                  {t("findJob.applicationModal.optional") || "Không bắt buộc"})
+                  {t("findJob.applicationModal.profileLink") || "Link hồ sơ"}
                 </label>
                 <input
                   type="url"
-                  className={styles.input}
                   value={applicationData.profileLink}
                   onChange={(e) =>
                     setApplicationData((prev) => ({
@@ -1121,22 +1117,25 @@ export default function JobDetailPage() {
                       profileLink: e.target.value,
                     }))
                   }
-                  placeholder="https://..."
+                  placeholder={
+                    t("findJob.applicationModal.profilePlaceholder") ||
+                    "https://..."
+                  }
+                  className={styles.textInput}
                 />
               </div>
 
-              <div className={styles.applyModalActions}>
+              <div className={styles.applicationModalActions}>
                 <button
-                  type="button"
-                  className={styles.cancelApplyBtn}
+                  className={styles.cancelBtn}
                   onClick={() => setApplyModalOpen(false)}
                   disabled={submitting}
                 >
-                  {t("common.close") || "Đóng"}
+                  {t("findJob.applicationModal.cancel") || "Hủy"}
                 </button>
                 <button
-                  type="submit"
-                  className={styles.submitApplyBtn}
+                  className={styles.submitBtn}
+                  onClick={handleSubmitApplication}
                   disabled={submitting}
                 >
                   {submitting
@@ -1144,7 +1143,7 @@ export default function JobDetailPage() {
                     : t("findJob.applicationModal.submit") || "Gửi đơn"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

@@ -30,7 +30,7 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .orgTable {
@@ -43,7 +43,7 @@
 .orgTable td {
   padding: 12px 14px;
   border-bottom: 1px solid #e5e7eb;
-  vertical-align: top;
+  vertical-align: middle;
   text-align: left;
 }
 
@@ -59,7 +59,7 @@
 }
 
 .orgNameCell {
-  min-width: 220px;
+  min-width: 200px;
 }
 
 .orgNameWrap {
@@ -69,16 +69,53 @@
 }
 
 .logoThumb {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid #e5e7eb;
 }
 
-.orgName {
+.orgNameBtn {
+  background: none;
+  border: none;
+  color: #2563eb;
   font-weight: 600;
-  color: #111827;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.25rem 0;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.orgNameBtn:hover {
+  color: #1d4ed8;
+}
+
+.emailCell,
+.websiteCell {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emailCell span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.websiteCell a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.websiteCell a:hover {
+  text-decoration: underline;
 }
 
 .badge {
@@ -111,6 +148,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 130px;
 }
 
 .approveButton,
@@ -121,7 +159,8 @@
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;
-  width: 120px;
+  width: 100%;
+  white-space: nowrap;
 }
 
 .approveButton {
@@ -199,6 +238,117 @@
   margin-bottom: 1rem;
 }
 
+.detailModal {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.detailContent {
+  padding: 2rem;
+}
+
+.detailLogo {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailRow strong {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.detailRow span,
+.detailRow p {
+  color: #111827;
+  margin: 0;
+  word-break: break-word;
+}
+
+.detailRow a {
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.detailRow a:hover {
+  text-decoration: underline;
+}
+
+.detailActions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 16px 16px;
+  position: sticky;
+  bottom: 0;
+}
+
 .reasonInput {
   width: 100%;
   padding: 0.75rem;
@@ -249,3 +399,80 @@
   cursor: not-allowed;
 }
 
+.confirmModal {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+}
+
+.confirmIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.confirmModal h3 {
+  font-size: 1.5rem;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.confirmText {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.confirmText strong {
+  color: #111827;
+}
+
+.warningBox {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.warningBox p {
+  margin: 0 0 0.5rem 0;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.warningBox ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.5rem;
+  color: #78350f;
+}
+
+.warningBox li {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+}
+
+.confirmApproveButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  background: #10b981;
+  color: white;
+  font-weight: 600;
+}
+
+.confirmApproveButton:hover:not(:disabled) {
+  background: #059669;
+}
+
+.confirmApproveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

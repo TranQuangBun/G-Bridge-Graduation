@@ -7,50 +7,74 @@ export class OrganizationRepository extends BaseRepository {
     super(Organization);
   }
 
-  async searchOrganizations(search, province, isActive, page = 1, limit = 20, ownerUserId = "") {
+  async searchOrganizations(
+    search,
+    province,
+    isActive,
+    page = 1,
+    limit = 20,
+    ownerUserId = "",
+    approvalStatus = ""
+  ) {
     const offset = (page - 1) * limit;
     const queryBuilder = this.repository.createQueryBuilder("organization");
+
+    let hasWhere = false;
 
     if (search) {
       queryBuilder.where(
         "(organization.name LIKE :search OR organization.description LIKE :search)",
         { search: `%${search}%` }
       );
+      hasWhere = true;
     }
 
     if (province) {
-      if (search) {
-        queryBuilder.andWhere("organization.province = :province", { province });
-      } else {
-        queryBuilder.where("organization.province = :province", { province });
-      }
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("organization.province = :province", {
+        province,
+      });
+      hasWhere = true;
     }
 
     if (isActive !== undefined && isActive !== "") {
       const isActiveValue = isActive === "true" || isActive === true;
-      if (search || province) {
-        queryBuilder.andWhere("organization.isActive = :isActive", {
-          isActive: isActiveValue,
-        });
-      } else {
-        queryBuilder.where("organization.isActive = :isActive", {
-          isActive: isActiveValue,
-        });
-      }
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("organization.isActive = :isActive", {
+        isActive: isActiveValue,
+      });
+      hasWhere = true;
+    }
+
+    // If approvalStatus is explicitly provided, filter by it
+    if (approvalStatus) {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("organization.approvalStatus = :approvalStatus", {
+        approvalStatus,
+      });
+      hasWhere = true;
+    }
+    // If ownerUserId is provided, show all statuses for that owner
+    else if (ownerUserId) {
+      // Don't filter by approvalStatus - user can see all their organizations
+    }
+    // If neither ownerUserId nor approvalStatus is provided, only show approved (public view)
+    else {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("organization.approvalStatus = :approvalStatus", {
+        approvalStatus: "approved",
+      });
+      hasWhere = true;
     }
 
     if (ownerUserId) {
       const ownerId = parseInt(ownerUserId);
       if (Number.isInteger(ownerId)) {
-        if (queryBuilder.expressionMap.wheres.length > 0) {
-          queryBuilder.andWhere("organization.ownerUserId = :ownerUserId", {
-            ownerUserId: ownerId,
-          });
-        } else {
-          queryBuilder.where("organization.ownerUserId = :ownerUserId", {
-            ownerUserId: ownerId,
-          });
-        }
+        const condition = hasWhere ? "andWhere" : "where";
+        queryBuilder[condition]("organization.ownerUserId = :ownerUserId", {
+          ownerUserId: ownerId,
+        });
+        hasWhere = true;
       }
     }
 
@@ -62,4 +86,3 @@ export class OrganizationRepository extends BaseRepository {
     return await queryBuilder.getManyAndCount();
   }
 }
-
