@@ -16,11 +16,14 @@ const CertificateApprovalPage = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [viewCert, setViewCert] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailCert, setDetailCert] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 5,
     total: 0,
     totalPages: 1,
   });
@@ -40,24 +43,27 @@ const CertificateApprovalPage = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
-      
+
       if (search) {
         params.search = search;
       }
-      
+
       if (statusFilter && statusFilter !== "all") {
         params.status = statusFilter;
       }
-      
+
       console.log("Fetching certifications with params:", params);
-      
+
       const response = await adminService.getPendingCertifications(params);
-      
+
       console.log("Certifications response:", response);
-      
-      if (response.success && response.data) {
-        setCertifications(response.data.certifications || []);
-        setPagination(response.data.pagination || pagination);
+
+      if (response.success) {
+        // sendPaginated trả về data là array trực tiếp, pagination là object riêng
+        setCertifications(response.data || []);
+        if (response.pagination) {
+          setPagination(response.pagination);
+        }
       } else {
         console.error("Response not successful:", response);
         setCertifications([]);
@@ -72,12 +78,22 @@ const CertificateApprovalPage = () => {
 
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {
-      const timeoutId = setTimeout(() => {
-        fetchCertifications();
-      }, search ? 500 : 0);
+      const timeoutId = setTimeout(
+        () => {
+          fetchCertifications();
+        },
+        search ? 500 : 0
+      );
       return () => clearTimeout(timeoutId);
     }
-  }, [isAuthenticated, user, pagination.page, search, statusFilter, fetchCertifications]);
+  }, [
+    isAuthenticated,
+    user,
+    pagination.page,
+    search,
+    statusFilter,
+    fetchCertifications,
+  ]);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
@@ -96,12 +112,11 @@ const CertificateApprovalPage = () => {
       rejected: { label: "Đã từ chối", className: styles.statusRejected },
       draft: { label: "Bản nháp", className: styles.statusDraft },
     };
-    const statusInfo = statusMap[status] || { label: status, className: styles.statusDefault };
-    return (
-      <span className={statusInfo.className}>
-        {statusInfo.label}
-      </span>
-    );
+    const statusInfo = statusMap[status] || {
+      label: status,
+      className: styles.statusDefault,
+    };
+    return <span className={statusInfo.className}>{statusInfo.label}</span>;
   };
 
   const handleApprove = async (id) => {
@@ -148,8 +163,32 @@ const CertificateApprovalPage = () => {
 
   const toggleMenu = (certId, e) => {
     e.stopPropagation();
-    const newMenuId = openMenuId === certId ? null : certId;
-    setOpenMenuId(newMenuId);
+
+    if (openMenuId === certId) {
+      setOpenMenuId(null);
+      return;
+    }
+
+    // Calculate menu position
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 180;
+    const menuHeight = 150; // approximate
+
+    let top = rect.bottom + 4;
+    let left = rect.right - menuWidth;
+
+    // Adjust if menu goes off screen
+    if (top + menuHeight > window.innerHeight) {
+      top = rect.top - menuHeight - 4;
+    }
+
+    if (left < 0) {
+      left = rect.left;
+    }
+
+    setMenuPosition({ top, left });
+    setOpenMenuId(certId);
   };
 
   const handleApproveFromMenu = (cert) => {
@@ -166,6 +205,11 @@ const CertificateApprovalPage = () => {
     setViewCert(cert);
     setShowViewModal(true);
     setOpenMenuId(null);
+  };
+
+  const openDetailModal = (cert) => {
+    setDetailCert(cert);
+    setShowDetailModal(true);
   };
 
   // Close menu when clicking outside
@@ -193,10 +237,12 @@ const CertificateApprovalPage = () => {
     if (!url) return false;
     const lowerUrl = url.toLowerCase();
     // Check for PDF extension or PDF in URL
-    return lowerUrl.endsWith('.pdf') || 
-           lowerUrl.includes('.pdf') || 
-           lowerUrl.includes('pdf') ||
-           lowerUrl.includes('application/pdf');
+    return (
+      lowerUrl.endsWith(".pdf") ||
+      lowerUrl.includes(".pdf") ||
+      lowerUrl.includes("pdf") ||
+      lowerUrl.includes("application/pdf")
+    );
   };
 
   const getPdfUrl = (cert) => {
@@ -213,7 +259,12 @@ const CertificateApprovalPage = () => {
     }
     // If imageUrl exists but we're not sure if it's PDF, check by trying to load it
     // For now, let's show both imageUrl and credentialUrl if they exist
-    console.log("No PDF found. credentialUrl:", cert.credentialUrl, "imageUrl:", cert.imageUrl);
+    console.log(
+      "No PDF found. credentialUrl:",
+      cert.credentialUrl,
+      "imageUrl:",
+      cert.imageUrl
+    );
     return null;
   };
 
@@ -268,11 +319,6 @@ const CertificateApprovalPage = () => {
                     <th>Người nộp</th>
                     <th>Email</th>
                     <th>Trạng thái</th>
-                    <th>Ngày cấp</th>
-                    <th>Ngày hết hạn</th>
-                    <th>Mã chứng chỉ</th>
-                    <th>Điểm</th>
-                    <th>Ngày tạo</th>
                     <th>Tham chiếu</th>
                     <th>Mô tả</th>
                     <th>Thao tác</th>
@@ -281,17 +327,19 @@ const CertificateApprovalPage = () => {
                 <tbody>
                   {certifications.map((cert) => (
                     <tr key={cert.id}>
-                      <td>{cert.id}</td>
+                      <td>
+                        <button
+                          className={styles.idButton}
+                          onClick={() => openDetailModal(cert)}
+                        >
+                          #{cert.id}
+                        </button>
+                      </td>
                       <td className={styles.certName}>{cert.name || "N/A"}</td>
                       <td>{cert.issuingOrganization || "N/A"}</td>
                       <td>{cert.user?.fullName || "N/A"}</td>
                       <td>{cert.user?.email || "N/A"}</td>
                       <td>{getStatusBadge(cert.verificationStatus)}</td>
-                      <td>{formatDate(cert.issueDate)}</td>
-                      <td>{formatDate(cert.expiryDate)}</td>
-                      <td>{cert.credentialId || "N/A"}</td>
-                      <td>{cert.score || "N/A"}</td>
-                      <td>{formatDate(cert.createdAt)}</td>
                       <td>
                         {cert.imageUrl ? (
                           <a
@@ -300,7 +348,7 @@ const CertificateApprovalPage = () => {
                             rel="noopener noreferrer"
                             className={styles.imageLink}
                           >
-                            Xem ảnh
+                            Link
                           </a>
                         ) : (
                           "N/A"
@@ -318,7 +366,8 @@ const CertificateApprovalPage = () => {
                         )}
                       </td>
                       <td className={styles.actionsCell}>
-                        {cert.verificationStatus === "pending" || cert.verificationStatus === "draft" ? (
+                        {cert.verificationStatus === "pending" ||
+                        cert.verificationStatus === "draft" ? (
                           <div className={styles.menuContainer}>
                             <button
                               className={styles.menuButton}
@@ -328,21 +377,32 @@ const CertificateApprovalPage = () => {
                               <span className={styles.menuDots}>⋮</span>
                             </button>
                             {openMenuId === cert.id && (
-                              <div className={styles.contextMenu}>
+                              <div
+                                className={styles.contextMenu}
+                                style={{
+                                  top: `${menuPosition.top}px`,
+                                  left: `${menuPosition.left}px`,
+                                }}
+                              >
                                 <button
                                   className={`${styles.menuItem} ${styles.menuItemView}`}
                                   onClick={() => handleViewCert(cert)}
                                 >
                                   👁️ Xem chứng chỉ
                                 </button>
-                                {cert.verificationStatus === "pending" || cert.verificationStatus === "draft" ? (
+                                {cert.verificationStatus === "pending" ||
+                                cert.verificationStatus === "draft" ? (
                                   <>
                                     <button
                                       className={styles.menuItem}
-                                      onClick={() => handleApproveFromMenu(cert)}
+                                      onClick={() =>
+                                        handleApproveFromMenu(cert)
+                                      }
                                       disabled={processing === cert.id}
                                     >
-                                      {processing === cert.id ? "Đang xử lý..." : "✓ Duyệt"}
+                                      {processing === cert.id
+                                        ? "Đang xử lý..."
+                                        : "✓ Duyệt"}
                                     </button>
                                     <button
                                       className={styles.menuItem}
@@ -369,7 +429,9 @@ const CertificateApprovalPage = () => {
             {pagination.totalPages > 1 && (
               <div className={styles.pagination}>
                 <button
-                  onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                  onClick={() =>
+                    setPagination((p) => ({ ...p, page: p.page - 1 }))
+                  }
                   disabled={pagination.page === 1}
                 >
                   Trước
@@ -378,7 +440,9 @@ const CertificateApprovalPage = () => {
                   Trang {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
-                  onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                  onClick={() =>
+                    setPagination((p) => ({ ...p, page: p.page + 1 }))
+                  }
                   disabled={pagination.page === pagination.totalPages}
                 >
                   Sau
@@ -388,8 +452,124 @@ const CertificateApprovalPage = () => {
           </>
         )}
 
+        {showDetailModal && detailCert && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowDetailModal(false)}
+          >
+            <div
+              className={styles.detailModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.modalHeader}>
+                <h3>Chi tiết chứng chỉ</h3>
+                <button
+                  className={styles.closeBtn}
+                  onClick={() => setShowDetailModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.detailContent}>
+                <div className={styles.detailRow}>
+                  <strong>ID:</strong>
+                  <span>#{detailCert.id}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Tên chứng chỉ:</strong>
+                  <span>{detailCert.name || "N/A"}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Tổ chức cấp:</strong>
+                  <span>{detailCert.issuingOrganization || "N/A"}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Người nộp:</strong>
+                  <span>{detailCert.user?.fullName || "N/A"}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Email:</strong>
+                  <span>{detailCert.user?.email || "N/A"}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Trạng thái:</strong>
+                  {getStatusBadge(detailCert.verificationStatus)}
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Ngày cấp:</strong>
+                  <span>{formatDate(detailCert.issueDate)}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Ngày hết hạn:</strong>
+                  <span>{formatDate(detailCert.expiryDate)}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Mã chứng chỉ:</strong>
+                  <span>{detailCert.credentialId || "N/A"}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Điểm:</strong>
+                  <span>{detailCert.score || "N/A"}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Ngày tạo:</strong>
+                  <span>{formatDate(detailCert.createdAt)}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <strong>Tham chiếu:</strong>
+                  {detailCert.imageUrl ? (
+                    <a
+                      href={detailCert.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Xem ảnh chứng chỉ
+                    </a>
+                  ) : (
+                    <span>N/A</span>
+                  )}
+                </div>
+                {detailCert.description && (
+                  <div className={styles.detailRow}>
+                    <strong>Mô tả:</strong>
+                    <p>{detailCert.description}</p>
+                  </div>
+                )}
+              </div>
+              {(detailCert.verificationStatus === "pending" ||
+                detailCert.verificationStatus === "draft") && (
+                <div className={styles.detailActions}>
+                  <button
+                    className={styles.approveButton}
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      handleApprove(detailCert.id);
+                    }}
+                    disabled={processing === detailCert.id}
+                  >
+                    {processing === detailCert.id ? "Đang xử lý..." : "Duyệt"}
+                  </button>
+                  <button
+                    className={styles.rejectButton}
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      openRejectModal(detailCert);
+                    }}
+                    disabled={processing === detailCert.id}
+                  >
+                    Từ chối
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {showModal && selectedCert && (
-          <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowModal(false)}
+          >
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
               <h3>Từ chối chứng chỉ</h3>
               <p>Chứng chỉ: {selectedCert.name}</p>
@@ -414,9 +594,13 @@ const CertificateApprovalPage = () => {
                 <button
                   className={styles.confirmRejectButton}
                   onClick={() => handleReject(selectedCert.id)}
-                  disabled={!rejectionReason.trim() || processing === selectedCert.id}
+                  disabled={
+                    !rejectionReason.trim() || processing === selectedCert.id
+                  }
                 >
-                  {processing === selectedCert.id ? "Đang xử lý..." : "Xác nhận từ chối"}
+                  {processing === selectedCert.id
+                    ? "Đang xử lý..."
+                    : "Xác nhận từ chối"}
                 </button>
               </div>
             </div>
@@ -424,8 +608,14 @@ const CertificateApprovalPage = () => {
         )}
 
         {showViewModal && viewCert && (
-          <div className={styles.modalOverlay} onClick={() => setShowViewModal(false)}>
-            <div className={styles.viewModal} onClick={(e) => e.stopPropagation()}>
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowViewModal(false)}
+          >
+            <div
+              className={styles.viewModal}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className={styles.viewModalHeader}>
                 <h2>Chi tiết chứng chỉ</h2>
                 <button
@@ -449,7 +639,7 @@ const CertificateApprovalPage = () => {
                 {(() => {
                   console.log("View cert data:", viewCert);
                   const pdfUrl = getPdfUrl(viewCert);
-                  
+
                   // Show PDF viewer if PDF is detected
                   if (pdfUrl) {
                     return (
@@ -488,7 +678,7 @@ const CertificateApprovalPage = () => {
                       </div>
                     );
                   }
-                  
+
                   // Show image if exists
                   if (viewCert.imageUrl) {
                     return (
@@ -501,12 +691,15 @@ const CertificateApprovalPage = () => {
                             className={styles.certImage}
                             onError={(e) => {
                               // If image fails to load, try as PDF
-                              console.log("Image failed to load, trying as PDF:", viewCert.imageUrl);
+                              console.log(
+                                "Image failed to load, trying as PDF:",
+                                viewCert.imageUrl
+                              );
                               const img = e.target;
-                              img.style.display = 'none';
+                              img.style.display = "none";
                               const parent = img.parentElement;
-                              if (parent && !parent.querySelector('iframe')) {
-                                const iframe = document.createElement('iframe');
+                              if (parent && !parent.querySelector("iframe")) {
+                                const iframe = document.createElement("iframe");
                                 iframe.src = `${viewCert.imageUrl}#toolbar=0`;
                                 iframe.className = styles.pdfViewer;
                                 iframe.title = "PDF Viewer";
@@ -529,13 +722,17 @@ const CertificateApprovalPage = () => {
                             className={styles.pdfOpenButton}
                             onClick={() => {
                               // Try to open as PDF in iframe
-                              const container = document.querySelector(`.${styles.certImageContainer}`);
+                              const container = document.querySelector(
+                                `.${styles.certImageContainer}`
+                              );
                               if (container) {
-                                const img = container.querySelector('img');
-                                if (img) img.style.display = 'none';
-                                const existingIframe = container.querySelector('iframe');
+                                const img = container.querySelector("img");
+                                if (img) img.style.display = "none";
+                                const existingIframe =
+                                  container.querySelector("iframe");
                                 if (!existingIframe) {
-                                  const iframe = document.createElement('iframe');
+                                  const iframe =
+                                    document.createElement("iframe");
                                   iframe.src = `${viewCert.imageUrl}#toolbar=0`;
                                   iframe.className = styles.pdfViewer;
                                   iframe.title = "PDF Viewer";
@@ -551,7 +748,7 @@ const CertificateApprovalPage = () => {
                       </div>
                     );
                   }
-                  
+
                   // Show credentialUrl if exists
                   if (viewCert.credentialUrl) {
                     return (
@@ -570,7 +767,7 @@ const CertificateApprovalPage = () => {
                             className={styles.pdfOpenButton}
                             onClick={() => {
                               // Try to open as PDF
-                              window.open(viewCert.credentialUrl, '_blank');
+                              window.open(viewCert.credentialUrl, "_blank");
                             }}
                           >
                             📄 Thử xem như PDF
@@ -579,7 +776,7 @@ const CertificateApprovalPage = () => {
                       </div>
                     );
                   }
-                  
+
                   // Show message if no file/URL
                   return (
                     <div className={styles.viewSection}>
@@ -587,7 +784,8 @@ const CertificateApprovalPage = () => {
                       <div className={styles.noFileMessage}>
                         <p>⚠️ Chứng chỉ này chưa có tài liệu đính kèm.</p>
                         <p className={styles.noFileSubtext}>
-                          Người dùng chưa upload file hình ảnh hoặc PDF cho chứng chỉ này.
+                          Người dùng chưa upload file hình ảnh hoặc PDF cho
+                          chứng chỉ này.
                         </p>
                       </div>
                     </div>
@@ -669,7 +867,9 @@ const CertificateApprovalPage = () => {
                 {viewCert.description && (
                   <div className={styles.viewSection}>
                     <h4>Mô tả</h4>
-                    <p className={styles.viewDescription}>{viewCert.description}</p>
+                    <p className={styles.viewDescription}>
+                      {viewCert.description}
+                    </p>
                   </div>
                 )}
               </div>
@@ -682,4 +882,3 @@ const CertificateApprovalPage = () => {
 };
 
 export default CertificateApprovalPage;
-

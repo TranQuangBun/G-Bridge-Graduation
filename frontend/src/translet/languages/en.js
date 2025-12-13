@@ -420,6 +420,18 @@ const en = {
         paymentSuccess: "Payment successful",
         subscriptionExpiring: "Subscription reminder",
         jobReviewStatus: "Job review update",
+        organizationApproved: "Organization approved",
+        organizationRejected: "Organization rejected",
+      },
+      organizationApproved: {
+        title: "Organization Approved",
+        message: 'Your organization "{{name}}" has been approved successfully.',
+      },
+      organizationRejected: {
+        title: "Organization Rejected",
+        message: 'Your organization "{{name}}" has been rejected.',
+        messageWithReason:
+          'Your organization "{{name}}" has been rejected. Reason: {{reason}}',
       },
     },
   },
@@ -511,6 +523,12 @@ const en = {
     emptyTitle: "No notifications yet",
     emptyMessage:
       "You will see updates here when companies, interpreters or the system send you messages.",
+    time: "Time",
+    status: "Status",
+    read: "Read",
+    unread: "Unread",
+    message: "Message",
+    details: "Additional Details",
   },
   myJobs: {
     subtitle: "Manage your posted jobs",
@@ -628,13 +646,18 @@ const en = {
       search: "Search",
       searchPlaceholder: "Search by name or skill...",
       languages: "Languages",
+      languagesTooltip: "Search by the best languages we offer",
       hourlyRate: "Hourly Rate (USD)",
       minExperience: "Minimum Experience",
       minRating: "Minimum Rating",
       location: "Location",
       locationPlaceholder: "City or country...",
       specializations: "Specializations",
+      specializationsTooltip: "Search by the best specializations we offer",
       advanced: "Advanced Filters",
+      otherLanguagePlaceholder: "Other language...",
+      otherSpecializationPlaceholder: "Other specialization...",
+      addButton: "Add",
     },
     sort: {
       newest: "Newest First",
@@ -752,6 +775,7 @@ const en = {
       save: "Save",
       saved: "Saved",
       unsave: "Unsave",
+      unsaved: "Unsaved",
     },
     alreadyApplied: "Already Applied",
     errors: {

@@ -23,8 +23,26 @@ const organizationService = {
       throw new Error(getErrorMessage(error));
     }
   },
+
+  updateOrganization: async (id, data) => {
+    try {
+      const response = await apiClient.put(`/organizations/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  getOrganizationById: async (id) => {
+    try {
+      const response = await apiClient.get(`/organizations/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 export default organizationService;
-
-

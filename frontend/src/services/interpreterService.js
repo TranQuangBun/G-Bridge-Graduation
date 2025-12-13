@@ -17,12 +17,15 @@ const interpreterService = {
         }
       });
 
-      const response = await apiClient.get(
-        `/interpreters?${params.toString()}`
-      );
+      const url = `/interpreters?${params.toString()}`;
+      console.log("🌐 API URL:", url);
+      console.log("🔍 Query params:", Object.fromEntries(params));
+
+      const response = await apiClient.get(url);
+      console.log("✅ API response status:", response.status);
       return response.data;
     } catch (error) {
-      console.error("Error fetching interpreters:", error);
+      console.error("❌ Error fetching interpreters:", error);
       throw new Error(getErrorMessage(error));
     }
   },

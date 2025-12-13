@@ -583,6 +583,8 @@ export default function FindJobPage() {
         page,
         limit: pageSize,
         status: "open",
+        sortBy: sortBy || "createdAt",
+        sortOrder: sortBy === "title" ? "ASC" : "DESC",
       };
 
       if (keyword) apiFilters.search = keyword;
@@ -740,6 +742,7 @@ export default function FindJobPage() {
     category,
     level,
     salaryRange,
+    sortBy,
     domains,
     levels,
     isAuthenticated,
@@ -1182,7 +1185,7 @@ export default function FindJobPage() {
                   <option value="createdAt">
                     {t("findJob.sort.newest") || "Newest"}
                   </option>
-                  <option value="salary">
+                  <option value="minSalary">
                     {t("findJob.sort.salary") || "Highest Salary"}
                   </option>
                   <option value="title">
