@@ -37,7 +37,7 @@ const OrganizationApprovalPage = () => {
       });
       if (response.success && response.data) {
         setOrganizations(response.data.organizations || []);
-        setPagination(response.data.pagination || pagination);
+        setPagination((prev) => response.data.pagination || prev);
       }
     } catch (error) {
       console.error("Error fetching pending organizations:", error);

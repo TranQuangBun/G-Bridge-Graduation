@@ -18,6 +18,8 @@ import {
   CertificateApprovalPage,
   OrganizationApprovalPage,
   SystemNotificationsPage,
+  UserManagementPage,
+  RevenueManagementPage,
   PostJobPage,
   JobDetailPage,
   MessagesPage,
@@ -198,6 +200,22 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["admin"]}>
         <SystemNotificationsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_USERS,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <UserManagementPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_REVENUE,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <RevenueManagementPage />
       </ProtectedRoute>
     ),
   },

@@ -59,7 +59,8 @@ services:
       - PORT=4000
       
       # CORS Configuration (Frontend URL for CORS)
-      - FRONTEND_URL=http://localhost:3000
+      # Note: Backend now allows both localhost:3000 and localhost:3333
+      - FRONTEND_URL=http://localhost:3333
       
       # ImgBB API Configuration (for file uploads)
       - IMGBB_API_KEY=939449e3cf45737142bb725ae88320a5
@@ -71,7 +72,7 @@ services:
       - VNP_TMN_CODE=HZO7L9T6
       - VNP_HASH_SECRET=5UIIVIR2F4DOLI41JIYN1C0V4O3HAU9H
       - VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - VNP_RETURN_URL=http://localhost:3000/payment/vnpay/callback
+      - VNP_RETURN_URL=http://localhost:3333/payment/vnpay/callback
       - VNP_IPN_URL=http://localhost:4000/api/payments/webhook/vnpay
       
       # MoMo Configuration (Payment Gateway)
@@ -83,7 +84,7 @@ services:
       - MOMO_ACCESS_KEY=klm05TvNBzhg7h7j
       - MOMO_SECRET_KEY=at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa
       - MOMO_API_URL=https://test-payment.momo.vn/v2/gateway/api/create
-      - MOMO_RETURN_URL=http://localhost:3000/payment/momo/callback
+      - MOMO_RETURN_URL=http://localhost:3333/payment/momo/callback
       - MOMO_NOTIFY_URL=http://localhost:4000/api/payments/webhook/momo
       - MOMO_ENVIRONMENT=sandbox
     ports:
@@ -135,11 +136,14 @@ services:
       - WATCHPACK_POLLING=true        # Enable webpack polling
       - FAST_REFRESH=true             # Enable React Fast Refresh
       - GENERATE_SOURCEMAP=true       # Generate source maps for debugging
+      - HOST=0.0.0.0                  # Allow external connections
+      - WDS_SOCKET_HOST=localhost    # Webpack Dev Server socket host
+      - WDS_SOCKET_PORT=3333          # Webpack Dev Server socket port
       
       # Optional: React App Environment
       # - REACT_APP_ENV=development
     ports:
-      - "3000:3000"
+      - "3333:3000"
     volumes:
       # Mount source code for hot reload
       - ./frontend/src:/app/src

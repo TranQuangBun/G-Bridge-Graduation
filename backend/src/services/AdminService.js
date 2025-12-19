@@ -2,11 +2,13 @@ import { CertificationRepository } from "../repositories/CertificationRepository
 import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
 import { NotificationService } from "./NotificationService.js";
 import { UserRepository } from "../repositories/UserRepository.js";
+import { PaymentRepository } from "../repositories/PaymentRepository.js";
 import { AppDataSource } from "../config/DataSource.js";
 import { User } from "../entities/User.js";
 import { CertificationStatus } from "../entities/Certification.js";
 import { OrganizationStatus } from "../entities/Organization.js";
 import { NotificationType } from "../entities/Notification.js";
+import { PaymentStatus } from "../entities/PaymentConstants.js";
 import { NotFoundError } from "../utils/Errors.js";
 
 export class AdminService {
@@ -15,6 +17,7 @@ export class AdminService {
     this.organizationRepository = new OrganizationRepository();
     this.notificationService = new NotificationService();
     this.userRepository = new UserRepository();
+    this.paymentRepository = new PaymentRepository();
     this.userRepo = AppDataSource.getRepository(User);
   }
 
@@ -277,7 +280,7 @@ export class AdminService {
         const notification = await this.notificationService.createNotification({
           recipientId,
           actorId: null, // System notification
-          type: NotificationType.GENERIC,
+          type: NotificationType.SYSTEM_NOTIFICATION,
           title,
           message,
           metadata,
@@ -295,7 +298,7 @@ export class AdminService {
         const notification = await this.notificationService.createNotification({
           recipientId: user.id,
           actorId: null,
-          type: NotificationType.GENERIC,
+          type: NotificationType.SYSTEM_NOTIFICATION,
           title,
           message,
           metadata,
@@ -348,6 +351,257 @@ export class AdminService {
       total: {
         certifications: totalCertifications,
         organizations: totalOrganizations,
+      },
+    };
+  }
+
+  // User Management Methods
+  async getAllUsers(filters = {}) {
+    const {
+      page = 1,
+      limit = 20,
+      search = "",
+      role = "",
+      isActive = "",
+      isVerified = "",
+    } = filters;
+
+    const [users, total] = await this.userRepository.searchUsers(
+      search,
+      role,
+      isActive,
+      isVerified,
+      parseInt(page),
+      parseInt(limit)
+    );
+
+    return {
+      users,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    };
+  }
+
+  async getUserById(id) {
+    const user = await this.userRepository.findByIdWithProfiles(parseInt(id));
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+    return user;
+  }
+
+  async updateUser(id, userData) {
+    const { passwordHash, ...data } = userData;
+
+    const user = await this.userRepository.findById(parseInt(id));
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    // Check email uniqueness if email is being updated
+    if (data.email && data.email !== user.email) {
+      const existing = await this.userRepository.findByEmail(data.email);
+      if (existing) {
+        throw new Error("Email already exists");
+      }
+    }
+
+    const updatePayload = { ...data };
+    if (passwordHash) {
+      updatePayload.passwordHash = passwordHash;
+    }
+
+    const updated = await this.userRepository.update(parseInt(id), updatePayload);
+    const userResponse = { ...updated };
+    delete userResponse.passwordHash;
+    return userResponse;
+  }
+
+  async deleteUser(id) {
+    const user = await this.userRepository.findById(parseInt(id));
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    await this.userRepository.delete(parseInt(id));
+    return true;
+  }
+
+  async toggleUserStatus(id) {
+    const user = await this.userRepository.findById(parseInt(id));
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    user.isActive = !user.isActive;
+    const updated = await this.userRepository.repository.save(user);
+    const userResponse = { ...updated };
+    delete userResponse.passwordHash;
+    return userResponse;
+  }
+
+  // Revenue Management Methods
+  async getRevenueStats(filters = {}) {
+    const { startDate, endDate } = filters;
+    
+    const paymentRepo = this.paymentRepository.repository;
+    
+    // Build date filter
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        dateFilter.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    // Get total revenue (completed payments only)
+    const totalRevenueQuery = paymentRepo
+      .createQueryBuilder("payment")
+      .select("SUM(payment.amount)", "total")
+      .where("payment.status = :status", { status: PaymentStatus.COMPLETED });
+
+    if (startDate) {
+      totalRevenueQuery.andWhere("payment.createdAt >= :startDate", { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      totalRevenueQuery.andWhere("payment.createdAt <= :endDate", { endDate: new Date(endDate) });
+    }
+
+    const totalRevenueResult = await totalRevenueQuery.getRawOne();
+    const totalRevenue = parseFloat(totalRevenueResult?.total || 0);
+
+    // Get revenue by payment gateway
+    const revenueByGatewayQuery = paymentRepo
+      .createQueryBuilder("payment")
+      .select("payment.paymentGateway", "gateway")
+      .addSelect("SUM(payment.amount)", "total")
+      .addSelect("COUNT(payment.id)", "count")
+      .where("payment.status = :status", { status: PaymentStatus.COMPLETED });
+
+    if (startDate) {
+      revenueByGatewayQuery.andWhere("payment.createdAt >= :startDate", { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      revenueByGatewayQuery.andWhere("payment.createdAt <= :endDate", { endDate: new Date(endDate) });
+    }
+
+    revenueByGatewayQuery
+      .groupBy("payment.paymentGateway")
+      .orderBy("total", "DESC");
+
+    const revenueByGateway = await revenueByGatewayQuery.getRawMany();
+
+    // Get revenue by month (last 12 months)
+    const revenueByMonthQuery = paymentRepo
+      .createQueryBuilder("payment")
+      .select("DATE_FORMAT(payment.createdAt, '%Y-%m')", "month")
+      .addSelect("SUM(payment.amount)", "total")
+      .addSelect("COUNT(payment.id)", "count")
+      .where("payment.status = :status", { status: PaymentStatus.COMPLETED })
+      .andWhere("payment.createdAt >= DATE_SUB(NOW(), INTERVAL 12 MONTH)")
+      .groupBy("month")
+      .orderBy("month", "ASC");
+
+    const revenueByMonth = await revenueByMonthQuery.getRawMany();
+
+    // Get payment statistics
+    const [
+      totalPayments,
+      completedPayments,
+      pendingPayments,
+      failedPayments,
+    ] = await Promise.all([
+      paymentRepo.count(),
+      paymentRepo.count({ where: { status: PaymentStatus.COMPLETED } }),
+      paymentRepo.count({ where: { status: PaymentStatus.PENDING } }),
+      paymentRepo.count({ where: { status: PaymentStatus.FAILED } }),
+    ]);
+
+    return {
+      totalRevenue,
+      revenueByGateway: revenueByGateway.map(item => ({
+        gateway: item.gateway,
+        total: parseFloat(item.total || 0),
+        count: parseInt(item.count || 0),
+      })),
+      revenueByMonth: revenueByMonth.map(item => ({
+        month: item.month,
+        total: parseFloat(item.total || 0),
+        count: parseInt(item.count || 0),
+      })),
+      statistics: {
+        totalPayments,
+        completedPayments,
+        pendingPayments,
+        failedPayments,
+        successRate: totalPayments > 0 ? ((completedPayments / totalPayments) * 100).toFixed(2) : 0,
+      },
+    };
+  }
+
+  async getAllPayments(filters = {}) {
+    const {
+      page = 1,
+      limit = 20,
+      userId = "",
+      planId = "",
+      status = "",
+      paymentGateway = "",
+      orderId = "",
+      startDate = "",
+      endDate = "",
+    } = filters;
+
+    const queryBuilder = this.paymentRepository.repository
+      .createQueryBuilder("payment")
+      .leftJoinAndSelect("payment.user", "user")
+      .leftJoinAndSelect("payment.plan", "plan")
+      .orderBy("payment.createdAt", "DESC");
+
+    // Apply filters
+    if (userId) {
+      queryBuilder.andWhere("payment.userId = :userId", { userId: parseInt(userId) });
+    }
+    if (planId) {
+      queryBuilder.andWhere("payment.planId = :planId", { planId: parseInt(planId) });
+    }
+    if (status) {
+      queryBuilder.andWhere("payment.status = :status", { status });
+    }
+    if (paymentGateway) {
+      queryBuilder.andWhere("payment.paymentGateway = :paymentGateway", { paymentGateway });
+    }
+    if (orderId) {
+      queryBuilder.andWhere("payment.orderId LIKE :orderId", { orderId: `%${orderId}%` });
+    }
+    if (startDate) {
+      queryBuilder.andWhere("payment.createdAt >= :startDate", { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      queryBuilder.andWhere("payment.createdAt <= :endDate", { endDate: new Date(endDate) });
+    }
+
+    queryBuilder
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .take(parseInt(limit));
+
+    const [payments, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      payments,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
       },
     };
   }

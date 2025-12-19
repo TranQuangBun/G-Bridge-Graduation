@@ -133,3 +133,102 @@ export async function getDashboardStats(req, res) {
   }
 }
 
+// User Management
+export async function getAllUsers(req, res) {
+  try {
+    const result = await adminService.getAllUsers(req.query);
+    return sendPaginated(
+      res,
+      result.users,
+      result.pagination,
+      "Users fetched successfully"
+    );
+  } catch (error) {
+    logError(error, "Fetching users");
+    return sendError(res, "Error fetching users", 500, error);
+  }
+}
+
+export async function getUserById(req, res) {
+  try {
+    const { id } = req.params;
+    const user = await adminService.getUserById(id);
+    return sendSuccess(res, user, "User fetched successfully");
+  } catch (error) {
+    if (error instanceof AppError || error.message === "User not found") {
+      return sendError(res, error.message, error.statusCode || 404);
+    }
+    logError(error, "Fetching user");
+    return sendError(res, "Error fetching user", 500, error);
+  }
+}
+
+export async function updateUser(req, res) {
+  try {
+    const { id } = req.params;
+    const user = await adminService.updateUser(id, req.body);
+    return sendSuccess(res, user, "User updated successfully");
+  } catch (error) {
+    if (error instanceof AppError || error.message === "User not found" || error.message === "Email already exists") {
+      const statusCode = error.statusCode || (error.message === "User not found" ? 404 : 409);
+      return sendError(res, error.message, statusCode);
+    }
+    logError(error, "Updating user");
+    return sendError(res, "Error updating user", 500, error);
+  }
+}
+
+export async function deleteUser(req, res) {
+  try {
+    const { id } = req.params;
+    await adminService.deleteUser(id);
+    return sendSuccess(res, null, "User deleted successfully");
+  } catch (error) {
+    if (error instanceof AppError || error.message === "User not found") {
+      return sendError(res, error.message, error.statusCode || 404);
+    }
+    logError(error, "Deleting user");
+    return sendError(res, "Error deleting user", 500, error);
+  }
+}
+
+export async function toggleUserStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const user = await adminService.toggleUserStatus(id);
+    return sendSuccess(res, user, "User status updated successfully");
+  } catch (error) {
+    if (error instanceof AppError || error.message === "User not found") {
+      return sendError(res, error.message, error.statusCode || 404);
+    }
+    logError(error, "Toggling user status");
+    return sendError(res, "Error updating user status", 500, error);
+  }
+}
+
+// Revenue Management
+export async function getRevenueStats(req, res) {
+  try {
+    const stats = await adminService.getRevenueStats(req.query);
+    return sendSuccess(res, stats, "Revenue stats fetched successfully");
+  } catch (error) {
+    logError(error, "Fetching revenue stats");
+    return sendError(res, "Error fetching revenue stats", 500, error);
+  }
+}
+
+export async function getAllPayments(req, res) {
+  try {
+    const result = await adminService.getAllPayments(req.query);
+    return sendPaginated(
+      res,
+      result.payments,
+      result.pagination,
+      "Payments fetched successfully"
+    );
+  } catch (error) {
+    logError(error, "Fetching payments");
+    return sendError(res, "Error fetching payments", 500, error);
+  }
+}
+

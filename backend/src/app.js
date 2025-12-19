@@ -42,9 +42,25 @@ const createApp = async () => {
   // Trust proxy for correct IP address in Docker/behind proxy
   app.set("trust proxy", true);
 
+  // CORS configuration - allow multiple origins for development
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || "http://localhost:3000",
+    "http://localhost:3000",
+    "http://localhost:3333",
+  ].filter(Boolean); // Remove any undefined/null values
+
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
       credentials: true,
     })
   );
