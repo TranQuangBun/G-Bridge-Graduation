@@ -112,6 +112,8 @@ function DashboardPage() {
   const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [markingAllNotifications, setMarkingAllNotifications] = useState(false);
   const [updatingNotificationId, setUpdatingNotificationId] = useState(null);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [notificationsPagination, setNotificationsPagination] = useState({
     page: 1,
     totalPages: 1,
@@ -527,6 +529,16 @@ function DashboardPage() {
     }
   };
 
+  const handleOpenNotificationModal = async (notification) => {
+    setSelectedNotification(notification);
+    setShowNotificationModal(true);
+
+    // Mark as read if not already
+    if (!notification.isRead) {
+      await handleMarkNotificationRead(notification.id);
+    }
+  };
+
   const handleLoadMoreNotifications = async () => {
     if (notificationsPagination.page >= notificationsPagination.totalPages)
       return;
@@ -700,6 +712,10 @@ function DashboardPage() {
                         className={`${styles.notificationCenterItem} ${
                           !notification.isRead ? styles.notificationUnread : ""
                         }`}
+                        onClick={() =>
+                          handleOpenNotificationModal(notification)
+                        }
+                        style={{ cursor: "pointer" }}
                       >
                         <div className={styles.notificationCenterBody}>
                           <div className={styles.notificationCenterHeading}>
@@ -730,9 +746,10 @@ function DashboardPage() {
                         {!notification.isRead && (
                           <button
                             className={styles.markReadBtn}
-                            onClick={() =>
-                              handleMarkNotificationRead(notification.id)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkNotificationRead(notification.id);
+                            }}
                             disabled={
                               updatingNotificationId === notification.id
                             }
@@ -1092,106 +1109,189 @@ function DashboardPage() {
                     )}
                   </div>
                 </section>
-
-                {/* Notifications */}
-                <section className={styles.notificationsSection}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>
-                      {t("dashboard.notifications.title") ||
-                        t("common.notifications") ||
-                        "Notifications"}
-                    </h2>
-                    <div className={styles.notificationHeaderActions}>
-                      {unreadNotifications.length > 0 && (
-                        <button
-                          className={styles.markAllBtn}
-                          onClick={handleMarkAllNotifications}
-                          disabled={markingAllNotifications}
-                        >
-                          {markingAllNotifications
-                            ? t("common.loading") || "Loading..."
-                            : t("dashboard.notifications.markAll") ||
-                              "Mark all as read"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={styles.notificationsList}>
-                    {notificationsLoading ? (
-                      <div className={styles.notificationsEmpty}>
-                        {t("common.loading") || "Loading..."}
-                      </div>
-                    ) : notifications.length === 0 ? (
-                      <div className={styles.notificationsEmpty}>
-                        {t("dashboard.notifications.empty") ||
-                          "You're all caught up!"}
-                      </div>
-                    ) : (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`${styles.notificationCard} ${
-                            !notification.isRead
-                              ? styles.notificationUnread
-                              : ""
-                          }`}
-                        >
-                          <div className={styles.notificationContent}>
-                            <div className={styles.notificationTitleRow}>
-                              {!notification.isRead && (
-                                <span className={styles.unreadDot} />
-                              )}
-                              <h3 className={styles.notificationTitle}>
-                                {notification.title}
-                              </h3>
-                            </div>
-                            {notification.message && (
-                              <p className={styles.notificationMessage}>
-                                {notification.message}
-                              </p>
-                            )}
-                            <div className={styles.notificationMeta}>
-                              <span>
-                                {formatDateTime(notification.createdAt)}
-                              </span>
-                              {notification.metadata?.status && (
-                                <span className={styles.notificationTag}>
-                                  {notification.metadata.status}
-                                </span>
-                              )}
-                              {notification.type && (
-                                <span className={styles.notificationType}>
-                                  {getNotificationTypeLabel(notification.type)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {!notification.isRead && (
-                            <button
-                              className={styles.markReadBtn}
-                              onClick={() =>
-                                handleMarkNotificationRead(notification.id)
-                              }
-                              disabled={
-                                updatingNotificationId === notification.id
-                              }
-                            >
-                              {updatingNotificationId === notification.id
-                                ? t("common.loading") || "Loading..."
-                                : t("dashboard.notifications.markRead") ||
-                                  "Mark as read"}
-                            </button>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </section>
               </div>
             </>
           )}
         </main>
+
+        {/* Notification Detail Modal */}
+        {showNotificationModal && selectedNotification && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowNotificationModal(false)}
+          >
+            <div
+              className={styles.notificationDetailModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.notificationModalHeader}>
+                <div className={styles.notificationModalHeaderLeft}>
+                  <div className={styles.notificationModalIcon}>
+                    {selectedNotification.type?.includes("approved") ? (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          stroke="#10b981"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : selectedNotification.type?.includes("rejected") ? (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          stroke="#3b82f6"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <div className={styles.notificationModalHeaderText}>
+                    <h3>{selectedNotification.title}</h3>
+                    <span className={styles.notificationModalType}>
+                      {selectedNotification.type?.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className={styles.modalCloseBtn}
+                  onClick={() => setShowNotificationModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.notificationModalBody}>
+                <div className={styles.notificationModalInfo}>
+                  <div className={styles.notificationModalInfoItem}>
+                    <span className={styles.notificationModalLabel}>
+                      {t("notificationsPage.time") || "Time"}:
+                    </span>
+                    <span className={styles.notificationModalValue}>
+                      {new Date(selectedNotification.createdAt).toLocaleString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </span>
+                  </div>
+                  <div className={styles.notificationModalInfoItem}>
+                    <span className={styles.notificationModalLabel}>
+                      {t("notificationsPage.status") || "Status"}:
+                    </span>
+                    <span
+                      className={`${styles.notificationModalValue} ${
+                        selectedNotification.isRead
+                          ? styles.statusRead
+                          : styles.statusUnread
+                      }`}
+                    >
+                      {selectedNotification.isRead
+                        ? t("notificationsPage.read") || "Read"
+                        : t("notificationsPage.unread") || "Unread"}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedNotification.message && (
+                  <div className={styles.notificationModalMessage}>
+                    <h4>{t("notificationsPage.message") || "Message"}</h4>
+                    <p>{selectedNotification.message}</p>
+                  </div>
+                )}
+
+                {selectedNotification.metadata &&
+                  (() => {
+                    // Filter out technical fields that users don't need to see
+                    const filteredMetadata = Object.entries(
+                      selectedNotification.metadata
+                    ).filter(([key]) => {
+                      // Hide these technical fields
+                      const hiddenFields = [
+                        "type",
+                        "certificationId",
+                        "organizationId",
+                        "userId",
+                        "jobId",
+                      ];
+                      return !hiddenFields.includes(key);
+                    });
+
+                    // Only show metadata section if there are meaningful fields
+                    if (filteredMetadata.length === 0) return null;
+
+                    return (
+                      <div className={styles.notificationModalMetadata}>
+                        <h4>
+                          {t("notificationsPage.details") ||
+                            "Additional Details"}
+                        </h4>
+                        <div className={styles.metadataGrid}>
+                          {filteredMetadata.map(([key, value]) => (
+                            <div key={key} className={styles.metadataItem}>
+                              <span className={styles.metadataKey}>
+                                {key.replace(/([A-Z])/g, " $1").trim()}:
+                              </span>
+                              <span className={styles.metadataValue}>
+                                {typeof value === "object"
+                                  ? JSON.stringify(value, null, 2)
+                                  : String(value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+              </div>
+
+              <div className={styles.notificationModalFooter}>
+                <button
+                  className={styles.modalActionBtn}
+                  onClick={() => setShowNotificationModal(false)}
+                >
+                  {t("common.close") || "Close"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

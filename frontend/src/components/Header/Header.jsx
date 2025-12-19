@@ -275,13 +275,7 @@ const Header = () => {
 
   const handleProfileClick = () => {
     setIsUserMenuOpen(false);
-    if (user?.role === "interpreter") {
-      navigate("/profile");
-    } else if (user?.role === "client") {
-      navigate("/company/profile");
-    } else if (user?.role === "admin") {
-      navigate("/admin/profile");
-    }
+    navigate("/profile");
   };
 
   // Function to check if a route is active
