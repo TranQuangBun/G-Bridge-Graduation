@@ -426,6 +426,18 @@ const vi = {
         paymentSuccess: "Thanh toán thành công",
         subscriptionExpiring: "Nhắc hết hạn gói",
         jobReviewStatus: "Duyệt tin tuyển dụng",
+        organizationApproved: "Tổ chức đã được duyệt",
+        organizationRejected: "Tổ chức bị từ chối",
+      },
+      organizationApproved: {
+        title: "Tổ chức đã được duyệt",
+        message: 'Tổ chức "{{name}}" của bạn đã được duyệt thành công.',
+      },
+      organizationRejected: {
+        title: "Tổ chức bị từ chối",
+        message: 'Tổ chức "{{name}}" của bạn đã bị từ chối.',
+        messageWithReason:
+          'Tổ chức "{{name}}" của bạn đã bị từ chối. Lý do: {{reason}}',
       },
     },
   },
@@ -517,6 +529,12 @@ const vi = {
     emptyTitle: "Chưa có thông báo",
     emptyMessage:
       "Bạn sẽ nhìn thấy thông báo tại đây khi có cập nhật từ công ty, phiên dịch viên hoặc hệ thống.",
+    time: "Thời gian",
+    status: "Trạng thái",
+    read: "Đã đọc",
+    unread: "Chưa đọc",
+    message: "Nội dung",
+    details: "Chi tiết bổ sung",
   },
   myJobs: {
     subtitle: "Quản lý các công việc bạn đã đăng",
@@ -636,13 +654,20 @@ const vi = {
       search: "Tìm kiếm",
       searchPlaceholder: "Tìm theo tên hoặc kỹ năng...",
       languages: "Ngôn ngữ",
+      languagesTooltip:
+        "Cho phép bạn tìm kiếm theo những ngôn ngữ cung cấp tốt nhất từ chúng tôi",
       hourlyRate: "Giá theo giờ (USD)",
       minExperience: "Kinh nghiệm tối thiểu",
       minRating: "Đánh giá tối thiểu",
       location: "Địa điểm",
       locationPlaceholder: "Thành phố hoặc quốc gia...",
       specializations: "Chuyên môn",
+      specializationsTooltip:
+        "Cho phép bạn tìm kiếm theo những chuyên môn cung cấp tốt nhất từ chúng tôi",
       advanced: "Bộ lọc nâng cao",
+      otherLanguagePlaceholder: "Ngôn ngữ khác...",
+      otherSpecializationPlaceholder: "Chuyên môn khác...",
+      addButton: "Thêm",
     },
     sort: {
       newest: "Mới nhất",
@@ -760,6 +785,7 @@ const vi = {
       save: "Lưu",
       saved: "Đã lưu",
       unsave: "Bỏ lưu",
+      unsaved: "Đã bỏ lưu",
     },
     alreadyApplied: "Đã ứng tuyển",
     errors: {

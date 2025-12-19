@@ -29,31 +29,36 @@ const NotificationsPage = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  const fetchNotifications = useCallback(async ({ page, append }) => {
-    try {
-      if (!append) {
-        setPageLoading(true);
-      }
-      const response = await notificationService.getMyNotifications({
-        page,
-        limit: 10,
-        isRead: showUnreadOnly ? false : undefined,
-      });
-      const data = response?.data;
-      if (data) {
-        setNotifications((prev) =>
-          append ? [...prev, ...(data.notifications || [])] : data.notifications || []
-        );
-        if (data.pagination) {
-          setPagination(data.pagination);
+  const fetchNotifications = useCallback(
+    async ({ page, append }) => {
+      try {
+        if (!append) {
+          setPageLoading(true);
         }
+        const response = await notificationService.getMyNotifications({
+          page,
+          limit: 10,
+          isRead: showUnreadOnly ? false : undefined,
+        });
+        const data = response?.data;
+        if (data) {
+          setNotifications((prev) =>
+            append
+              ? [...prev, ...(data.notifications || [])]
+              : data.notifications || []
+          );
+          if (data.pagination) {
+            setPagination(data.pagination);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load notifications:", error);
+      } finally {
+        setPageLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to load notifications:", error);
-    } finally {
-      setPageLoading(false);
-    }
-  }, [showUnreadOnly]);
+    },
+    [showUnreadOnly]
+  );
 
   useEffect(() => {
     if (!isAuthenticated || loading) return;
@@ -71,11 +76,18 @@ const NotificationsPage = () => {
     try {
       setMarkingId(id);
       await notificationService.markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === id ? { ...notification, isRead: true } : notification
-        )
-      );
+      setNotifications((prev) => {
+        // If showing unread only, remove the notification from list
+        if (showUnreadOnly) {
+          return prev.filter((notification) => notification.id !== id);
+        }
+        // Otherwise just mark as read
+        return prev.map((notification) =>
+          notification.id === id
+            ? { ...notification, isRead: true }
+            : notification
+        );
+      });
     } catch (error) {
       console.error("Failed to mark notification read:", error);
     } finally {
@@ -87,9 +99,15 @@ const NotificationsPage = () => {
     try {
       setMarkingAll(true);
       await notificationService.markAllNotificationsRead();
-      setNotifications((prev) =>
-        prev.map((notification) => ({ ...notification, isRead: true }))
-      );
+      // If showing unread only, clear all notifications
+      if (showUnreadOnly) {
+        setNotifications([]);
+      } else {
+        // Otherwise mark all as read
+        setNotifications((prev) =>
+          prev.map((notification) => ({ ...notification, isRead: true }))
+        );
+      }
     } catch (error) {
       console.error("Failed to mark all notifications read:", error);
     } finally {
@@ -98,6 +116,11 @@ const NotificationsPage = () => {
   };
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  // Filter notifications based on showUnreadOnly
+  const displayedNotifications = showUnreadOnly
+    ? notifications.filter((n) => !n.isRead)
+    : notifications;
 
   return (
     <MainLayout>
@@ -148,10 +171,12 @@ const NotificationsPage = () => {
             <div className={styles.emptyState}>
               {t("common.loading") || "Loading..."}
             </div>
-          ) : notifications.length === 0 ? (
+          ) : displayedNotifications.length === 0 ? (
             <div className={styles.emptyState}>
               <span className={styles.emptyIcon}>🎉</span>
-              <h3>{t("notificationsPage.emptyTitle") || "You're all caught up!"}</h3>
+              <h3>
+                {t("notificationsPage.emptyTitle") || "You're all caught up!"}
+              </h3>
               <p>
                 {t("notificationsPage.emptyMessage") ||
                   "Check back later for updates on your jobs, bookings and payments."}
@@ -159,7 +184,7 @@ const NotificationsPage = () => {
             </div>
           ) : (
             <div className={styles.notificationsList}>
-              {notifications.map((notification) => (
+              {displayedNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`${styles.notificationItem} ${
@@ -172,15 +197,20 @@ const NotificationsPage = () => {
                         {notification.type?.replace(/_/g, " ")}
                       </span>
                       <time>
-                        {new Date(notification.createdAt).toLocaleString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(notification.createdAt).toLocaleString(
+                          undefined,
+                          {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
                       </time>
                     </div>
-                    <h3 className={styles.notificationTitle}>{notification.title}</h3>
+                    <h3 className={styles.notificationTitle}>
+                      {notification.title}
+                    </h3>
                     {notification.message && (
                       <div
                         className={styles.notificationMessage}
@@ -191,7 +221,9 @@ const NotificationsPage = () => {
                   {!notification.isRead && (
                     <button
                       className={styles.markReadBtn}
-                      onClick={() => handleMarkNotificationRead(notification.id)}
+                      onClick={() =>
+                        handleMarkNotificationRead(notification.id)
+                      }
                       disabled={markingId === notification.id}
                     >
                       {markingId === notification.id
@@ -215,4 +247,3 @@ const NotificationsPage = () => {
 };
 
 export default NotificationsPage;
-

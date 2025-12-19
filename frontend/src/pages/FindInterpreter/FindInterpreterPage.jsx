@@ -15,6 +15,7 @@ import {
   FaMapMarkerAlt,
   FaBookmark,
   FaRegBookmark,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 const FindInterpreterPage = () => {
@@ -30,9 +31,16 @@ const FindInterpreterPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [savedInterpreters, setSavedInterpreters] = useState(new Set());
 
-  // Filter options
-  const [availableLanguages, setAvailableLanguages] = useState([]);
-  const [availableSpecializations, setAvailableSpecializations] = useState([]);
+  // Other input states for custom languages and specializations
+  const [otherLanguage, setOtherLanguage] = useState("");
+  const [otherSpecialization, setOtherSpecialization] = useState("");
+
+  // Temporary filters for modal (not applied yet)
+  const [tempFilters, setTempFilters] = useState({
+    location: "",
+    languages: [],
+    specializations: [],
+  });
 
   // Filters
   const [filters, setFilters] = useState({
@@ -57,6 +65,18 @@ const FindInterpreterPage = () => {
     limit: 12,
     totalPages: 0,
   });
+
+  // Debug: Log when interpreters state changes
+  useEffect(() => {
+    console.log("🔄 Interpreters state updated:", interpreters.length, "items");
+    if (interpreters.length > 0) {
+      console.log("📋 Sample interpreter:", {
+        id: interpreters[0].id,
+        name: interpreters[0].fullName,
+        experience: interpreters[0].profile?.experience || 0,
+      });
+    }
+  }, [interpreters]);
 
   // Load saved interpreters function
   const loadSavedInterpreters = useCallback(async () => {
@@ -109,37 +129,69 @@ const FindInterpreterPage = () => {
 
   // Fetch interpreters when filters change
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+
+    console.log("⚡ useEffect triggered, filters changed");
+
+    // Only debounce search input
+    if (filters.search !== "") {
+      const debounceTimer = setTimeout(() => {
+        fetchInterpreters();
+      }, 500);
+      return () => clearTimeout(debounceTimer);
+    } else {
+      // Fetch immediately for all other changes
       fetchInterpreters();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.sortBy, filters.sortOrder, user]);
   
   // eslint-disable-next-line no-unused-vars
-  const fetchFilterOptions = async () => {
-    try {
-      const [langsRes, specsRes] = await Promise.all([
-        interpreterService.getAvailableLanguages(),
-        interpreterService.getAvailableSpecializations(),
-      ]);
-
-      setAvailableLanguages(langsRes.data || []);
-      setAvailableSpecializations(specsRes.data || []);
-    } catch (error) {
-      console.error("Error fetching filter options:", error);
-    }
-  };
-
   const fetchInterpreters = async () => {
+    console.log("🔍 Fetching interpreters with filters:", filters);
     setLoading(true);
     try {
+      // Build query filters and remove empty values
       const queryFilters = {
-        ...filters,
-        languages: filters.languages.join(","),
-        specializations: filters.specializations.join(","),
+        page: filters.page,
+        limit: filters.limit,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
       };
 
+      // Add optional filters only if they have values
+      if (filters.search && filters.search.trim()) {
+        queryFilters.search = filters.search.trim();
+      }
+      if (filters.languages && filters.languages.length > 0) {
+        queryFilters.languages = filters.languages.join(",");
+      }
+      if (filters.specializations && filters.specializations.length > 0) {
+        queryFilters.specializations = filters.specializations.join(",");
+      }
+      if (filters.minRate && filters.minRate !== "") {
+        queryFilters.minRate = Number(filters.minRate);
+      }
+      if (filters.maxRate && filters.maxRate !== "") {
+        queryFilters.maxRate = Number(filters.maxRate);
+      }
+      if (filters.minExperience && filters.minExperience !== "") {
+        queryFilters.minExperience = Number(filters.minExperience);
+      }
+      if (filters.rating && filters.rating !== "") {
+        queryFilters.rating = Number(filters.rating);
+      }
+      if (filters.location && filters.location.trim()) {
+        queryFilters.location = filters.location.trim();
+      }
+
+      console.log("📤 Sending API request with filters:", queryFilters);
       const response = await interpreterService.getInterpreters(queryFilters);
+      console.log("📥 Received response:", response);
+      console.log(
+        "📥 Interpreters count:",
+        response.data?.interpreters?.length || 0
+      );
 
       // Map interpreterProfile to profile for consistency
       const interpretersWithProfile = (response.data.interpreters || []).map(
@@ -149,11 +201,20 @@ const FindInterpreterPage = () => {
         })
       );
 
+      console.log("✅ Mapped interpreters:", interpretersWithProfile.length);
+      console.log("👤 First interpreter sample:", interpretersWithProfile[0]);
+
       setInterpreters(interpretersWithProfile);
       setPagination(response.data.pagination || {});
+
+      console.log(
+        "✅ State updated - interpreters count:",
+        interpretersWithProfile.length
+      );
     } catch (error) {
-      console.error("Error fetching interpreters:", error);
+      console.error("❌ Error fetching interpreters:", error);
       toast.error("Failed to load interpreters");
+      setInterpreters([]); // Clear on error
     } finally {
       setLoading(false);
     }
@@ -166,21 +227,50 @@ const FindInterpreterPage = () => {
   };
 
   const handleFilterChange = (key, value) => {
+    console.log(`🔧 Filter change: ${key} = ${value}`);
     setFilters({ ...filters, [key]: value, page: 1 });
   };
 
-  const handleLanguageToggle = (lang) => {
-    const newLanguages = filters.languages.includes(lang)
-      ? filters.languages.filter((l) => l !== lang)
-      : [...filters.languages, lang];
-    setFilters({ ...filters, languages: newLanguages, page: 1 });
+  // Handlers for temporary filters in modal
+  const handleTempFilterChange = (key, value) => {
+    setTempFilters({ ...tempFilters, [key]: value });
   };
 
-  const handleSpecializationToggle = (spec) => {
-    const newSpecs = filters.specializations.includes(spec)
-      ? filters.specializations.filter((s) => s !== spec)
-      : [...filters.specializations, spec];
-    setFilters({ ...filters, specializations: newSpecs, page: 1 });
+  const handleTempLanguageToggle = (lang) => {
+    const newLanguages = tempFilters.languages.includes(lang)
+      ? tempFilters.languages.filter((l) => l !== lang)
+      : [...tempFilters.languages, lang];
+    setTempFilters({ ...tempFilters, languages: newLanguages });
+  };
+
+  const handleTempSpecializationToggle = (spec) => {
+    const newSpecs = tempFilters.specializations.includes(spec)
+      ? tempFilters.specializations.filter((s) => s !== spec)
+      : [...tempFilters.specializations, spec];
+    setTempFilters({ ...tempFilters, specializations: newSpecs });
+  };
+
+  // Apply advanced filters
+  const handleApplyAdvancedFilters = () => {
+    setFilters({
+      ...filters,
+      location: tempFilters.location,
+      languages: tempFilters.languages,
+      specializations: tempFilters.specializations,
+      page: 1,
+    });
+    setShowAdvancedFilters(false);
+    // fetchInterpreters will be called by useEffect when filters change
+  };
+
+  // Open advanced filters modal and sync temp filters
+  const handleOpenAdvancedFilters = () => {
+    setTempFilters({
+      location: filters.location,
+      languages: filters.languages,
+      specializations: filters.specializations,
+    });
+    setShowAdvancedFilters(true);
   };
 
   const handleClearFilters = () => {
@@ -276,6 +366,203 @@ const FindInterpreterPage = () => {
             onClose={handleCloseModal}
           />
         )}
+
+        {/* Advanced Filters Modal */}
+        {showAdvancedFilters && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowAdvancedFilters(false)}
+          >
+            <div
+              className={styles.advancedFiltersModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.modalHeader}>
+                <h2>{t("findInterpreter.filters.advanced")}</h2>
+                <button
+                  className={styles.closeBtn}
+                  onClick={() => setShowAdvancedFilters(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.modalBody}>
+                {/* Location */}
+                <div className={styles.filterSection}>
+                  <label>{t("findInterpreter.filters.location")}</label>
+                  <input
+                    type="text"
+                    placeholder={t(
+                      "findInterpreter.filters.locationPlaceholder"
+                    )}
+                    value={tempFilters.location}
+                    onChange={(e) =>
+                      handleTempFilterChange("location", e.target.value)
+                    }
+                    className={styles.searchInput}
+                  />
+                </div>
+
+                {/* Languages - Multiple Selection */}
+                <div className={styles.filterSection}>
+                  <label className={styles.labelWithTooltip}>
+                    {t("findInterpreter.filters.languages")}
+                    <span className={styles.tooltipWrapper}>
+                      <FaInfoCircle className={styles.infoIcon} />
+                      <span className={styles.tooltip}>
+                        {t("findInterpreter.filters.languagesTooltip")}
+                      </span>
+                    </span>
+                  </label>
+                  <div className={styles.checkboxGroup}>
+                    {[
+                      "English",
+                      "Vietnamese",
+                      "Chinese",
+                      "Japanese",
+                      "Korean",
+                      "French",
+                      "German",
+                      "Spanish",
+                      "Thai",
+                      "Russian",
+                    ].map((lang) => (
+                      <div key={lang} className={styles.checkboxItem}>
+                        <input
+                          type="checkbox"
+                          id={`lang-${lang}`}
+                          checked={tempFilters.languages.includes(lang)}
+                          onChange={() => handleTempLanguageToggle(lang)}
+                        />
+                        <label htmlFor={`lang-${lang}`}>{lang}</label>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Other Language Input */}
+                  <div className={styles.otherInputWrapper}>
+                    <input
+                      type="text"
+                      placeholder={t(
+                        "findInterpreter.filters.otherLanguagePlaceholder"
+                      )}
+                      value={otherLanguage}
+                      onChange={(e) => setOtherLanguage(e.target.value)}
+                      className={styles.otherInput}
+                    />
+                    <button
+                      type="button"
+                      className={styles.addBtn}
+                      onClick={() => {
+                        if (
+                          otherLanguage.trim() &&
+                          !tempFilters.languages.includes(otherLanguage.trim())
+                        ) {
+                          handleTempLanguageToggle(otherLanguage.trim());
+                          setOtherLanguage("");
+                        }
+                      }}
+                    >
+                      {t("findInterpreter.filters.addButton")}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Specializations */}
+                <div className={styles.filterSection}>
+                  <label className={styles.labelWithTooltip}>
+                    {t("findInterpreter.filters.specializations")}
+                    <span className={styles.tooltipWrapper}>
+                      <FaInfoCircle className={styles.infoIcon} />
+                      <span className={styles.tooltip}>
+                        {t("findInterpreter.filters.specializationsTooltip")}
+                      </span>
+                    </span>
+                  </label>
+                  <div className={styles.checkboxGroup}>
+                    {[
+                      "Medical",
+                      "Legal",
+                      "Business",
+                      "Technical",
+                      "Educational",
+                      "Tourism",
+                      "Conference",
+                      "Media",
+                      "Government",
+                      "Finance",
+                      "Marketing",
+                      "IT & Software",
+                    ].map((spec) => (
+                      <div key={spec} className={styles.checkboxItem}>
+                        <input
+                          type="checkbox"
+                          id={`spec-${spec}`}
+                          checked={tempFilters.specializations.includes(spec)}
+                          onChange={() => handleTempSpecializationToggle(spec)}
+                        />
+                        <label htmlFor={`spec-${spec}`}>{spec}</label>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Other Specialization Input */}
+                  <div className={styles.otherInputWrapper}>
+                    <input
+                      type="text"
+                      placeholder={t(
+                        "findInterpreter.filters.otherSpecializationPlaceholder"
+                      )}
+                      value={otherSpecialization}
+                      onChange={(e) => setOtherSpecialization(e.target.value)}
+                      className={styles.otherInput}
+                    />
+                    <button
+                      type="button"
+                      className={styles.addBtn}
+                      onClick={() => {
+                        if (
+                          otherSpecialization.trim() &&
+                          !tempFilters.specializations.includes(
+                            otherSpecialization.trim()
+                          )
+                        ) {
+                          handleTempSpecializationToggle(
+                            otherSpecialization.trim()
+                          );
+                          setOtherSpecialization("");
+                        }
+                      }}
+                    >
+                      {t("findInterpreter.filters.addButton")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button
+                  className={styles.clearModalBtn}
+                  onClick={() => {
+                    setTempFilters({
+                      location: "",
+                      languages: [],
+                      specializations: [],
+                    });
+                  }}
+                >
+                  {t("findInterpreter.filters.clearAll")}
+                </button>
+                <button
+                  className={styles.applyModalBtn}
+                  onClick={handleApplyAdvancedFilters}
+                >
+                  {t("findInterpreter.filters.apply")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className={styles.pageHeader}>
           <div className={styles.headerContent}>
@@ -306,24 +593,6 @@ const FindInterpreterPage = () => {
                   className={styles.searchInput}
                 />
               </form>
-            </div>
-
-            {/* Languages Filter */}
-            <div className={styles.filterSection}>
-              <label>{t("findInterpreter.filters.languages")}</label>
-              <div className={styles.checkboxGroup}>
-                {availableLanguages.slice(0, 10).map((lang) => (
-                  <div key={lang} className={styles.checkboxItem}>
-                    <input
-                      type="checkbox"
-                      id={`lang-${lang}`}
-                      checked={filters.languages.includes(lang)}
-                      onChange={() => handleLanguageToggle(lang)}
-                    />
-                    <label htmlFor={`lang-${lang}`}>{lang}</label>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Hourly Rate Filter */}
@@ -388,50 +657,10 @@ const FindInterpreterPage = () => {
             {/* Advanced Filters Toggle */}
             <button
               className={styles.advancedToggle}
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              onClick={handleOpenAdvancedFilters}
             >
-              {showAdvancedFilters ? "▲" : "▼"}{" "}
               {t("findInterpreter.filters.advanced")}
             </button>
-
-            {/* Advanced Filters */}
-            {showAdvancedFilters && (
-              <>
-                {/* Location */}
-                <div className={styles.filterSection}>
-                  <label>{t("findInterpreter.filters.location")}</label>
-                  <input
-                    type="text"
-                    placeholder={t(
-                      "findInterpreter.filters.locationPlaceholder"
-                    )}
-                    value={filters.location}
-                    onChange={(e) =>
-                      handleFilterChange("location", e.target.value)
-                    }
-                    className={styles.searchInput}
-                  />
-                </div>
-
-                {/* Specializations */}
-                <div className={styles.filterSection}>
-                  <label>{t("findInterpreter.filters.specializations")}</label>
-                  <div className={styles.checkboxGroup}>
-                    {availableSpecializations.slice(0, 8).map((spec) => (
-                      <div key={spec} className={styles.checkboxItem}>
-                        <input
-                          type="checkbox"
-                          id={`spec-${spec}`}
-                          checked={filters.specializations.includes(spec)}
-                          onChange={() => handleSpecializationToggle(spec)}
-                        />
-                        <label htmlFor={`spec-${spec}`}>{spec}</label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
 
             <button className={styles.applyBtn} onClick={fetchInterpreters}>
               {t("findInterpreter.filters.apply")}

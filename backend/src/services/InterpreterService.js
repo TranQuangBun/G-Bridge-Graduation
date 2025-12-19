@@ -27,7 +27,14 @@ export class InterpreterService {
       verificationStatus = "",
       isAvailable = "",
       minRating = "",
+      rating = "",
+      minRate = "",
+      maxRate = "",
+      minExperience = "",
+      location = "",
       province = "",
+      sortBy = "createdAt",
+      sortOrder = "DESC",
     } = filters;
 
     const queryBuilder = AppDataSource.getRepository(User)
@@ -67,19 +74,75 @@ export class InterpreterService {
       });
     }
 
+    if (rating) {
+      queryBuilder.andWhere("profile.rating >= :rating", {
+        rating: parseFloat(rating),
+      });
+    }
+
+    if (minRate) {
+      queryBuilder.andWhere("profile.hourlyRate >= :minRate", {
+        minRate: parseFloat(minRate),
+      });
+    }
+
+    if (maxRate) {
+      queryBuilder.andWhere("profile.hourlyRate <= :maxRate", {
+        maxRate: parseFloat(maxRate),
+      });
+    }
+
+    if (minExperience) {
+      queryBuilder.andWhere("profile.experience >= :minExperience", {
+        minExperience: parseInt(minExperience),
+      });
+    }
+
+    if (location) {
+      queryBuilder.andWhere(
+        "(profile.province LIKE :location OR profile.city LIKE :location OR profile.address LIKE :location)",
+        { location: `%${location}%` }
+      );
+    }
+
     if (province) {
       queryBuilder.andWhere("profile.province = :province", { province });
     }
 
     if (languages) {
-      const languageIds = languages.split(",").map((id) => parseInt(id));
-      queryBuilder.andWhere("languages.id IN (:...languageIds)", {
-        languageIds,
-      });
+      // Support both language names and IDs
+      const languageList = languages.split(",").map((l) => l.trim());
+
+      // Check if first item is a number (ID) or string (name)
+      const isNumeric = !isNaN(parseInt(languageList[0]));
+
+      if (isNumeric) {
+        const languageIds = languageList.map((id) => parseInt(id));
+        queryBuilder.andWhere("languages.id IN (:...languageIds)", {
+          languageIds,
+        });
+      } else {
+        // Filter by language names
+        queryBuilder.andWhere("languages.name IN (:...languageNames)", {
+          languageNames: languageList,
+        });
+      }
     }
 
+    // Dynamic sorting
+    const validSortFields = {
+      createdAt: "user.createdAt",
+      rating: "profile.rating",
+      hourlyRate: "profile.hourlyRate",
+      experience: "profile.experience",
+      totalReviews: "profile.totalReviews",
+    };
+
+    const sortField = validSortFields[sortBy] || validSortFields.createdAt;
+    const order = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
     queryBuilder
-      .orderBy("profile.rating", "DESC")
+      .orderBy(sortField, order)
       .addOrderBy("user.createdAt", "DESC")
       .skip((parseInt(page) - 1) * parseInt(limit))
       .take(parseInt(limit));

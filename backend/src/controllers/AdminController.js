@@ -8,14 +8,12 @@ const adminService = new AdminService();
 export async function getPendingCertifications(req, res) {
   try {
     const result = await adminService.getPendingCertifications(req.query);
-    return res.status(200).json({
-      success: true,
-      message: "Certifications fetched successfully",
-      data: {
-        certifications: result.certifications,
-        pagination: result.pagination,
-      },
-    });
+    return sendPaginated(
+      res,
+      result.certifications,
+      result.pagination,
+      "Certifications fetched successfully"
+    );
   } catch (error) {
     logError(error, "Fetching certifications");
     return sendError(res, "Error fetching certifications", 500, error);
@@ -27,7 +25,11 @@ export async function approveCertification(req, res) {
     const { id } = req.params;
     const adminId = req.user?.sub || req.user?.id;
     const certification = await adminService.approveCertification(id, adminId);
-    return sendSuccess(res, certification, "Certification approved successfully");
+    return sendSuccess(
+      res,
+      certification,
+      "Certification approved successfully"
+    );
   } catch (error) {
     if (error instanceof AppError) {
       return sendError(res, error.message, error.statusCode || 404);
@@ -42,8 +44,16 @@ export async function rejectCertification(req, res) {
     const { id } = req.params;
     const adminId = req.user?.sub || req.user?.id;
     const { reason } = req.body;
-    const certification = await adminService.rejectCertification(id, adminId, reason);
-    return sendSuccess(res, certification, "Certification rejected successfully");
+    const certification = await adminService.rejectCertification(
+      id,
+      adminId,
+      reason
+    );
+    return sendSuccess(
+      res,
+      certification,
+      "Certification rejected successfully"
+    );
   } catch (error) {
     if (error instanceof AppError) {
       return sendError(res, error.message, error.statusCode || 404);
@@ -89,7 +99,11 @@ export async function rejectOrganization(req, res) {
     const { id } = req.params;
     const adminId = req.user?.sub || req.user?.id;
     const { reason } = req.body;
-    const organization = await adminService.rejectOrganization(id, adminId, reason);
+    const organization = await adminService.rejectOrganization(
+      id,
+      adminId,
+      reason
+    );
     return sendSuccess(res, organization, "Organization rejected successfully");
   } catch (error) {
     if (error instanceof AppError) {
@@ -118,7 +132,12 @@ export async function createSystemNotification(req, res) {
     );
   } catch (error) {
     logError(error, "Creating system notification");
-    return sendError(res, error.message || "Error creating system notification", 500, error);
+    return sendError(
+      res,
+      error.message || "Error creating system notification",
+      500,
+      error
+    );
   }
 }
 

@@ -1,23 +1,26 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../translet/LanguageContext";
+import { ROUTES } from "../../constants";
 import interpreterService from "../../services/interpreterService";
 import { toast } from "react-toastify";
 import styles from "./InterpreterModal.module.css";
-import { 
-  FaStar, 
-  FaBriefcase, 
-  FaDollarSign, 
-  FaMapMarkerAlt, 
+import {
+  FaStar,
+  FaBriefcase,
+  FaDollarSign,
+  FaMapMarkerAlt,
   FaBullseye,
   FaEdit,
   FaGlobe,
-  FaLock
+  FaLock,
 } from "react-icons/fa";
 
 const InterpreterModal = ({ interpreterId, onClose }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [interpreter, setInterpreter] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +62,11 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
       return;
     }
     toast.info("Booking feature coming soon!");
+  };
+
+  const handleUpgradeToPremium = () => {
+    onClose(); // Close modal first
+    navigate(ROUTES.PRICING); // Navigate to pricing/subscription page
   };
 
   const handleBackdropClick = (e) => {
@@ -138,7 +146,8 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                 {t("interpreterModal.years")}
               </span>
               <span className={styles.infoItem}>
-                <FaDollarSign /> ${Number(interpreter.profile?.hourlyRate || 0).toFixed(2)}/hr
+                <FaDollarSign /> $
+                {Number(interpreter.profile?.hourlyRate || 0).toFixed(2)}/hr
               </span>
               <span className={styles.infoItem}>
                 <FaMapMarkerAlt /> {interpreter.address || "Not specified"}
@@ -150,12 +159,17 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
         {/* Premium Access Warning */}
         {!hasPremiumAccess && (
           <div className={styles.premiumWarning}>
-            <div className={styles.warningIcon}><FaLock /></div>
+            <div className={styles.warningIcon}>
+              <FaLock />
+            </div>
             <div className={styles.warningText}>
               <strong>{t("interpreterModal.premiumRequired")}</strong>
               <p>{t("interpreterModal.premiumMessage")}</p>
             </div>
-            <button className={styles.upgradeBtn}>
+            <button
+              className={styles.upgradeBtn}
+              onClick={handleUpgradeToPremium}
+            >
               {t("interpreterModal.upgradeToPremium")}
             </button>
           </div>
@@ -167,7 +181,9 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {interpreter.profile?.bio && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}><FaEdit /></span>
+                <span className={styles.icon}>
+                  <FaEdit />
+                </span>
                 {t("interpreterModal.about")}
               </h3>
               <p className={styles.bio}>{interpreter.profile.bio}</p>
@@ -177,7 +193,9 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {/* Languages Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}><FaGlobe /></span>
+              <span className={styles.icon}>
+                <FaGlobe />
+              </span>
               {t("interpreterModal.languages")}
             </h3>
             <div className={styles.tagsList}>
@@ -193,7 +211,9 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {interpreter.profile?.specializations?.length > 0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}><FaBullseye /></span>
+                <span className={styles.icon}>
+                  <FaBullseye />
+                </span>
                 {t("interpreterModal.specializations")}
               </h3>
               <div className={styles.tagsList}>
@@ -365,7 +385,9 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
             </div>
             {!hasPremiumAccess && (
               <div className={styles.blurOverlay}>
-                <div className={styles.lockIcon}><FaLock /></div>
+                <div className={styles.lockIcon}>
+                  <FaLock />
+                </div>
                 <p>{t("interpreterModal.upgradeToViewContact")}</p>
               </div>
             )}
