@@ -8,6 +8,13 @@ import {
   rejectOrganization,
   createSystemNotification,
   getDashboardStats,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  toggleUserStatus,
+  getRevenueStats,
+  getAllPayments,
 } from "../controllers/AdminController.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
 
@@ -32,6 +39,17 @@ router.post("/organizations/:id/reject", rejectOrganization);
 
 // System Notifications
 router.post("/notifications/system", createSystemNotification);
+
+// User Management
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserById);
+router.put("/users/:id", updateUser);
+router.delete("/users/:id", deleteUser);
+router.patch("/users/:id/toggle-status", toggleUserStatus);
+
+// Revenue Management
+router.get("/revenue/stats", getRevenueStats);
+router.get("/revenue/payments", getAllPayments);
 
 export default router;
 

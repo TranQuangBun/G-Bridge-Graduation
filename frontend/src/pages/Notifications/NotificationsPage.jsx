@@ -182,7 +182,10 @@ const NotificationsPage = () => {
                     </div>
                     <h3 className={styles.notificationTitle}>{notification.title}</h3>
                     {notification.message && (
-                      <p className={styles.notificationMessage}>{notification.message}</p>
+                      <div
+                        className={styles.notificationMessage}
+                        dangerouslySetInnerHTML={{ __html: notification.message }}
+                      />
                     )}
                   </div>
                   {!notification.isRead && (

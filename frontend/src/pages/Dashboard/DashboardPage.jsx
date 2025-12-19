@@ -27,17 +27,7 @@ import {
   FaHeart,
   FaReply,
   FaBookmark,
-  FaCamera,
-  FaGlobe,
-  FaMoon,
-  FaBell,
-  FaLock,
-  FaHistory,
-  FaTrash,
-  FaEye,
-  FaEyeSlash,
 } from "react-icons/fa";
-import { toast } from "react-toastify";
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -137,7 +127,8 @@ function DashboardPage() {
     seconds: 0,
   });
 
-  // Settings state
+  // Settings state (reserved for future use)
+  // eslint-disable-next-line no-unused-vars
   const [settingsData, setSettingsData] = useState({
     avatar: null,
     name: user?.fullName || "",
@@ -145,18 +136,27 @@ function DashboardPage() {
     phone: user?.phone || "",
     role: user?.role || "interpreter",
   });
+  // eslint-disable-next-line no-unused-vars
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  // eslint-disable-next-line no-unused-vars
   const [themeMode, setThemeMode] = useState("light");
+  // eslint-disable-next-line no-unused-vars
   const [emailNotifications, setEmailNotifications] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [pushNotifications, setPushNotifications] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [smsNotifications, setSmsNotifications] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+  // eslint-disable-next-line no-unused-vars
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,

@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Editor } from "react-draft-wysiwyg";
+import { EditorState, convertToRaw } from "draft-js";
+import draftToHtml from "draftjs-to-html";
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
 import adminService from "../../services/adminService";
@@ -15,6 +19,7 @@ const SystemNotificationsPage = () => {
     recipientIds: "",
     sendToAll: true,
   });
+  const [editorState, setEditorState] = useState(() => EditorState.createEmpty());
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -29,10 +34,21 @@ const SystemNotificationsPage = () => {
     setLoading(true);
     setSuccess(false);
 
+    // Convert editor state to HTML
+    const htmlContent = draftToHtml(convertToRaw(editorState.getCurrentContent()));
+    
+    // Check if message has content (strip HTML tags)
+    const messageText = htmlContent.replace(/<[^>]*>/g, "").trim();
+    if (!messageText) {
+      alert("Vui lòng nhập nội dung thông báo");
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = {
         title: formData.title,
-        message: formData.message,
+        message: htmlContent, // Send HTML content
         ...(formData.sendToAll
           ? {}
           : {
@@ -52,6 +68,7 @@ const SystemNotificationsPage = () => {
           recipientIds: "",
           sendToAll: true,
         });
+        setEditorState(EditorState.createEmpty());
         setTimeout(() => setSuccess(false), 3000);
       }
     } catch (error) {
@@ -91,14 +108,101 @@ const SystemNotificationsPage = () => {
 
           <div className={styles.formGroup}>
             <label htmlFor="message">Nội dung *</label>
-            <textarea
-              id="message"
-              value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              required
-              rows={6}
-              placeholder="Nhập nội dung thông báo"
-            />
+            <div className={styles.editorWrapper}>
+              <Editor
+                editorState={editorState}
+                onEditorStateChange={setEditorState}
+                placeholder="Nhập nội dung thông báo (có thể sử dụng định dạng: in đậm, in nghiêng, gạch chân, ...)"
+                toolbar={{
+                  options: [
+                    "inline",
+                    "blockType",
+                    "fontSize",
+                    "fontFamily",
+                    "list",
+                    "textAlign",
+                    "colorPicker",
+                    "link",
+                    "emoji",
+                    "image",
+                    "remove",
+                    "history",
+                  ],
+                  inline: {
+                    inDropdown: false,
+                    className: undefined,
+                    component: undefined,
+                    dropdownClassName: undefined,
+                    options: ["bold", "italic", "underline", "strikethrough", "monospace"],
+                  },
+                  blockType: {
+                    inDropdown: true,
+                    options: ["Normal", "H1", "H2", "H3", "H4", "H5", "H6", "Blockquote"],
+                    className: undefined,
+                    component: undefined,
+                    dropdownClassName: undefined,
+                  },
+                  fontSize: {
+                    options: [8, 9, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48, 60, 72, 96],
+                    className: undefined,
+                    component: undefined,
+                    dropdownClassName: undefined,
+                  },
+                  list: {
+                    inDropdown: false,
+                    className: undefined,
+                    component: undefined,
+                    dropdownClassName: undefined,
+                    options: ["unordered", "ordered", "indent", "outdent"],
+                  },
+                  textAlign: {
+                    inDropdown: false,
+                    className: undefined,
+                    component: undefined,
+                    dropdownClassName: undefined,
+                    options: ["left", "center", "right", "justify"],
+                  },
+                  colorPicker: {
+                    className: undefined,
+                    component: undefined,
+                    popupClassName: undefined,
+                    colors: [
+                      "rgb(97,189,109)",
+                      "rgb(26,188,156)",
+                      "rgb(84,172,210)",
+                      "rgb(44,130,201)",
+                      "rgb(147,101,184)",
+                      "rgb(71,85,119)",
+                      "rgb(204,204,204)",
+                      "rgb(65,168,95)",
+                      "rgb(0,168,133)",
+                      "rgb(61,142,185)",
+                      "rgb(41,105,176)",
+                      "rgb(85,57,130)",
+                      "rgb(40,50,78)",
+                      "rgb(0,0,0)",
+                      "rgb(247,218,100)",
+                      "rgb(251,160,38)",
+                      "rgb(235,107,86)",
+                      "rgb(226,80,65)",
+                      "rgb(163,143,132)",
+                      "rgb(239,239,239)",
+                      "rgb(255,255,255)",
+                      "rgb(250,197,28)",
+                      "rgb(243,121,52)",
+                      "rgb(209,72,65)",
+                      "rgb(184,49,47)",
+                      "rgb(124,112,107)",
+                      "rgb(209,213,216)",
+                    ],
+                  },
+                }}
+                editorClassName={styles.editor}
+              />
+            </div>
+            <small className={styles.helpText}>
+              Bạn có thể sử dụng các công cụ định dạng ở trên để tạo nội dung phong phú
+            </small>
           </div>
 
           <div className={styles.formGroup}>
@@ -145,7 +249,7 @@ const SystemNotificationsPage = () => {
             <button
               type="submit"
               className={styles.submitButton}
-              disabled={loading || !formData.title || !formData.message}
+              disabled={loading || !formData.title || !draftToHtml(convertToRaw(editorState.getCurrentContent())).replace(/<[^>]*>/g, "").trim()}
             >
               {loading ? "Đang gửi..." : "Gửi thông báo"}
             </button>

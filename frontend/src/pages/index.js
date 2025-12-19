@@ -16,6 +16,8 @@ export { default as AdminRegisterPage } from "./AdminRegister";
 export { default as CertificateApprovalPage } from "./CertificateApproval";
 export { default as OrganizationApprovalPage } from "./OrganizationApproval";
 export { default as SystemNotificationsPage } from "./SystemNotifications";
+export { default as UserManagementPage } from "./UserManagement";
+export { default as RevenueManagementPage } from "./RevenueManagement";
 export { default as PostJobPage } from "./PostJob";
 export { default as JobDetailPage } from "./JobDetail/JobDetailPage";
 export { default as MessagesPage } from "./Messages/MessagesPage";

@@ -29,7 +29,6 @@ const FindInterpreterPage = () => {
   const [selectedInterpreterId, setSelectedInterpreterId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [savedInterpreters, setSavedInterpreters] = useState(new Set());
-  const [loadingSaved, setLoadingSaved] = useState(true);
 
   // Filter options
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -62,7 +61,6 @@ const FindInterpreterPage = () => {
   // Load saved interpreters function
   const loadSavedInterpreters = useCallback(async () => {
     try {
-      setLoadingSaved(true);
       const result = await savedInterpreterService.getAllSavedInterpreters();
       console.log("🔄 Loading saved interpreters:", result);
 
@@ -77,8 +75,6 @@ const FindInterpreterPage = () => {
     } catch (error) {
       console.error("❌ Error loading saved interpreters:", error);
       setSavedInterpreters(new Set());
-    } finally {
-      setLoadingSaved(false);
     }
   }, []);
 
@@ -118,6 +114,8 @@ const FindInterpreterPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.sortBy, filters.sortOrder, user]);
+  
+  // eslint-disable-next-line no-unused-vars
   const fetchFilterOptions = async () => {
     try {
       const [langsRes, specsRes] = await Promise.all([

@@ -138,6 +138,20 @@ const AdminDashboardPage = () => {
             </button>
             <button
               className={styles.actionButton}
+              onClick={() => navigate(ROUTES.ADMIN_USERS)}
+            >
+              <span className={styles.actionIcon}>👥</span>
+              <span>Quản lý tài khoản</span>
+            </button>
+            <button
+              className={styles.actionButton}
+              onClick={() => navigate(ROUTES.ADMIN_REVENUE)}
+            >
+              <span className={styles.actionIcon}>💰</span>
+              <span>Quản lý doanh thu</span>
+            </button>
+            <button
+              className={styles.actionButton}
               onClick={() => navigate(ROUTES.ADMIN_JOB_MODERATION)}
             >
               <span className={styles.actionIcon}>💼</span>

@@ -76,6 +76,71 @@ const adminService = {
       throw error.response?.data || { message: "Failed to create system notification" };
     }
   },
+
+  // User Management
+  getAllUsers: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/admin/users", { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to get users" };
+    }
+  },
+
+  getUserById: async (id) => {
+    try {
+      const response = await apiClient.get(`/admin/users/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to get user" };
+    }
+  },
+
+  updateUser: async (id, data) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to update user" };
+    }
+  },
+
+  deleteUser: async (id) => {
+    try {
+      const response = await apiClient.delete(`/admin/users/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to delete user" };
+    }
+  },
+
+  toggleUserStatus: async (id) => {
+    try {
+      const response = await apiClient.patch(`/admin/users/${id}/toggle-status`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to toggle user status" };
+    }
+  },
+
+  // Revenue Management
+  getRevenueStats: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/admin/revenue/stats", { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to get revenue stats" };
+    }
+  },
+
+  getAllPayments: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/admin/revenue/payments", { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to get payments" };
+    }
+  },
 };
 
 export default adminService;

@@ -13,7 +13,7 @@ export const vnpayConfig = {
     process.env.VNP_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
   vnp_ReturnUrl:
     process.env.VNP_RETURN_URL ||
-    "http://localhost:3000/payment/vnpay/callback",
+    "http://localhost:3333/payment/vnpay/callback",
   vnp_IpnUrl:
     process.env.VNP_IPN_URL ||
     "http://localhost:4000/api/payments/webhook/vnpay",
@@ -102,10 +102,10 @@ export const paypalConfig = {
   clientSecret: process.env.PAYPAL_CLIENT_SECRET || "YOUR_CLIENT_SECRET",
   returnUrl:
     process.env.PAYPAL_RETURN_URL ||
-    "http://localhost:3000/payment/paypal/success",
+    "http://localhost:3333/payment/paypal/success",
   cancelUrl:
     process.env.PAYPAL_CANCEL_URL ||
-    "http://localhost:3000/payment/paypal/cancel",
+    "http://localhost:3333/payment/paypal/cancel",
   webhookUrl:
     process.env.PAYPAL_WEBHOOK_URL ||
     "http://localhost:4000/api/payments/webhook/paypal",
@@ -119,7 +119,7 @@ export const momoConfig = {
     process.env.MOMO_API_URL || "https://test-payment.momo.vn/v2/gateway/api/create",
   returnUrl:
     process.env.MOMO_RETURN_URL ||
-    "http://localhost:3000/payment/momo/callback",
+    "http://localhost:3333/payment/momo/callback",
   notifyUrl:
     process.env.MOMO_NOTIFY_URL ||
     "http://localhost:4000/api/payments/webhook/momo",

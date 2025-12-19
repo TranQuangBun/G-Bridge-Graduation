@@ -57,7 +57,7 @@ const CertificateApprovalPage = () => {
       
       if (response.success && response.data) {
         setCertifications(response.data.certifications || []);
-        setPagination(response.data.pagination || pagination);
+        setPagination((prev) => response.data.pagination || prev);
       } else {
         console.error("Response not successful:", response);
         setCertifications([]);
