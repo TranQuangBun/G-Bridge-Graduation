@@ -23,3 +23,5 @@ export { default as JobDetailPage } from "./JobDetail/JobDetailPage";
 export { default as MessagesPage } from "./Messages/MessagesPage";
 export { default as SavedJobsPage } from "./Dashboard/SavedJobs/SavedJobs";
 export { default as SavedInterpretersPage } from "./Dashboard/SavedInterpreters/SavedInterpreters";
+export { default as ForgotPasswordPage } from "./ForgotPassword/ForgotPasswordPage";
+export { default as ResetPasswordPage } from "./ResetPassword/ResetPasswordPage";

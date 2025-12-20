@@ -54,6 +54,8 @@ export class ClientProfile {
   foundedYear;
   licenseNumber;
   taxId;
+  businessLicense;
+  licenseVerificationStatus;
   billingAddress;
   paymentMethod;
   preferredLanguages;
@@ -135,6 +137,15 @@ export const ClientProfileSchema = new EntitySchema({
       type: "varchar",
       length: 50,
       nullable: true,
+    },
+    businessLicense: {
+      type: "text",
+      nullable: true,
+    },
+    licenseVerificationStatus: {
+      type: "enum",
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     billingAddress: {
       type: "text",

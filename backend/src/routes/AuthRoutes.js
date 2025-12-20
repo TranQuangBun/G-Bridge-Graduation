@@ -7,10 +7,16 @@ import {
   updateUserProfile,
   updateInterpreterProfile,
   uploadAvatar,
+  uploadBusinessLicense,
   toggleActiveStatus,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/AuthController.js";
 import { authRequired } from "../middleware/auth.js";
-import { uploadAvatar as uploadAvatarMiddleware } from "../middleware/Upload.js";
+import {
+  uploadAvatar as uploadAvatarMiddleware,
+  uploadBusinessLicense as uploadBusinessLicenseMiddleware,
+} from "../middleware/Upload.js";
 
 const router = express.Router();
 
@@ -26,6 +32,14 @@ router.post(
   uploadAvatarMiddleware.single("avatar"),
   uploadAvatar
 );
+router.post(
+  "/upload-business-license",
+  authRequired,
+  uploadBusinessLicenseMiddleware.single("businessLicense"),
+  uploadBusinessLicense
+);
 router.put("/toggle-active-status", authRequired, toggleActiveStatus);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

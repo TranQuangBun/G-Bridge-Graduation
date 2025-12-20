@@ -12,7 +12,9 @@ export class UserProfileService {
   }
 
   async getUserById(userId) {
-    const user = await this.userRepository.findByIdWithProfiles(parseInt(userId));
+    const user = await this.userRepository.findByIdWithProfiles(
+      parseInt(userId)
+    );
     if (!user) {
       throw new NotFoundError("User");
     }
@@ -40,65 +42,81 @@ export class UserProfileService {
     if (address !== undefined) updatePayload.address = address;
     if (email !== undefined) updatePayload.email = email;
 
-    const updated = await this.userRepository.update(parseInt(userId), updatePayload);
-    
+    const updated = await this.userRepository.update(
+      parseInt(userId),
+      updatePayload
+    );
+
     // Update profile completeness if user is interpreter
     if (updated.role === "interpreter") {
       await updateProfileCompleteness(parseInt(userId));
     }
-    
+
     const userResponse = { ...updated };
     delete userResponse.passwordHash;
     return userResponse;
   }
 
   async updateInterpreterProfileData(userId, profileData) {
-    const profile = await this.interpreterProfileRepository.findByUserId(parseInt(userId));
+    const profile = await this.interpreterProfileRepository.findByUserId(
+      parseInt(userId)
+    );
     if (!profile) {
       throw new NotFoundError("Interpreter profile");
     }
 
     // Ensure specializations is properly formatted as array
     const updateData = { ...profileData };
-    
+
     console.log("updateInterpreterProfileData - Received profileData:", {
       profileData,
       specializations: profileData.specializations,
       specializationsType: typeof profileData.specializations,
       isArray: Array.isArray(profileData.specializations),
-      length: profileData.specializations?.length
+      length: profileData.specializations?.length,
     });
-    
+
     if (updateData.specializations !== undefined) {
       // Ensure it's an array
       if (Array.isArray(updateData.specializations)) {
         // Filter out empty strings and trim - but keep the array even if empty
         updateData.specializations = updateData.specializations
-          .filter(spec => spec && typeof spec === 'string' && spec.trim().length > 0)
-          .map(spec => spec.trim());
-        
+          .filter(
+            (spec) => spec && typeof spec === "string" && spec.trim().length > 0
+          )
+          .map((spec) => spec.trim());
+
         console.log("Processed specializations array:", {
           original: profileData.specializations,
           processed: updateData.specializations,
-          length: updateData.specializations.length
+          length: updateData.specializations.length,
         });
-      } else if (typeof updateData.specializations === 'string') {
+      } else if (typeof updateData.specializations === "string") {
         // If it's a string, try to parse it or convert to array
         try {
           const parsed = JSON.parse(updateData.specializations);
-          updateData.specializations = Array.isArray(parsed) 
-            ? parsed.filter(spec => spec && typeof spec === 'string' && spec.trim().length > 0).map(spec => spec.trim())
+          updateData.specializations = Array.isArray(parsed)
+            ? parsed
+                .filter(
+                  (spec) =>
+                    spec && typeof spec === "string" && spec.trim().length > 0
+                )
+                .map((spec) => spec.trim())
             : [];
         } catch {
           // If not valid JSON, treat as single value or empty array
-          updateData.specializations = updateData.specializations.trim() ? [updateData.specializations.trim()] : [];
+          updateData.specializations = updateData.specializations.trim()
+            ? [updateData.specializations.trim()]
+            : [];
         }
       } else {
         updateData.specializations = [];
       }
     } else {
       // If specializations is not provided, keep the existing value
-      console.log("specializations not provided in updateData, keeping existing value");
+      console.log(
+        "specializations not provided in updateData, keeping existing value"
+      );
     }
 
     console.log("Updating interpreter profile:", {
@@ -108,7 +126,7 @@ export class UserProfileService {
       specializations: updateData.specializations,
       specializationsType: typeof updateData.specializations,
       isArray: Array.isArray(updateData.specializations),
-      currentSpecializations: profile.specializations
+      currentSpecializations: profile.specializations,
     });
 
     // Update fields individually to ensure proper handling
@@ -121,54 +139,56 @@ export class UserProfileService {
     if (updateData.portfolio !== undefined) {
       profile.portfolio = updateData.portfolio;
     }
-    
+
     // Explicitly set specializations - ensure it's properly formatted
     if (updateData.specializations !== undefined) {
       // Ensure it's an array for JSON column
-      const specializationsArray = Array.isArray(updateData.specializations) 
-        ? updateData.specializations 
+      const specializationsArray = Array.isArray(updateData.specializations)
+        ? updateData.specializations
         : [];
-      
+
       // Use query builder to explicitly update JSON field if needed
       // But first try with save() which should work
       profile.specializations = specializationsArray;
-      
+
       console.log("Setting specializations on profile entity:", {
         value: profile.specializations,
         type: typeof profile.specializations,
         isArray: Array.isArray(profile.specializations),
-        length: profile.specializations.length
+        length: profile.specializations.length,
       });
     }
-    
+
     // Save the profile entity - TypeORM should handle JSON serialization
-    const savedProfile = await this.interpreterProfileRepository.repository.save(profile);
-    
+    const savedProfile =
+      await this.interpreterProfileRepository.repository.save(profile);
+
     console.log("Saved profile (immediately after save):", {
       profileId: savedProfile.id,
       specializations: savedProfile.specializations,
       specializationsType: typeof savedProfile.specializations,
       isArray: Array.isArray(savedProfile.specializations),
-      stringified: JSON.stringify(savedProfile.specializations)
+      stringified: JSON.stringify(savedProfile.specializations),
     });
-    
+
     // Update profile completeness
     await updateProfileCompleteness(parseInt(userId));
-    
+
     // Reload from database to get fresh data (in case of caching)
-    const updatedProfile = await this.interpreterProfileRepository.repository.findOne({
-      where: { id: savedProfile.id },
-      relations: ["user"],
-    });
-    
+    const updatedProfile =
+      await this.interpreterProfileRepository.repository.findOne({
+        where: { id: savedProfile.id },
+        relations: ["user"],
+      });
+
     console.log("Reloaded profile from database:", {
       profileId: updatedProfile.id,
       specializations: updatedProfile.specializations,
       specializationsType: typeof updatedProfile.specializations,
       isArray: Array.isArray(updatedProfile.specializations),
-      stringified: JSON.stringify(updatedProfile.specializations)
+      stringified: JSON.stringify(updatedProfile.specializations),
     });
-    
+
     return updatedProfile;
   }
 
@@ -178,10 +198,48 @@ export class UserProfileService {
       throw new NotFoundError("User");
     }
 
-    const updated = await this.userRepository.update(parseInt(userId), { avatar: avatarUrl });
+    const updated = await this.userRepository.update(parseInt(userId), {
+      avatar: avatarUrl,
+    });
     const userResponse = { ...updated };
     delete userResponse.passwordHash;
     return userResponse;
+  }
+
+  async updateClientProfileBusinessLicense(userId, licenseUrl) {
+    const user = await this.userRepository.findById(parseInt(userId));
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    if (user.role !== "client") {
+      throw new AppError("Only clients can upload business license", 403);
+    }
+
+    // Get or create client profile
+    let clientProfile = user.clientProfile;
+    if (!clientProfile) {
+      // Create new client profile if doesn't exist
+      const ClientProfileRepository =
+        require("../repositories/ClientProfileRepository.js").ClientProfileRepository;
+      const clientProfileRepo = new ClientProfileRepository();
+      clientProfile = await clientProfileRepo.create({
+        userId: parseInt(userId),
+        businessLicense: licenseUrl,
+        licenseVerificationStatus: "pending",
+      });
+    } else {
+      // Update existing client profile
+      const ClientProfileRepository =
+        require("../repositories/ClientProfileRepository.js").ClientProfileRepository;
+      const clientProfileRepo = new ClientProfileRepository();
+      clientProfile = await clientProfileRepo.update(clientProfile.id, {
+        businessLicense: licenseUrl,
+        licenseVerificationStatus: "pending",
+      });
+    }
+
+    return clientProfile;
   }
 
   async toggleUserActiveStatus(userId) {
@@ -192,7 +250,9 @@ export class UserProfileService {
 
     // Toggle isActive status
     const newStatus = !user.isActive;
-    const updated = await this.userRepository.update(parseInt(userId), { isActive: newStatus });
+    const updated = await this.userRepository.update(parseInt(userId), {
+      isActive: newStatus,
+    });
     const userResponse = { ...updated };
     delete userResponse.passwordHash;
     return userResponse;
@@ -210,14 +270,23 @@ export async function updateUserBasicInfo(userId, updateData) {
 }
 
 export async function updateInterpreterProfileData(userId, profileData) {
-  return await userProfileService.updateInterpreterProfileData(userId, profileData);
+  return await userProfileService.updateInterpreterProfileData(
+    userId,
+    profileData
+  );
 }
 
 export async function updateUserAvatar(userId, avatarUrl) {
   return await userProfileService.updateUserAvatar(userId, avatarUrl);
 }
 
+export async function updateClientProfileBusinessLicense(userId, licenseUrl) {
+  return await userProfileService.updateClientProfileBusinessLicense(
+    userId,
+    licenseUrl
+  );
+}
+
 export async function toggleUserActiveStatus(userId) {
   return await userProfileService.toggleUserActiveStatus(userId);
 }
-

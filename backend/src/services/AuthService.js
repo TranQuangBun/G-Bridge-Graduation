@@ -14,7 +14,8 @@ export class AuthService {
   }
 
   async registerUser(userData) {
-    const { email, password, fullName, role, phone, address, isVerified } = userData;
+    const { email, password, fullName, role, phone, address, isVerified } =
+      userData;
 
     const existing = await this.userRepository.findByEmail(email);
     if (existing) {
@@ -41,7 +42,7 @@ export class AuthService {
         verificationStatus: "pending",
         isAvailable: true,
       });
-      
+
       // Calculate initial profile completeness
       await updateProfileCompleteness(user.id);
     } else if (role === "client") {
@@ -56,13 +57,16 @@ export class AuthService {
     const token = this.generateToken(user);
 
     // Get full user data with profiles, languages, certifications (same as /auth/me)
-    const fullUserData = await this.userRepository.findByIdWithProfiles(user.id);
-    
+    const fullUserData = await this.userRepository.findByIdWithProfiles(
+      user.id
+    );
+
     const userResponse = { ...fullUserData };
     delete userResponse.passwordHash;
 
     // Extract profile, languages, certifications for easier frontend access
-    const profile = userResponse.interpreterProfile || userResponse.clientProfile || null;
+    const profile =
+      userResponse.interpreterProfile || userResponse.clientProfile || null;
     const languages = userResponse.languages || [];
     const certifications = userResponse.certifications || [];
 
@@ -93,13 +97,16 @@ export class AuthService {
     const token = this.generateToken(user);
 
     // Get full user data with profiles, languages, certifications (same as /auth/me)
-    const fullUserData = await this.userRepository.findByIdWithProfiles(user.id);
-    
+    const fullUserData = await this.userRepository.findByIdWithProfiles(
+      user.id
+    );
+
     const userResponse = { ...fullUserData };
     delete userResponse.passwordHash;
 
     // Extract profile, languages, certifications for easier frontend access
-    const profile = userResponse.interpreterProfile || userResponse.clientProfile || null;
+    const profile =
+      userResponse.interpreterProfile || userResponse.clientProfile || null;
     const languages = userResponse.languages || [];
     const certifications = userResponse.certifications || [];
 
@@ -135,3 +142,43 @@ export async function loginUser(email, password) {
   return await authService.loginUser(email, password);
 }
 
+export async function getUserByEmail(email) {
+  const userRepository = new UserRepository();
+  return await userRepository.findByEmail(email);
+}
+
+export async function updateUserResetToken(userId, token, expiry) {
+  const userRepository = new UserRepository();
+  return await userRepository.update(userId, {
+    resetPasswordToken: token,
+    resetPasswordExpiry: expiry,
+  });
+}
+
+export async function getUserByResetToken(token) {
+  const userRepository = new UserRepository();
+  const users = await userRepository.findAll();
+  const user = users.find(
+    (u) =>
+      u.resetPasswordToken === token &&
+      u.resetPasswordExpiry &&
+      new Date(u.resetPasswordExpiry) > new Date()
+  );
+  return user || null;
+}
+
+export async function updateUserPassword(userId, newPassword) {
+  const userRepository = new UserRepository();
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  return await userRepository.update(userId, {
+    passwordHash,
+  });
+}
+
+export async function clearUserResetToken(userId) {
+  const userRepository = new UserRepository();
+  return await userRepository.update(userId, {
+    resetPasswordToken: null,
+    resetPasswordExpiry: null,
+  });
+}
