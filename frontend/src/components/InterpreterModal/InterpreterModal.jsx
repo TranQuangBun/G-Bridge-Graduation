@@ -122,7 +122,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                 {interpreter.fullName?.charAt(0)?.toUpperCase()}
               </div>
             )}
-            {interpreter.profile?.rating >= 4.5 && (
+            {interpreter.interpreterProfile?.rating >= 4.5 && (
               <div className={styles.topRatedBadge}>
                 <FaStar /> {t("interpreterModal.topRated")}
               </div>
@@ -133,21 +133,26 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
             <h2 className={styles.interpreterName}>{interpreter.fullName}</h2>
             <div className={styles.ratingRow}>
               <span className={styles.rating}>
-                <FaStar /> {Number(interpreter.profile?.rating || 0).toFixed(1)}
+                <FaStar />{" "}
+                {Number(interpreter.interpreterProfile?.rating || 0).toFixed(1)}
               </span>
               <span className={styles.reviews}>
-                ({interpreter.profile?.totalReviews || 0}{" "}
+                ({interpreter.interpreterProfile?.totalReviews || 0}{" "}
                 {t("interpreterModal.reviews")})
               </span>
             </div>
             <div className={styles.quickInfo}>
               <span className={styles.infoItem}>
-                <FaBriefcase /> {interpreter.profile?.experience || 0}{" "}
+                <FaBriefcase />{" "}
+                {interpreter.interpreterProfile?.experience || 0}{" "}
                 {t("interpreterModal.years")}
               </span>
               <span className={styles.infoItem}>
                 <FaDollarSign /> $
-                {Number(interpreter.profile?.hourlyRate || 0).toFixed(2)}/hr
+                {Number(
+                  interpreter.interpreterProfile?.hourlyRate || 0
+                ).toFixed(2)}
+                /hr
               </span>
               <span className={styles.infoItem}>
                 <FaMapMarkerAlt /> {interpreter.address || "Not specified"}
@@ -178,7 +183,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
         {/* Content Section */}
         <div className={styles.modalBody}>
           {/* Bio Section */}
-          {interpreter.profile?.bio && (
+          {interpreter.interpreterProfile?.bio && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
                 <span className={styles.icon}>
@@ -186,7 +191,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                 </span>
                 {t("interpreterModal.about")}
               </h3>
-              <p className={styles.bio}>{interpreter.profile.bio}</p>
+              <p className={styles.bio}>{interpreter.interpreterProfile.bio}</p>
             </div>
           )}
 
@@ -208,7 +213,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           </div>
 
           {/* Specializations Section */}
-          {interpreter.profile?.specializations?.length > 0 && (
+          {interpreter.interpreterProfile?.specializations?.length > 0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
                 <span className={styles.icon}>
@@ -217,11 +222,13 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                 {t("interpreterModal.specializations")}
               </h3>
               <div className={styles.tagsList}>
-                {interpreter.profile.specializations.map((spec, idx) => (
-                  <span key={idx} className={styles.tag}>
-                    {spec}
-                  </span>
-                ))}
+                {interpreter.interpreterProfile.specializations.map(
+                  (spec, idx) => (
+                    <span key={idx} className={styles.tag}>
+                      {spec}
+                    </span>
+                  )
+                )}
               </div>
             </div>
           )}
@@ -238,7 +245,21 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                   <div key={cert.id} className={styles.certificationItem}>
                     <div className={styles.certIcon}>📜</div>
                     <div className={styles.certInfo}>
-                      <strong>{cert.name}</strong>
+                      <div className={styles.certHeader}>
+                        <strong>{cert.name}</strong>
+                        {cert.verificationStatus &&
+                          cert.verificationStatus !== "approved" && (
+                            <span
+                              className={`${styles.certStatusBadge} ${
+                                styles[cert.verificationStatus]
+                              }`}
+                            >
+                              {t(
+                                `interpreterModal.certificationStatus.${cert.verificationStatus}`
+                              )}
+                            </span>
+                          )}
+                      </div>
                       <p className={styles.certIssuer}>
                         {cert.issuingOrganization}
                       </p>
@@ -248,6 +269,22 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                           {new Date(cert.issueDate).toLocaleDateString()}
                         </p>
                       )}
+                      {cert.imageUrl && (
+                        <a
+                          href={
+                            cert.imageUrl.startsWith("http")
+                              ? cert.imageUrl
+                              : `http://localhost:4000${cert.imageUrl}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.viewCertBtn}
+                          download
+                        >
+                          {t("interpreterModal.viewCertificate") ||
+                            "View Certificate"}
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -256,9 +293,10 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           )}
 
           {/* Availability Section */}
-          {interpreter.profile?.availability &&
-            typeof interpreter.profile.availability === "object" &&
-            Object.keys(interpreter.profile.availability).length > 0 && (
+          {interpreter.interpreterProfile?.availability &&
+            typeof interpreter.interpreterProfile.availability === "object" &&
+            Object.keys(interpreter.interpreterProfile.availability).length >
+              0 && (
               <div className={styles.section}>
                 <h3 className={styles.sectionTitle}>
                   <span className={styles.icon}>📅</span>
@@ -298,7 +336,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
                     try {
                       // Get availability entries and normalize keys
                       const availabilityEntries = Object.entries(
-                        interpreter.profile.availability
+                        interpreter.interpreterProfile.availability
                       )
                         .map(([key, value]) => {
                           const normalizedKey =

@@ -149,4 +149,20 @@ export class OrganizationService {
     }
     return true;
   }
+
+  async updateOrganizationLicense(id, licenseUrl) {
+    const organization = await this.organizationRepository.findById(
+      parseInt(id)
+    );
+    if (!organization) {
+      throw new Error("Organization not found");
+    }
+
+    await this.organizationRepository.update(parseInt(id), {
+      businessLicense: licenseUrl,
+      licenseVerificationStatus: "pending",
+    });
+
+    return await this.organizationRepository.findById(parseInt(id));
+  }
 }

@@ -23,6 +23,8 @@ import {
   PostJobPage,
   JobDetailPage,
   MessagesPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
 } from "../pages";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
 import SavedJobs from "../pages/Dashboard/SavedJobs/SavedJobs";
@@ -138,6 +140,14 @@ const router = createBrowserRouter([
   {
     path: ROUTES.REGISTER,
     element: <RegisterPage />,
+  },
+  {
+    path: ROUTES.FORGOT_PASSWORD,
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: ROUTES.RESET_PASSWORD,
+    element: <ResetPasswordPage />,
   },
   {
     path: ROUTES.ADMIN_REGISTER,

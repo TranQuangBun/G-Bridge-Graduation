@@ -44,6 +44,7 @@ export async function getJobs(req, res) {
       maxSalary = "",
       status = "open",
       reviewStatus = "",
+      organizationName = "",
       sortBy = "createdDate",
       sortOrder = "DESC",
     } = req.query;
@@ -140,6 +141,14 @@ export async function getJobs(req, res) {
       const condition = hasWhere ? "andWhere" : "where";
       queryBuilder[condition]("job.reviewStatus = :reviewStatus", {
         reviewStatus,
+      });
+      hasWhere = true;
+    }
+
+    if (organizationName) {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("organization.name LIKE :organizationName", {
+        organizationName: `%${organizationName}%`,
       });
       hasWhere = true;
     }

@@ -33,6 +33,8 @@ export class User {
   isPremium;
   premiumExpiresAt;
   lastLoginAt;
+  resetPasswordToken;
+  resetPasswordExpiry;
   createdAt;
   updatedAt;
   interpreterProfile;
@@ -114,6 +116,15 @@ export const UserSchema = new EntitySchema({
       nullable: true,
     },
     lastLoginAt: {
+      type: "datetime",
+      nullable: true,
+    },
+    resetPasswordToken: {
+      type: "varchar",
+      length: 255,
+      nullable: true,
+    },
+    resetPasswordExpiry: {
       type: "datetime",
       nullable: true,
     },
