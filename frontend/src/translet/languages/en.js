@@ -23,6 +23,9 @@ const en = {
     edit: "Edit",
     delete: "Delete",
     notFound: "Not found",
+    cancel: "Cancel",
+    location: "Location",
+    startChat: "Start Chat",
   },
   header: {
     roles: {
@@ -387,6 +390,44 @@ const en = {
       accepted: "Accepted",
       rejected: "Rejected",
     },
+    completion: {
+      request: "Complete Job",
+      confirm: "Confirm Completion",
+      pending: "Pending Confirmation",
+      completed: "Completed",
+      confirmRequest: "Are you sure you want to request job completion?",
+      confirmComplete: "Confirm that the job has been completed?",
+      confirmCancel: "Cancel job completion request?",
+      requestSent: "Completion request has been sent!",
+      requestError: "Unable to send request",
+      confirmError: "Unable to confirm completion",
+      cancelled: "Request has been cancelled",
+      cancelError: "Unable to cancel request",
+      modalTitleRequest: "Request Job Completion",
+      modalTitleConfirm: "Confirm Completion",
+      modalTitleCancel: "Cancel Request",
+      modalMessageRequest:
+        "Are you sure you want to request completion for this job? The other party will be notified to confirm.",
+      modalMessageConfirm:
+        "Confirm that the job has been completed? Both parties will not be able to change this after confirmation.",
+      modalMessageCancel:
+        "Are you sure you want to cancel the job completion request?",
+      sendRequest: "Send Request",
+      confirmBtn: "Confirm",
+      cancelBtn: "Cancel Request",
+      jobCompleted: "Job Completed",
+      canReviewNow: "You can review this job now",
+      requestTitle: "Job Completion Request",
+      requestMessage:
+        "The other party has requested job completion. Do you agree?",
+      waitingConfirmation: "Waiting for Confirmation",
+      waitingMessage:
+        "You have requested job completion. Waiting for the other party to confirm.",
+      agree: "Agree",
+      cancelRequest: "Cancel Request",
+      hint: "Once both parties agree, the job will be marked as completed",
+      completionMarked: "Job has been marked as completed!",
+    },
   },
   dashboard: {
     pageTitle: "Dashboard",
@@ -580,6 +621,30 @@ const en = {
   },
   myJobs: {
     subtitle: "Manage your posted jobs",
+    status: {
+      open: "Open",
+      closed: "Closed",
+      expired: "Expired",
+    },
+    reviewStatus: {
+      approved: "Approved",
+      rejected: "Rejected",
+      pending: "Pending Review",
+    },
+    posted: "Posted",
+    expires: "Expires",
+    quantity: "Quantity",
+    buttons: {
+      view: "View",
+      edit: "Edit",
+      close: "Close",
+    },
+    closeModal: {
+      title: "Confirm Close Job",
+      message: "Are you sure you want to close the job",
+      warning: "Once closed, the job will no longer accept new applications.",
+      confirm: "Close Job",
+    },
   },
   postJob: {
     eyebrow: "For employers",
@@ -1289,6 +1354,15 @@ const en = {
     rejectSuccess: "Application rejected successfully",
     acceptError: "Error accepting application",
     rejectError: "Error rejecting application",
+    apply: {
+      success: "Application submitted successfully!",
+      errors: {
+        pdfOnly: "Only PDF files are accepted",
+        cvRequired: "Please upload your CV",
+        introRequired: "Please enter a self-introduction",
+        failed: "Unable to submit application",
+      },
+    },
   },
 };
 

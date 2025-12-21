@@ -23,6 +23,9 @@ const vi = {
     edit: "Chỉnh sửa",
     delete: "Xóa",
     notFound: "Không tìm thấy",
+    cancel: "Hủy",
+    location: "Địa điểm",
+    startChat: "Nhắn tin",
   },
   header: {
     roles: {
@@ -392,6 +395,44 @@ const vi = {
       accepted: "Đã chấp nhận",
       rejected: "Đã từ chối",
     },
+    completion: {
+      request: "Hoàn thành công việc",
+      confirm: "Xác nhận hoàn thành",
+      pending: "Chờ xác nhận",
+      completed: "Đã hoàn thành",
+      confirmRequest: "Bạn có chắc muốn yêu cầu hoàn thành công việc này?",
+      confirmComplete: "Xác nhận rằng công việc đã hoàn thành?",
+      confirmCancel: "Hủy yêu cầu hoàn thành công việc?",
+      requestSent: "Yêu cầu hoàn thành đã được gửi!",
+      requestError: "Không thể gửi yêu cầu",
+      confirmError: "Không thể xác nhận hoàn thành",
+      cancelled: "Yêu cầu đã được hủy",
+      cancelError: "Không thể hủy yêu cầu",
+      modalTitleRequest: "Yêu cầu hoàn thành công việc",
+      modalTitleConfirm: "Xác nhận hoàn thành",
+      modalTitleCancel: "Hủy yêu cầu",
+      modalMessageRequest:
+        "Bạn có chắc muốn yêu cầu hoàn thành công việc này? Đối phương sẽ nhận được thông báo để xác nhận.",
+      modalMessageConfirm:
+        "Xác nhận rằng công việc đã được hoàn thành? Cả hai bên sẽ không thể thay đổi sau khi xác nhận.",
+      modalMessageCancel:
+        "Bạn có chắc muốn hủy yêu cầu hoàn thành công việc này?",
+      sendRequest: "Gửi yêu cầu",
+      confirmBtn: "Xác nhận",
+      cancelBtn: "Hủy yêu cầu",
+      jobCompleted: "Công việc đã hoàn thành",
+      canReviewNow: "Bạn có thể đánh giá công việc này ngay bây giờ",
+      requestTitle: "Yêu cầu hoàn thành công việc",
+      requestMessage:
+        "Đối phương đã yêu cầu hoàn thành công việc. Bạn có đồng ý không?",
+      waitingConfirmation: "Đang chờ xác nhận",
+      waitingMessage:
+        "Bạn đã yêu cầu hoàn thành công việc. Đang chờ đối phương xác nhận.",
+      agree: "Đồng ý",
+      cancelRequest: "Hủy yêu cầu",
+      hint: "Sau khi cả hai bên đồng ý, công việc sẽ được đánh dấu hoàn thành",
+      completionMarked: "Công việc đã được đánh dấu hoàn thành!",
+    },
   },
   dashboard: {
     pageTitle: "Bảng điều khiển",
@@ -586,6 +627,30 @@ const vi = {
   },
   myJobs: {
     subtitle: "Quản lý các công việc bạn đã đăng",
+    status: {
+      open: "Đang mở",
+      closed: "Đã đóng",
+      expired: "Hết hạn",
+    },
+    reviewStatus: {
+      approved: "Đã duyệt",
+      rejected: "Bị từ chối",
+      pending: "Chờ duyệt",
+    },
+    posted: "Đã đăng",
+    expires: "Hết hạn",
+    quantity: "Số lượng",
+    buttons: {
+      view: "Xem",
+      edit: "Sửa",
+      close: "Đóng",
+    },
+    closeModal: {
+      title: "Xác nhận đóng công việc",
+      message: "Bạn có chắc chắn muốn đóng công việc",
+      warning: "Sau khi đóng, công việc sẽ không còn nhận đơn ứng tuyển mới.",
+      confirm: "Đóng công việc",
+    },
   },
   postJob: {
     eyebrow: "Dành cho nhà tuyển dụng",
@@ -1301,6 +1366,15 @@ const vi = {
     rejectSuccess: "Từ chối đơn ứng tuyển thành công",
     acceptError: "Lỗi khi chấp nhận đơn ứng tuyển",
     rejectError: "Lỗi khi từ chối đơn ứng tuyển",
+    apply: {
+      success: "Ứng tuyển thành công!",
+      errors: {
+        pdfOnly: "Chỉ chấp nhận file PDF",
+        cvRequired: "Vui lòng tải lên CV",
+        introRequired: "Vui lòng nhập giới thiệu bản thân",
+        failed: "Không thể ứng tuyển",
+      },
+    },
   },
 };
 

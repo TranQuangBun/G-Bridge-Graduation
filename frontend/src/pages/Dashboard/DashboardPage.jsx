@@ -267,31 +267,48 @@ function DashboardPage() {
           ]);
 
         // Calculate stats
-        const appliedCount =
-          applicationsResponse?.data?.applications?.length || 0;
-        const savedCount = savedJobsResponse?.data?.savedJobs?.length || 0;
+        // Backend uses sendPaginated which returns { success, data, pagination }
+        const applications =
+          applicationsResponse?.data?.data || applicationsResponse?.data || [];
+        const savedJobs =
+          savedJobsResponse?.data?.data || savedJobsResponse?.data || [];
+
+        const appliedCount = applications.length || 0;
+        const savedCount = savedJobs.length || 0;
 
         // Count replied jobs (applications with status other than pending)
         const repliedCount =
-          applicationsResponse?.data?.applications?.filter(
+          applications.filter(
             (app) => app.status && app.status.toLowerCase() !== "pending"
           ).length || 0;
         if (user?.role === "client") {
           // For client: fetch posted jobs and applications
           try {
-            const jobsData = await jobService.getClientJobs();
-            const jobs = jobsData.data || [];
+            const jobsResponse = await jobService.getClientJobs();
+            const jobs = jobsResponse?.data?.data || jobsResponse?.data || [];
+
+            // Count active jobs (statusOpenStop === 'open')
             const activeJobs = jobs.filter(
-              (job) => job.status === "active"
+              (job) => job.statusOpenStop === "open"
             ).length;
+
+            // Get total applications count
+            let totalApplications = 0;
+            try {
+              const applicationsResponse = await jobService.getMyApplications();
+              const applications =
+                applicationsResponse?.data?.data ||
+                applicationsResponse?.data ||
+                [];
+              totalApplications = applications.length;
+            } catch (err) {
+              console.error("Error fetching applications count:", err);
+            }
 
             setClientStats({
               postedJobs: jobs.length,
               activeJobs: activeJobs,
-              receivedApplications: jobs.reduce(
-                (sum, job) => sum + (job.applicationCount || 0),
-                0
-              ),
+              receivedApplications: totalApplications,
             });
           } catch (error) {
             console.error("Error fetching client stats:", error);
@@ -314,8 +331,8 @@ function DashboardPage() {
         if (user?.role === "client") {
           // For client: get received applications from their posted jobs
           try {
-            const jobsData = await jobService.getClientJobs();
-            const jobs = jobsData.data || [];
+            const jobsResponse = await jobService.getClientJobs();
+            const jobs = jobsResponse?.data?.data || jobsResponse?.data || [];
             const allApplications = [];
 
             // Fetch applications for each job
@@ -325,8 +342,11 @@ function DashboardPage() {
                 const applicationsData = await jobService.getJobApplications(
                   job.id
                 );
-                if (applicationsData?.data) {
-                  const jobApps = applicationsData.data.map((app) => ({
+                const applications =
+                  applicationsData?.data?.data || applicationsData?.data || [];
+
+                if (applications.length > 0) {
+                  const jobApps = applications.map((app) => ({
                     ...app,
                     jobTitle: job.title,
                     jobId: job.id,
@@ -366,27 +386,25 @@ function DashboardPage() {
             console.error("Error fetching client applications:", error);
             setRecentJobs([]);
           }
-        } else if (applicationsResponse?.data?.applications) {
+        } else if (applications && applications.length > 0) {
           // For interpreter: get their applied jobs
-          const recentApplications = applicationsResponse.data.applications
-            .slice(0, 3)
-            .map((app) => ({
-              id: app.id,
-              company: app.job?.organization?.name || "Company",
-              logo: app.job?.organization?.logo || FaBuilding,
-              position: app.job?.title || "Position",
-              jobType: app.job?.workingMode?.name || "Full-time",
-              workType: app.job?.workingMode?.name || "Remote",
-              location: app.job?.province || app.job?.address || "Location TBD",
-              salary:
-                app.job?.minSalary && app.job?.maxSalary
-                  ? `$${app.job.minSalary}-${app.job.maxSalary}`
-                  : app.job?.minSalary
-                  ? `$${app.job.minSalary}+`
-                  : "Negotiable",
-              dateApplied: app.createdAt || new Date().toISOString(),
-              status: app.status || "pending",
-            }));
+          const recentApplications = applications.slice(0, 3).map((app) => ({
+            id: app.id,
+            company: app.job?.organization?.name || "Company",
+            logo: app.job?.organization?.logo || FaBuilding,
+            position: app.job?.title || "Position",
+            jobType: app.job?.workingMode?.name || "Full-time",
+            workType: app.job?.workingMode?.name || "Remote",
+            location: app.job?.province || app.job?.address || "Location TBD",
+            salary:
+              app.job?.minSalary && app.job?.maxSalary
+                ? `$${app.job.minSalary}-${app.job.maxSalary}`
+                : app.job?.minSalary
+                ? `$${app.job.minSalary}+`
+                : "Negotiable",
+            dateApplied: app.createdAt || new Date().toISOString(),
+            status: app.status || "pending",
+          }));
           setRecentJobs(recentApplications);
         } else {
           setRecentJobs([]);

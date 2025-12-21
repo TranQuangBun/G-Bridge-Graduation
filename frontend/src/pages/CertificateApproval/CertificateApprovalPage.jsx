@@ -16,6 +16,9 @@ const CertificateApprovalPage = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [actionCertId, setActionCertId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [viewCert, setViewCert] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -57,10 +60,14 @@ const CertificateApprovalPage = () => {
       const response = await adminService.getPendingCertifications(params);
 
       console.log("Certifications response:", response);
-      
-      if (response.success && response.data) {
-        setCertifications(response.data.certifications || []);
-        setPagination((prev) => response.data.pagination || prev);
+
+      if (response.success) {
+        // Backend returns { data: [certifications], pagination: {...} }
+        const certsData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.certifications || [];
+        setCertifications(certsData);
+        setPagination((prev) => response.pagination || prev);
       } else {
         console.error("Response not successful:", response);
         setCertifications([]);
@@ -116,13 +123,22 @@ const CertificateApprovalPage = () => {
     return <span className={statusInfo.className}>{statusInfo.label}</span>;
   };
 
-  const handleApprove = async (id) => {
+  const confirmApprove = (id) => {
+    setActionCertId(id);
+    setShowApproveConfirm(true);
+  };
+
+  const handleApprove = async () => {
+    const id = actionCertId;
     setProcessing(id);
+    setShowApproveConfirm(false);
     try {
       await adminService.approveCertification(id);
       await fetchCertifications();
       setShowModal(false);
       setSelectedCert(null);
+      setActionCertId(null);
+      setOpenMenuId(null);
     } catch (error) {
       console.error("Error approving certification:", error);
       alert(error.message || "Không thể duyệt chứng chỉ");
@@ -131,18 +147,26 @@ const CertificateApprovalPage = () => {
     }
   };
 
-  const handleReject = async (id) => {
+  const confirmReject = (id) => {
     if (!rejectionReason.trim()) {
       alert("Vui lòng nhập lý do từ chối");
       return;
     }
+    setActionCertId(id);
+    setShowRejectConfirm(true);
+  };
+
+  const handleReject = async () => {
+    const id = actionCertId;
     setProcessing(id);
+    setShowRejectConfirm(false);
     try {
       await adminService.rejectCertification(id, rejectionReason);
       await fetchCertifications();
       setShowModal(false);
       setSelectedCert(null);
       setRejectionReason("");
+      setActionCertId(null);
     } catch (error) {
       console.error("Error rejecting certification:", error);
       alert(error.message || "Không thể từ chối chứng chỉ");
@@ -190,7 +214,7 @@ const CertificateApprovalPage = () => {
 
   const handleApproveFromMenu = (cert) => {
     setOpenMenuId(null);
-    handleApprove(cert.id);
+    confirmApprove(cert.id);
   };
 
   const handleRejectFromMenu = (cert) => {
@@ -363,59 +387,50 @@ const CertificateApprovalPage = () => {
                         )}
                       </td>
                       <td className={styles.actionsCell}>
-                        {cert.verificationStatus === "pending" ||
-                        cert.verificationStatus === "draft" ? (
-                          <div className={styles.menuContainer}>
-                            <button
-                              className={styles.menuButton}
-                              onClick={(e) => toggleMenu(cert.id, e)}
-                              disabled={processing === cert.id}
+                        <div className={styles.menuContainer}>
+                          <button
+                            className={styles.menuButton}
+                            onClick={(e) => toggleMenu(cert.id, e)}
+                            disabled={processing === cert.id}
+                          >
+                            <span className={styles.menuDots}>⋮</span>
+                          </button>
+                          {openMenuId === cert.id && (
+                            <div
+                              className={styles.contextMenu}
+                              style={{
+                                top: `${menuPosition.top}px`,
+                                left: `${menuPosition.left}px`,
+                              }}
                             >
-                              <span className={styles.menuDots}>⋮</span>
-                            </button>
-                            {openMenuId === cert.id && (
-                              <div
-                                className={styles.contextMenu}
-                                style={{
-                                  top: `${menuPosition.top}px`,
-                                  left: `${menuPosition.left}px`,
-                                }}
+                              <button
+                                className={`${styles.menuItem} ${styles.menuItemView}`}
+                                onClick={() => handleViewCert(cert)}
                               >
+                                👁️ Xem chứng chỉ
+                              </button>
+                              {(cert.verificationStatus === "pending" ||
+                                cert.verificationStatus === "draft") && (
                                 <button
-                                  className={`${styles.menuItem} ${styles.menuItemView}`}
-                                  onClick={() => handleViewCert(cert)}
+                                  className={styles.menuItem}
+                                  onClick={() => handleApproveFromMenu(cert)}
+                                  disabled={processing === cert.id}
                                 >
-                                  👁️ Xem chứng chỉ
+                                  {processing === cert.id
+                                    ? "Đang xử lý..."
+                                    : "✓ Duyệt"}
                                 </button>
-                                {cert.verificationStatus === "pending" ||
-                                cert.verificationStatus === "draft" ? (
-                                  <>
-                                    <button
-                                      className={styles.menuItem}
-                                      onClick={() =>
-                                        handleApproveFromMenu(cert)
-                                      }
-                                      disabled={processing === cert.id}
-                                    >
-                                      {processing === cert.id
-                                        ? "Đang xử lý..."
-                                        : "✓ Duyệt"}
-                                    </button>
-                                    <button
-                                      className={styles.menuItem}
-                                      onClick={() => handleRejectFromMenu(cert)}
-                                      disabled={processing === cert.id}
-                                    >
-                                      ✕ Từ chối
-                                    </button>
-                                  </>
-                                ) : null}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className={styles.noAction}>-</span>
-                        )}
+                              )}
+                              <button
+                                className={styles.menuItem}
+                                onClick={() => handleRejectFromMenu(cert)}
+                                disabled={processing === cert.id}
+                              >
+                                ✕ Từ chối
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -540,7 +555,7 @@ const CertificateApprovalPage = () => {
                     className={styles.approveButton}
                     onClick={() => {
                       setShowDetailModal(false);
-                      handleApprove(detailCert.id);
+                      confirmApprove(detailCert.id);
                     }}
                     disabled={processing === detailCert.id}
                   >
@@ -590,7 +605,7 @@ const CertificateApprovalPage = () => {
                 </button>
                 <button
                   className={styles.confirmRejectButton}
-                  onClick={() => handleReject(selectedCert.id)}
+                  onClick={() => confirmReject(selectedCert.id)}
                   disabled={
                     !rejectionReason.trim() || processing === selectedCert.id
                   }
@@ -869,6 +884,57 @@ const CertificateApprovalPage = () => {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Approve Confirmation Modal */}
+        {showApproveConfirm && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.confirmModal}>
+              <h2>📝 Xác nhận duyệt chứng chỉ</h2>
+              <p>Bạn có chắc chắn muốn duyệt chứng chỉ này không?</p>
+              <div className={styles.confirmActions}>
+                <button
+                  className={styles.cancelButton}
+                  onClick={() => {
+                    setShowApproveConfirm(false);
+                    setActionCertId(null);
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  className={styles.confirmButton}
+                  onClick={handleApprove}
+                >
+                  Xác nhận duyệt
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reject Confirmation Modal */}
+        {showRejectConfirm && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.confirmModal}>
+              <h2>⚠️ Xác nhận từ chối chứng chỉ</h2>
+              <p>Bạn có chắc chắn muốn từ chối chứng chỉ này không?</p>
+              <div className={styles.confirmActions}>
+                <button
+                  className={styles.cancelButton}
+                  onClick={() => {
+                    setShowRejectConfirm(false);
+                    setActionCertId(null);
+                  }}
+                >
+                  Hủy
+                </button>
+                <button className={styles.rejectButton} onClick={handleReject}>
+                  Xác nhận từ chối
+                </button>
               </div>
             </div>
           </div>

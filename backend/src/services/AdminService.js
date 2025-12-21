@@ -23,12 +23,7 @@ export class AdminService {
 
   // Certificate Approval Methods
   async getPendingCertifications(filters = {}) {
-    const {
-      page = 1,
-      limit = 20,
-      search = "",
-      status,
-    } = filters;
+    const { page = 1, limit = 20, search = "", status } = filters;
 
     const queryBuilder = this.certificationRepository.repository
       .createQueryBuilder("certification")
@@ -57,7 +52,8 @@ export class AdminService {
       queryBuilder.where(conditions.join(" AND "), parameters);
     }
 
-    queryBuilder.orderBy("certification.createdAt", "DESC")
+    queryBuilder
+      .orderBy("certification.createdAt", "DESC")
       .skip((parseInt(page) - 1) * parseInt(limit))
       .take(parseInt(limit));
 
@@ -68,9 +64,12 @@ export class AdminService {
     console.log("Filters:", { page, limit, search, status });
 
     const [certifications, count] = await queryBuilder.getManyAndCount();
-    
+
     console.log("Found certifications:", count);
-    console.log("Certification statuses:", certifications.map(c => ({ id: c.id, status: c.verificationStatus })));
+    console.log(
+      "Certification statuses:",
+      certifications.map((c) => ({ id: c.id, status: c.verificationStatus }))
+    );
 
     return {
       certifications,
@@ -84,10 +83,12 @@ export class AdminService {
   }
 
   async approveCertification(certificationId, adminId) {
-    const certification = await this.certificationRepository.repository.findOne({
-      where: { id: parseInt(certificationId) },
-      relations: ["user"],
-    });
+    const certification = await this.certificationRepository.repository.findOne(
+      {
+        where: { id: parseInt(certificationId) },
+        relations: ["user"],
+      }
+    );
 
     if (!certification) {
       throw new NotFoundError("Certification");
@@ -95,7 +96,9 @@ export class AdminService {
 
     certification.verificationStatus = CertificationStatus.APPROVED;
     certification.isVerified = true;
-    const updated = await this.certificationRepository.repository.save(certification);
+    const updated = await this.certificationRepository.repository.save(
+      certification
+    );
 
     // Send notification to user
     await this.notificationService.createNotification({
@@ -114,10 +117,12 @@ export class AdminService {
   }
 
   async rejectCertification(certificationId, adminId, reason = "") {
-    const certification = await this.certificationRepository.repository.findOne({
-      where: { id: parseInt(certificationId) },
-      relations: ["user"],
-    });
+    const certification = await this.certificationRepository.repository.findOne(
+      {
+        where: { id: parseInt(certificationId) },
+        relations: ["user"],
+      }
+    );
 
     if (!certification) {
       throw new NotFoundError("Certification");
@@ -125,7 +130,9 @@ export class AdminService {
 
     certification.verificationStatus = CertificationStatus.REJECTED;
     certification.isVerified = false;
-    const updated = await this.certificationRepository.repository.save(certification);
+    const updated = await this.certificationRepository.repository.save(
+      certification
+    );
 
     // Send notification to user
     await this.notificationService.createNotification({
@@ -133,7 +140,9 @@ export class AdminService {
       actorId: adminId,
       type: NotificationType.GENERIC,
       title: "Chứng chỉ bị từ chối",
-      message: `Chứng chỉ "${certification.name}" của bạn đã bị từ chối.${reason ? ` Lý do: ${reason}` : ""}`,
+      message: `Chứng chỉ "${certification.name}" của bạn đã bị từ chối.${
+        reason ? ` Lý do: ${reason}` : ""
+      }`,
       metadata: {
         certificationId: certification.id,
         type: "certification_rejected",
@@ -145,17 +154,12 @@ export class AdminService {
   }
 
   // Organization Approval Methods
-  async getPendingOrganizations(filters = {}) {
-    const {
-      page = 1,
-      limit = 20,
-      search = "",
-    } = filters;
+  async getOrganizations(filters = {}) {
+    const { page = 1, limit = 20, search = "", status = "" } = filters;
 
     const queryBuilder = this.organizationRepository.repository
       .createQueryBuilder("organization")
       .leftJoinAndSelect("organization.owner", "owner")
-      .where("organization.approvalStatus = :status", { status: OrganizationStatus.PENDING })
       .select([
         "organization.id",
         "organization.name",
@@ -166,6 +170,69 @@ export class AdminService {
         "organization.phone",
         "organization.address",
         "organization.province",
+        "organization.businessLicense",
+        "organization.licenseVerificationStatus",
+        "organization.isActive",
+        "organization.approvalStatus",
+        "organization.rejectionReason",
+        "organization.createdAt",
+        "owner.id",
+        "owner.fullName",
+        "owner.email",
+      ]);
+
+    // Filter by status if provided
+    if (status) {
+      queryBuilder.where("organization.approvalStatus = :status", { status });
+    }
+
+    if (search) {
+      const condition = status ? "andWhere" : "where";
+      queryBuilder[condition](
+        "(organization.name LIKE :search OR organization.description LIKE :search OR owner.fullName LIKE :search)",
+        { search: `%${search}%` }
+      );
+    }
+
+    queryBuilder
+      .orderBy("organization.createdAt", "DESC")
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .take(parseInt(limit));
+
+    const [organizations, count] = await queryBuilder.getManyAndCount();
+
+    return {
+      organizations,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+    };
+  }
+
+  async getPendingOrganizations(filters = {}) {
+    const { page = 1, limit = 20, search = "" } = filters;
+
+    const queryBuilder = this.organizationRepository.repository
+      .createQueryBuilder("organization")
+      .leftJoinAndSelect("organization.owner", "owner")
+      .where("organization.approvalStatus = :status", {
+        status: OrganizationStatus.PENDING,
+      })
+      .select([
+        "organization.id",
+        "organization.name",
+        "organization.description",
+        "organization.logo",
+        "organization.website",
+        "organization.email",
+        "organization.phone",
+        "organization.address",
+        "organization.province",
+        "organization.businessLicense",
+        "organization.licenseVerificationStatus",
         "organization.isActive",
         "organization.approvalStatus",
         "organization.rejectionReason",
@@ -182,7 +249,8 @@ export class AdminService {
       );
     }
 
-    queryBuilder.orderBy("organization.createdAt", "DESC")
+    queryBuilder
+      .orderBy("organization.createdAt", "DESC")
       .skip((parseInt(page) - 1) * parseInt(limit))
       .take(parseInt(limit));
 
@@ -212,7 +280,9 @@ export class AdminService {
     organization.approvalStatus = OrganizationStatus.APPROVED;
     organization.isActive = true;
     organization.rejectionReason = null;
-    const updated = await this.organizationRepository.repository.save(organization);
+    const updated = await this.organizationRepository.repository.save(
+      organization
+    );
 
     // Send notification to owner if exists
     if (organization.ownerUserId) {
@@ -245,7 +315,9 @@ export class AdminService {
     organization.approvalStatus = OrganizationStatus.REJECTED;
     organization.isActive = false;
     organization.rejectionReason = reason || null;
-    const updated = await this.organizationRepository.repository.save(organization);
+    const updated = await this.organizationRepository.repository.save(
+      organization
+    );
 
     // Send notification to owner if exists
     if (organization.ownerUserId) {
@@ -254,7 +326,9 @@ export class AdminService {
         actorId: adminId,
         type: NotificationType.GENERIC,
         title: "Tổ chức bị từ chối",
-        message: `Tổ chức "${organization.name}" của bạn đã bị từ chối.${reason ? ` Lý do: ${reason}` : ""}`,
+        message: `Tổ chức "${organization.name}" của bạn đã bị từ chối.${
+          reason ? ` Lý do: ${reason}` : ""
+        }`,
         metadata: {
           organizationId: organization.id,
           type: "organization_rejected",
@@ -267,7 +341,12 @@ export class AdminService {
   }
 
   // System Notification Methods
-  async createSystemNotification({ title, message, recipientIds = null, metadata = null }) {
+  async createSystemNotification({
+    title,
+    message,
+    recipientIds = null,
+    metadata = null,
+  }) {
     if (!title || !message) {
       throw new Error("Title and message are required");
     }
@@ -331,7 +410,9 @@ export class AdminService {
       userRepo.count({ where: { isActive: true } }),
       userRepo.count({ where: { role: "interpreter", isActive: true } }),
       userRepo.count({ where: { role: "client", isActive: true } }),
-      certRepo.count({ where: { verificationStatus: CertificationStatus.PENDING } }),
+      certRepo.count({
+        where: { verificationStatus: CertificationStatus.PENDING },
+      }),
       orgRepo.count({ where: { approvalStatus: OrganizationStatus.PENDING } }),
       certRepo.count(),
       orgRepo.count(),
@@ -415,7 +496,10 @@ export class AdminService {
       updatePayload.passwordHash = passwordHash;
     }
 
-    const updated = await this.userRepository.update(parseInt(id), updatePayload);
+    const updated = await this.userRepository.update(
+      parseInt(id),
+      updatePayload
+    );
     const userResponse = { ...updated };
     delete userResponse.passwordHash;
     return userResponse;
@@ -447,9 +531,9 @@ export class AdminService {
   // Revenue Management Methods
   async getRevenueStats(filters = {}) {
     const { startDate, endDate } = filters;
-    
+
     const paymentRepo = this.paymentRepository.repository;
-    
+
     // Build date filter
     const dateFilter = {};
     if (startDate || endDate) {
@@ -469,10 +553,14 @@ export class AdminService {
       .where("payment.status = :status", { status: PaymentStatus.COMPLETED });
 
     if (startDate) {
-      totalRevenueQuery.andWhere("payment.createdAt >= :startDate", { startDate: new Date(startDate) });
+      totalRevenueQuery.andWhere("payment.createdAt >= :startDate", {
+        startDate: new Date(startDate),
+      });
     }
     if (endDate) {
-      totalRevenueQuery.andWhere("payment.createdAt <= :endDate", { endDate: new Date(endDate) });
+      totalRevenueQuery.andWhere("payment.createdAt <= :endDate", {
+        endDate: new Date(endDate),
+      });
     }
 
     const totalRevenueResult = await totalRevenueQuery.getRawOne();
@@ -487,10 +575,14 @@ export class AdminService {
       .where("payment.status = :status", { status: PaymentStatus.COMPLETED });
 
     if (startDate) {
-      revenueByGatewayQuery.andWhere("payment.createdAt >= :startDate", { startDate: new Date(startDate) });
+      revenueByGatewayQuery.andWhere("payment.createdAt >= :startDate", {
+        startDate: new Date(startDate),
+      });
     }
     if (endDate) {
-      revenueByGatewayQuery.andWhere("payment.createdAt <= :endDate", { endDate: new Date(endDate) });
+      revenueByGatewayQuery.andWhere("payment.createdAt <= :endDate", {
+        endDate: new Date(endDate),
+      });
     }
 
     revenueByGatewayQuery
@@ -513,26 +605,22 @@ export class AdminService {
     const revenueByMonth = await revenueByMonthQuery.getRawMany();
 
     // Get payment statistics
-    const [
-      totalPayments,
-      completedPayments,
-      pendingPayments,
-      failedPayments,
-    ] = await Promise.all([
-      paymentRepo.count(),
-      paymentRepo.count({ where: { status: PaymentStatus.COMPLETED } }),
-      paymentRepo.count({ where: { status: PaymentStatus.PENDING } }),
-      paymentRepo.count({ where: { status: PaymentStatus.FAILED } }),
-    ]);
+    const [totalPayments, completedPayments, pendingPayments, failedPayments] =
+      await Promise.all([
+        paymentRepo.count(),
+        paymentRepo.count({ where: { status: PaymentStatus.COMPLETED } }),
+        paymentRepo.count({ where: { status: PaymentStatus.PENDING } }),
+        paymentRepo.count({ where: { status: PaymentStatus.FAILED } }),
+      ]);
 
     return {
       totalRevenue,
-      revenueByGateway: revenueByGateway.map(item => ({
+      revenueByGateway: revenueByGateway.map((item) => ({
         gateway: item.gateway,
         total: parseFloat(item.total || 0),
         count: parseInt(item.count || 0),
       })),
-      revenueByMonth: revenueByMonth.map(item => ({
+      revenueByMonth: revenueByMonth.map((item) => ({
         month: item.month,
         total: parseFloat(item.total || 0),
         count: parseInt(item.count || 0),
@@ -542,7 +630,10 @@ export class AdminService {
         completedPayments,
         pendingPayments,
         failedPayments,
-        successRate: totalPayments > 0 ? ((completedPayments / totalPayments) * 100).toFixed(2) : 0,
+        successRate:
+          totalPayments > 0
+            ? ((completedPayments / totalPayments) * 100).toFixed(2)
+            : 0,
       },
     };
   }
@@ -568,25 +659,37 @@ export class AdminService {
 
     // Apply filters
     if (userId) {
-      queryBuilder.andWhere("payment.userId = :userId", { userId: parseInt(userId) });
+      queryBuilder.andWhere("payment.userId = :userId", {
+        userId: parseInt(userId),
+      });
     }
     if (planId) {
-      queryBuilder.andWhere("payment.planId = :planId", { planId: parseInt(planId) });
+      queryBuilder.andWhere("payment.planId = :planId", {
+        planId: parseInt(planId),
+      });
     }
     if (status) {
       queryBuilder.andWhere("payment.status = :status", { status });
     }
     if (paymentGateway) {
-      queryBuilder.andWhere("payment.paymentGateway = :paymentGateway", { paymentGateway });
+      queryBuilder.andWhere("payment.paymentGateway = :paymentGateway", {
+        paymentGateway,
+      });
     }
     if (orderId) {
-      queryBuilder.andWhere("payment.orderId LIKE :orderId", { orderId: `%${orderId}%` });
+      queryBuilder.andWhere("payment.orderId LIKE :orderId", {
+        orderId: `%${orderId}%`,
+      });
     }
     if (startDate) {
-      queryBuilder.andWhere("payment.createdAt >= :startDate", { startDate: new Date(startDate) });
+      queryBuilder.andWhere("payment.createdAt >= :startDate", {
+        startDate: new Date(startDate),
+      });
     }
     if (endDate) {
-      queryBuilder.andWhere("payment.createdAt <= :endDate", { endDate: new Date(endDate) });
+      queryBuilder.andWhere("payment.createdAt <= :endDate", {
+        endDate: new Date(endDate),
+      });
     }
 
     queryBuilder
@@ -606,4 +709,3 @@ export class AdminService {
     };
   }
 }
-

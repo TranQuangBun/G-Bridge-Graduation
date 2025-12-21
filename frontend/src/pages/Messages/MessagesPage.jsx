@@ -23,7 +23,9 @@ function MessagesPage() {
   const loadSelectedConversation = useCallback(async (conversationId) => {
     try {
       const response = await messageService.getConversation(conversationId);
-      setSelectedConversation(response.data);
+      console.log("Selected conversation response:", response);
+      const conversationData = response.data?.data || response.data;
+      setSelectedConversation(conversationData);
     } catch (error) {
       console.error("Error loading conversation:", error);
     }
@@ -31,20 +33,36 @@ function MessagesPage() {
 
   const loadConversations = useCallback(async () => {
     try {
+      console.log("Loading conversations with showArchived:", showArchived);
       const response = await messageService.getConversations(
-        showArchived,
+        true, // Always load all conversations (including archived)
         false // Don't include deleted
       );
-      setConversations(response.data || []);
+      console.log("Conversations response:", response);
+      const conversationsData = response.data?.data || response.data || [];
+      console.log("All conversations count:", conversationsData.length);
+
+      // If showArchived is false (Inbox), show all conversations
+      // If showArchived is true (Archived), show only archived conversations
+      const filteredData = showArchived
+        ? conversationsData.filter((conv) => conv.isArchived === true)
+        : conversationsData; // Show all in inbox
+
+      console.log("Filtered conversations count:", filteredData.length);
+      setConversations(filteredData);
     } catch (error) {
       console.error("Error loading conversations:", error);
+      console.error("Error details:", error.response?.data || error.message);
     }
   }, [showArchived]);
 
   const loadUnreadCount = useCallback(async () => {
     try {
       const response = await messageService.getUnreadCount();
-      setUnreadCount(response.data?.unreadCount || 0);
+      console.log("Unread count response:", response);
+      const count =
+        response.data?.unreadCount || response.data?.data?.unreadCount || 0;
+      setUnreadCount(count);
     } catch (error) {
       console.error("Error loading unread count:", error);
     }
@@ -60,7 +78,12 @@ function MessagesPage() {
       // Remove from URL after setting
       setSearchParams({});
     }
-  }, [searchParams, setSearchParams, selectedConversationId, loadSelectedConversation]);
+  }, [
+    searchParams,
+    setSearchParams,
+    selectedConversationId,
+    loadSelectedConversation,
+  ]);
 
   // Initial load
   useEffect(() => {
@@ -93,7 +116,12 @@ function MessagesPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [loadConversations, loadUnreadCount, loadSelectedConversation, selectedConversationId]);
+  }, [
+    loadConversations,
+    loadUnreadCount,
+    loadSelectedConversation,
+    selectedConversationId,
+  ]);
 
   const handleSelectConversation = async (conversationId) => {
     setSelectedConversationId(conversationId);
@@ -170,10 +198,16 @@ function MessagesPage() {
   return (
     <MainLayout>
       <div className={styles.messagesPage}>
-        <div className={styles.sidebar}>
+        <div
+          className={`${styles.sidebar} ${
+            selectedConversationId ? styles.hideOnMobile : ""
+          }`}
+        >
           <div className={styles.tabs}>
             <button
-              className={`${styles.tab} ${!showArchived ? styles.tabActive : ""}`}
+              className={`${styles.tab} ${
+                !showArchived ? styles.tabActive : ""
+              }`}
               onClick={() => {
                 setShowArchived(false);
                 setSelectedConversationId(null);
@@ -187,7 +221,9 @@ function MessagesPage() {
               )}
             </button>
             <button
-              className={`${styles.tab} ${showArchived ? styles.tabActive : ""}`}
+              className={`${styles.tab} ${
+                showArchived ? styles.tabActive : ""
+              }`}
               onClick={() => {
                 setShowArchived(true);
                 setSelectedConversationId(null);
@@ -213,12 +249,20 @@ function MessagesPage() {
           />
         </div>
 
-        <div className={styles.chatArea}>
+        <div
+          className={`${styles.chatArea} ${
+            selectedConversationId ? styles.fullScreenOnMobile : ""
+          }`}
+        >
           <ChatWindow
             conversation={selectedConversation}
             currentUserId={user?.id || user?.sub}
             onMessageSent={handleMessageSent}
             onMessageDeleted={handleMessageDeleted}
+            onBackClick={() => {
+              setSelectedConversationId(null);
+              setSelectedConversation(null);
+            }}
             loading={false}
           />
         </div>
@@ -228,4 +272,3 @@ function MessagesPage() {
 }
 
 export default MessagesPage;
-

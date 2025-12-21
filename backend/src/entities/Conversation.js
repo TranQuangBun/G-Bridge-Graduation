@@ -138,4 +138,3 @@ export const ConversationSchema = new EntitySchema({
     },
   },
 });
-

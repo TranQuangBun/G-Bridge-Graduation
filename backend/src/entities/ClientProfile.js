@@ -88,8 +88,7 @@ export const ClientProfileSchema = new EntitySchema({
       unique: true,
     },
     companyName: {
-      type: "varchar",
-      length: 255,
+      type: "text",
     },
     companyType: {
       type: "enum",
@@ -101,8 +100,7 @@ export const ClientProfileSchema = new EntitySchema({
       nullable: true,
     },
     website: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     industry: {
@@ -115,13 +113,11 @@ export const ClientProfileSchema = new EntitySchema({
       nullable: true,
     },
     logo: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     headquarters: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     foundedYear: {

@@ -55,8 +55,7 @@ export const OrganizationSchema = new EntitySchema({
       nullable: true,
     },
     logo: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     website: {

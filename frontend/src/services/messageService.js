@@ -22,7 +22,9 @@ const messageService = {
   // Get unread count
   getUnreadCount: async () => {
     try {
-      const response = await apiClient.get("/messages/conversations/unread-count");
+      const response = await apiClient.get(
+        "/messages/conversations/unread-count"
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching unread count:", error);
@@ -46,9 +48,12 @@ const messageService = {
   // Create conversation from approved application
   createConversationFromApplication: async (applicationId) => {
     try {
-      const response = await apiClient.post("/messages/conversations/from-application", {
-        applicationId: parseInt(applicationId),
-      });
+      const response = await apiClient.post(
+        "/messages/conversations/from-application",
+        {
+          applicationId: parseInt(applicationId),
+        }
+      );
       return response.data;
     } catch (error) {
       console.error("Error creating conversation from application:", error);
@@ -59,7 +64,9 @@ const messageService = {
   // Get conversation by ID
   getConversation: async (conversationId) => {
     try {
-      const response = await apiClient.get(`/messages/conversations/${conversationId}`);
+      const response = await apiClient.get(
+        `/messages/conversations/${conversationId}`
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching conversation:", error);
@@ -153,14 +160,52 @@ const messageService = {
   // Delete a message
   deleteMessage: async (messageId) => {
     try {
-      const response = await apiClient.delete(`/messages/messages/${messageId}`);
+      const response = await apiClient.delete(
+        `/messages/messages/${messageId}`
+      );
       return response.data;
     } catch (error) {
       console.error("Error deleting message:", error);
       throw new Error(getErrorMessage(error));
     }
   },
+
+  // Update a message
+  updateMessage: async (messageId, data) => {
+    try {
+      const response = await apiClient.patch(
+        `/messages/messages/${messageId}`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating message:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Send message with file
+  sendMessageWithFile: async (conversationId, content, file) => {
+    try {
+      const formData = new FormData();
+      if (content) formData.append("content", content.trim());
+      formData.append("file", file);
+
+      const response = await apiClient.post(
+        `/messages/conversations/${conversationId}/messages/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error sending message with file:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 export default messageService;
-

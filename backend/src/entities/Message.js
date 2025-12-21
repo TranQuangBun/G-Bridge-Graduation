@@ -9,6 +9,13 @@ export class Message {
   content;
   isRead;
   readAt;
+  isEdited;
+  fileUrl;
+  fileName;
+  fileType;
+  fileSize;
+  deletedAt;
+  deletedBy;
   createdAt;
   updatedAt;
   conversation;
@@ -43,6 +50,36 @@ export const MessageSchema = new EntitySchema({
     },
     readAt: {
       type: "datetime",
+      nullable: true,
+    },
+    isEdited: {
+      type: "boolean",
+      default: false,
+    },
+    fileUrl: {
+      type: "text",
+      nullable: true,
+    },
+    fileName: {
+      type: "varchar",
+      length: 255,
+      nullable: true,
+    },
+    fileType: {
+      type: "varchar",
+      length: 100,
+      nullable: true,
+    },
+    fileSize: {
+      type: "int",
+      nullable: true,
+    },
+    deletedAt: {
+      type: "datetime",
+      nullable: true,
+    },
+    deletedBy: {
+      type: "int",
       nullable: true,
     },
     createdAt: {
@@ -92,4 +129,3 @@ export const MessageSchema = new EntitySchema({
     },
   },
 });
-

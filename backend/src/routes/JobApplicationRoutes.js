@@ -5,6 +5,9 @@ import {
   createJobApplication,
   updateJobApplication,
   deleteJobApplication,
+  requestJobCompletion,
+  confirmJobCompletion,
+  cancelJobCompletionRequest,
 } from "../controllers/JobApplicationController.js";
 import { authRequired } from "../middleware/auth.js";
 
@@ -16,5 +19,9 @@ router.post("/", authRequired, createJobApplication);
 router.put("/:id", authRequired, updateJobApplication);
 router.delete("/:id", authRequired, deleteJobApplication);
 
-export default router;
+// Job completion endpoints
+router.post("/:id/request-completion", authRequired, requestJobCompletion);
+router.post("/:id/confirm-completion", authRequired, confirmJobCompletion);
+router.post("/:id/cancel-completion", authRequired, cancelJobCompletionRequest);
 
+export default router;

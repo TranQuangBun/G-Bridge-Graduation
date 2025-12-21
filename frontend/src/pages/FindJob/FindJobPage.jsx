@@ -600,6 +600,7 @@ export default function FindJobPage() {
         page,
         limit: pageSize,
         status: "open",
+        reviewStatus: "approved", // Only show approved jobs
         sortBy: sortBy || "createdAt",
         sortOrder: sortBy === "title" ? "ASC" : "DESC",
       };
@@ -627,7 +628,11 @@ export default function FindJobPage() {
       }
 
       // Advanced Filters
-      if (advancedFilters.reviewStatus) {
+      // Note: reviewStatus defaults to "approved" above, only override if explicitly set in advanced filters
+      if (
+        advancedFilters.reviewStatus &&
+        advancedFilters.reviewStatus !== "approved"
+      ) {
         apiFilters.reviewStatus = advancedFilters.reviewStatus;
       }
       if (advancedFilters.companyName) {
