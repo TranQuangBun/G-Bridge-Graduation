@@ -17,6 +17,7 @@ import {
   approveJob,
   rejectJob,
   getMyJobs,
+  closeJob,
 } from "../controllers/JobController.js";
 import { uploadResume } from "../middleware/Upload.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
@@ -254,7 +255,12 @@ router.get("/:id", getJobById);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.post("/:jobId/apply", authRequired, uploadResume.single("resume"), applyForJob);
+router.post(
+  "/:jobId/apply",
+  authRequired,
+  uploadResume.single("resume"),
+  applyForJob
+);
 
 /**
  * @swagger
@@ -340,7 +346,11 @@ router.get("/applications/my", authRequired, getMyApplications);
  *       404:
  *         description: Application not found
  */
-router.patch("/applications/:applicationId/accept", authRequired, acceptApplication);
+router.patch(
+  "/applications/:applicationId/accept",
+  authRequired,
+  acceptApplication
+);
 
 /**
  * @swagger
@@ -372,7 +382,11 @@ router.patch("/applications/:applicationId/accept", authRequired, acceptApplicat
  *       404:
  *         description: Application not found
  */
-router.patch("/applications/:applicationId/reject", authRequired, rejectApplication);
+router.patch(
+  "/applications/:applicationId/reject",
+  authRequired,
+  rejectApplication
+);
 
 /**
  * @swagger
@@ -453,6 +467,35 @@ router.put("/:id", authRequired, updateJob);
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete("/:id", authRequired, deleteJob);
+
+/**
+ * @swagger
+ * /api/jobs/{id}/close:
+ *   patch:
+ *     summary: Close a job (company only)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Job closed successfully
+ *       400:
+ *         description: Job is already closed
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Permission denied
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.patch("/:id/close", authRequired, closeJob);
+
 router.patch("/:id/approve", authRequired, adminOnly, approveJob);
 router.patch("/:id/reject", authRequired, adminOnly, rejectJob);
 

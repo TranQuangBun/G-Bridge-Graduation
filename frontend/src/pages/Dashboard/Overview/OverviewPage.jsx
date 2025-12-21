@@ -31,28 +31,66 @@ export default function OverviewPage() {
       try {
         setLoading(true);
         if (user?.role === "client") {
-          const jobsData = await jobService.getClientJobs();
-          const jobs = jobsData.data || [];
+          // Fetch client's posted jobs
+          const jobsResponse = await jobService.getClientJobs();
+          // Backend uses sendPaginated which returns { success, data, pagination }
+          const jobs = jobsResponse?.data?.data || jobsResponse?.data || [];
+
+          // Count active jobs (statusOpenStop === 'open')
           const activeJobs = jobs.filter(
-            (job) => job.status === "active"
+            (job) => job.statusOpenStop === "open"
           ).length;
+
+          // Fetch all applications to count received applications
+          let totalApplications = 0;
+          try {
+            const applicationsResponse = await jobService.getMyApplications();
+            const applications =
+              applicationsResponse?.data?.data ||
+              applicationsResponse?.data ||
+              [];
+            totalApplications = applications.length;
+          } catch (err) {
+            console.error("Error fetching applications:", err);
+          }
 
           setStats({
             postedJobs: jobs.length,
             activeJobs: activeJobs,
-            receivedApplications: jobs.reduce(
-              (sum, job) => sum + (job.applicationCount || 0),
-              0
-            ),
+            receivedApplications: totalApplications,
           });
         } else {
-          const applicationsData = await jobService.getMyApplications();
-          const favoritesData = await jobService.getSavedJobs();
+          // For interpreter
+          const [applicationsResponse, favoritesResponse] = await Promise.all([
+            jobService.getMyApplications(),
+            jobService.getSavedJobs(),
+          ]);
+
+          console.log("Applications Response:", applicationsResponse);
+          console.log("Favorites Response:", favoritesResponse);
+
+          // Backend uses sendPaginated which returns { success, data, pagination }
+          // So the actual data is in response.data.data
+          const applications =
+            applicationsResponse?.data?.data ||
+            applicationsResponse?.data ||
+            [];
+
+          const savedJobs =
+            favoritesResponse?.data?.data || favoritesResponse?.data || [];
+
+          console.log("Parsed applications:", applications);
+          console.log("Parsed savedJobs:", savedJobs);
+
+          // Count applications with non-pending status as "replied"
+          const repliedCount = applications.filter(
+            (app) => app.status && app.status.toLowerCase() !== "pending"
+          ).length;
 
           setStats({
-            appliedJobs: applicationsData.data?.length || 0,
-            favoriteJobs: favoritesData.data?.length || 0,
-            jobAlerts: 0,
+            appliedJobs: applications.length,
+            favoriteJobs: savedJobs.length,
+            jobAlerts: repliedCount,
           });
         }
       } catch (error) {
@@ -62,7 +100,9 @@ export default function OverviewPage() {
       }
     };
 
-    fetchStats();
+    if (user) {
+      fetchStats();
+    }
   }, [user]);
 
   const clientStats = [

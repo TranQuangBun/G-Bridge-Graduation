@@ -90,8 +90,7 @@ export const BookingRequestSchema = new EntitySchema({
       default: BookingType.ONLINE,
     },
     location: {
-      type: "varchar",
-      length: 500,
+      type: "text",
       nullable: true,
     },
     eventDuration: {

@@ -7,73 +7,121 @@ const adminService = {
       const response = await apiClient.get("/admin/dashboard/stats");
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to get dashboard stats" };
+      throw (
+        error.response?.data || { message: "Failed to get dashboard stats" }
+      );
     }
   },
 
   // Certificate Approval
   getPendingCertifications: async (params = {}) => {
     try {
-      const response = await apiClient.get("/admin/certifications/pending", { params });
+      const response = await apiClient.get("/admin/certifications/pending", {
+        params,
+      });
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to get pending certifications" };
+      throw (
+        error.response?.data || {
+          message: "Failed to get pending certifications",
+        }
+      );
     }
   },
 
   approveCertification: async (id) => {
     try {
-      const response = await apiClient.post(`/admin/certifications/${id}/approve`);
+      const response = await apiClient.post(
+        `/admin/certifications/${id}/approve`
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to approve certification" };
+      throw (
+        error.response?.data || { message: "Failed to approve certification" }
+      );
     }
   },
 
   rejectCertification: async (id, reason = "") => {
     try {
-      const response = await apiClient.post(`/admin/certifications/${id}/reject`, { reason });
+      const response = await apiClient.post(
+        `/admin/certifications/${id}/reject`,
+        { reason }
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to reject certification" };
+      throw (
+        error.response?.data || { message: "Failed to reject certification" }
+      );
     }
   },
 
   // Organization Approval
-  getPendingOrganizations: async (params = {}) => {
+  getOrganizations: async (params = {}) => {
     try {
-      const response = await apiClient.get("/admin/organizations/pending", { params });
+      const response = await apiClient.get("/admin/organizations", { params });
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to get pending organizations" };
+      throw error.response?.data || { message: "Failed to get organizations" };
+    }
+  },
+
+  getPendingOrganizations: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/admin/organizations/pending", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Failed to get pending organizations",
+        }
+      );
     }
   },
 
   approveOrganization: async (id) => {
     try {
-      const response = await apiClient.post(`/admin/organizations/${id}/approve`);
+      const response = await apiClient.post(
+        `/admin/organizations/${id}/approve`
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to approve organization" };
+      throw (
+        error.response?.data || { message: "Failed to approve organization" }
+      );
     }
   },
 
   rejectOrganization: async (id, reason = "") => {
     try {
-      const response = await apiClient.post(`/admin/organizations/${id}/reject`, { reason });
+      const response = await apiClient.post(
+        `/admin/organizations/${id}/reject`,
+        { reason }
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to reject organization" };
+      throw (
+        error.response?.data || { message: "Failed to reject organization" }
+      );
     }
   },
 
   // System Notifications
   createSystemNotification: async (data) => {
     try {
-      const response = await apiClient.post("/admin/notifications/system", data);
+      const response = await apiClient.post(
+        "/admin/notifications/system",
+        data
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Failed to create system notification" };
+      throw (
+        error.response?.data || {
+          message: "Failed to create system notification",
+        }
+      );
     }
   },
 
@@ -116,7 +164,9 @@ const adminService = {
 
   toggleUserStatus: async (id) => {
     try {
-      const response = await apiClient.patch(`/admin/users/${id}/toggle-status`);
+      const response = await apiClient.patch(
+        `/admin/users/${id}/toggle-status`
+      );
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: "Failed to toggle user status" };
@@ -135,7 +185,9 @@ const adminService = {
 
   getAllPayments: async (params = {}) => {
     try {
-      const response = await apiClient.get("/admin/revenue/payments", { params });
+      const response = await apiClient.get("/admin/revenue/payments", {
+        params,
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: "Failed to get payments" };
@@ -144,4 +196,3 @@ const adminService = {
 };
 
 export default adminService;
-

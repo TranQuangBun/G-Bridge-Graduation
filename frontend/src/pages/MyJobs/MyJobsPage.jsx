@@ -20,6 +20,7 @@ import {
   FaEdit,
   FaEnvelope,
   FaBookmark,
+  FaTimes,
 } from "react-icons/fa";
 
 // Sidebar menu for Client/Company role
@@ -58,6 +59,8 @@ function MyJobsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedReviewStatus, setSelectedReviewStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [jobToClose, setJobToClose] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -192,11 +195,11 @@ function MyJobsPage() {
   const getStatusText = (status) => {
     switch (status?.toLowerCase()) {
       case "open":
-        return "Open";
+        return t("myJobs.status.open") || "Open";
       case "closed":
-        return "Closed";
+        return t("myJobs.status.closed") || "Closed";
       case "expired":
-        return "Expired";
+        return t("myJobs.status.expired") || "Expired";
       default:
         return status || "Unknown";
     }
@@ -205,13 +208,13 @@ function MyJobsPage() {
   const getReviewStatusText = (status) => {
     switch (status?.toLowerCase()) {
       case "approved":
-        return "Approved";
+        return t("myJobs.reviewStatus.approved") || "Approved";
       case "rejected":
-        return "Rejected";
+        return t("myJobs.reviewStatus.rejected") || "Rejected";
       case "pending":
-        return "Pending Review";
+        return t("myJobs.reviewStatus.pending") || "Pending Review";
       default:
-        return "Pending Review";
+        return t("myJobs.reviewStatus.pending") || "Pending Review";
     }
   };
 
@@ -233,6 +236,70 @@ function MyJobsPage() {
   const handleEditJob = (jobId) => {
     // Navigate to edit job page or show edit modal
     navigate(`${ROUTES.POST_JOB}?edit=${jobId}`);
+  };
+
+  const handleCloseJob = (jobId, jobTitle) => {
+    setJobToClose({ id: jobId, title: jobTitle });
+    setShowCloseModal(true);
+  };
+
+  const confirmCloseJob = async () => {
+    if (!jobToClose) return;
+
+    try {
+      setShowCloseModal(false);
+      await jobService.closeJob(jobToClose.id);
+
+      // Refresh jobs list
+      const filters = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+
+      if (selectedStatus !== "all") {
+        filters.status = selectedStatus;
+      }
+
+      if (selectedReviewStatus !== "all") {
+        filters.reviewStatus = selectedReviewStatus;
+      }
+
+      const response = await jobService.getMyJobs(filters);
+      const jobsData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.jobs || [];
+
+      if (response && response.success !== false) {
+        const transformedJobs = jobsData.map((job) => ({
+          id: job.id,
+          title: job.title || "Untitled Job",
+          organization: job.organization?.name || "Organization",
+          logo: job.organization?.logo || FaBuilding,
+          workingMode: job.workingMode?.name || "Full-time",
+          location: job.province || job.address || "Location TBD",
+          salary:
+            job.minSalary && job.maxSalary
+              ? `$${job.minSalary}-${job.maxSalary}`
+              : job.minSalary
+              ? `$${job.minSalary}+`
+              : "Negotiable",
+          createdAt:
+            job.createdDate || job.createdAt || new Date().toISOString(),
+          status: job.statusOpenStop || "open",
+          reviewStatus: job.reviewStatus || "pending",
+          expirationDate: job.expirationDate || null,
+          description: job.descriptions || "",
+          quantity: job.quantity || 1,
+        }));
+
+        setJobs(transformedJobs);
+      }
+      setJobToClose(null);
+    } catch (error) {
+      console.error("Error closing job:", error);
+      alert(error.message || "Failed to close job");
+      setJobToClose(null);
+    }
   };
 
   return (
@@ -412,16 +479,17 @@ function MyJobsPage() {
                         )}
                         <div className={styles.jobMeta}>
                           <span className={styles.metaItem}>
-                            <FaCalendar /> Posted: {formatDate(job.createdAt)}
+                            <FaCalendar /> {t("myJobs.posted") || "Posted"}:{" "}
+                            {formatDate(job.createdAt)}
                           </span>
                           {job.expirationDate && (
                             <span className={styles.metaItem}>
-                              <FaCalendar /> Expires:{" "}
+                              <FaCalendar /> {t("myJobs.expires") || "Expires"}:{" "}
                               {formatDate(job.expirationDate)}
                             </span>
                           )}
                           <span className={styles.metaItem}>
-                            Quantity: {job.quantity}
+                            {t("myJobs.quantity") || "Quantity"}: {job.quantity}
                           </span>
                         </div>
                       </div>
@@ -431,14 +499,22 @@ function MyJobsPage() {
                           className={styles.viewBtn}
                           onClick={() => handleViewJob(job.id)}
                         >
-                          <FaEye /> View
+                          <FaEye /> {t("myJobs.buttons.view") || "View"}
                         </button>
                         <button
                           className={styles.editBtn}
                           onClick={() => handleEditJob(job.id)}
                         >
-                          <FaEdit /> Edit
+                          <FaEdit /> {t("myJobs.buttons.edit") || "Edit"}
                         </button>
+                        {job.status === "open" && (
+                          <button
+                            className={styles.closeBtn}
+                            onClick={() => handleCloseJob(job.id, job.title)}
+                          >
+                            <FaTimes /> {t("myJobs.buttons.close") || "Close"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -481,6 +557,53 @@ function MyJobsPage() {
             )}
           </section>
         </main>
+
+        {/* Close Job Confirmation Modal */}
+        {showCloseModal && jobToClose && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowCloseModal(false)}
+          >
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.modalHeader}>
+                <h3>
+                  {t("myJobs.closeModal.title") || "Xác nhận đóng công việc"}
+                </h3>
+              </div>
+              <div className={styles.modalBody}>
+                <p>
+                  {t("myJobs.closeModal.message") ||
+                    "Bạn có chắc chắn muốn đóng công việc"}{" "}
+                  <strong>"{jobToClose.title}"</strong>?
+                </p>
+                <p className={styles.modalWarning}>
+                  {t("myJobs.closeModal.warning") ||
+                    "Sau khi đóng, công việc sẽ không còn nhận đơn ứng tuyển mới."}
+                </p>
+              </div>
+              <div className={styles.modalFooter}>
+                <button
+                  className={styles.modalCancelBtn}
+                  onClick={() => {
+                    setShowCloseModal(false);
+                    setJobToClose(null);
+                  }}
+                >
+                  {t("common.cancel") || "Hủy"}
+                </button>
+                <button
+                  className={styles.modalConfirmBtn}
+                  onClick={confirmCloseJob}
+                >
+                  {t("myJobs.closeModal.confirm") || "Đóng công việc"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   );

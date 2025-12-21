@@ -12,8 +12,11 @@ import {
   getMessages,
   sendMessage,
   deleteMessage,
+  updateMessage,
+  sendMessageWithFile,
 } from "../controllers/MessageController.js";
 import { authRequired } from "../middleware/auth.js";
+import { uploadMessageFile } from "../middleware/Upload.js";
 
 const router = express.Router();
 
@@ -115,7 +118,10 @@ router.post("/conversations", createOrGetConversation);
  *       404:
  *         description: Application not found
  */
-router.post("/conversations/from-application", createConversationFromApplication);
+router.post(
+  "/conversations/from-application",
+  createConversationFromApplication
+);
 
 /**
  * @swagger
@@ -280,6 +286,42 @@ router.post("/conversations/:conversationId/messages", sendMessage);
 
 /**
  * @swagger
+ * /api/messages/conversations/{conversationId}/messages/upload:
+ *   post:
+ *     summary: Send a message with file attachment
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: conversationId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Message with file sent successfully
+ */
+router.post(
+  "/conversations/:conversationId/messages/upload",
+  uploadMessageFile.single("file"),
+  sendMessageWithFile
+);
+
+/**
+ * @swagger
  * /api/messages/messages/{messageId}:
  *   delete:
  *     summary: Delete a message
@@ -298,5 +340,33 @@ router.post("/conversations/:conversationId/messages", sendMessage);
  */
 router.delete("/messages/:messageId", deleteMessage);
 
-export default router;
+/**
+ * @swagger
+ * /api/messages/messages/{messageId}:
+ *   patch:
+ *     summary: Update a message
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Message updated successfully
+ */
+router.patch("/messages/:messageId", updateMessage);
 
+export default router;

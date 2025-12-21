@@ -30,7 +30,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "gbridge_db",
   entities: entitySchemas,
-  synchronize: true, // Re-enabled for MariaDB
+  synchronize: false, // Disabled temporarily to avoid row size issues - use migrations instead
   logging: false,
   charset: "utf8mb4",
   extra: {

@@ -3,6 +3,7 @@ import {
   getPendingCertifications,
   approveCertification,
   rejectCertification,
+  getOrganizations,
   getPendingOrganizations,
   approveOrganization,
   rejectOrganization,
@@ -33,6 +34,7 @@ router.post("/certifications/:id/approve", approveCertification);
 router.post("/certifications/:id/reject", rejectCertification);
 
 // Organization Approval
+router.get("/organizations", getOrganizations);
 router.get("/organizations/pending", getPendingOrganizations);
 router.post("/organizations/:id/approve", approveOrganization);
 router.post("/organizations/:id/reject", rejectOrganization);
@@ -52,4 +54,3 @@ router.get("/revenue/stats", getRevenueStats);
 router.get("/revenue/payments", getAllPayments);
 
 export default router;
-

@@ -55,9 +55,13 @@ const OrganizationApprovalPage = () => {
         if (paginationData) {
           setPagination((prev) => paginationData || prev);
         }
+      } else {
+        console.error("Response not successful:", response);
+        setOrganizations([]);
       }
     } catch (error) {
       console.error("Error fetching organizations:", error);
+      setOrganizations([]);
     } finally {
       setLoading(false);
     }
@@ -178,7 +182,7 @@ const OrganizationApprovalPage = () => {
                     <th>Tên tổ chức</th>
                     <th>Trạng thái</th>
                     <th>Email</th>
-                    <th>Website</th>
+                    <th>Giấy phép KD</th>
                     <th>Chủ sở hữu</th>
                     <th>Hành động</th>
                   </tr>
@@ -214,18 +218,19 @@ const OrganizationApprovalPage = () => {
                           "—"
                         )}
                       </td>
-                      <td className={styles.websiteCell}>
-                        {org.website ? (
+                      <td className={styles.licenseCell}>
+                        {org.businessLicense ? (
                           <a
-                            href={org.website}
+                            href={org.businessLicense}
                             target="_blank"
                             rel="noopener noreferrer"
-                            title={org.website}
+                            className={styles.viewLicenseBtn}
+                            title="Xem giấy phép kinh doanh"
                           >
-                            Link
+                            📄 Xem file
                           </a>
                         ) : (
-                          "—"
+                          <span className={styles.noFile}>—</span>
                         )}
                       </td>
                       <td>
