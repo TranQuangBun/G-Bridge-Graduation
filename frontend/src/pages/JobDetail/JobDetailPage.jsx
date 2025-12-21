@@ -5,6 +5,7 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { ROUTES } from "../../constants/enums";
 import jobService from "../../services/jobService.js";
+import { AIRankedApplications } from "../../components/AIMatching";
 import styles from "./JobDetailPage.module.css";
 import {
   FaMapMarkerAlt,
@@ -24,9 +25,6 @@ import {
   FaLanguage,
   FaCheckCircle,
   FaEdit,
-  FaUser,
-  FaCheck,
-  FaTimes,
   FaFileAlt,
 } from "react-icons/fa";
 
@@ -45,7 +43,6 @@ export default function JobDetailPage() {
     type: "error",
   });
   const [applications, setApplications] = useState([]);
-  const [loadingApplications, setLoadingApplications] = useState(false);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -373,42 +370,9 @@ export default function JobDetailPage() {
     navigate(ROUTES.MY_JOBS);
   }
 
-  async function handleAcceptApplication(applicationId) {
-    try {
-      const response = await jobService.acceptApplication(applicationId);
-      if (response?.success) {
-        showNotification(t("jobDetail.acceptSuccess"), "success");
-        // Refresh applications
-        const appsResponse = await jobService.getJobApplications(job.id);
-        const applicationsData = Array.isArray(appsResponse.data)
-          ? appsResponse.data
-          : appsResponse.data?.applications || [];
-        setApplications(applicationsData);
-      }
-    } catch (error) {
-      showNotification(error.message || t("jobDetail.acceptError"), "error");
-    }
-  }
 
-  async function handleRejectApplication(applicationId) {
-    try {
-      const response = await jobService.rejectApplication(applicationId);
-      if (response?.success) {
-        showNotification(t("jobDetail.rejectSuccess"), "success");
-        // Refresh applications
-        const appsResponse = await jobService.getJobApplications(job.id);
-        const applicationsData = Array.isArray(appsResponse.data)
-          ? appsResponse.data
-          : appsResponse.data?.applications || [];
-        setApplications(applicationsData);
-      }
-    } catch (error) {
-      showNotification(error.message || t("jobDetail.rejectError"), "error");
-    }
-  }
-
-  // Check if current user is the owner of this job
-  const isJobOwner = user?.role === "client" && job?.ownerUserId === user?.id;
+  // Check if current user is the owner of this job (via organization)
+  const isJobOwner = user?.role === "client" && job?.organization?.ownerUserId === user?.id;
 
   // Fetch applications for this job if user is owner
   useEffect(() => {
@@ -418,7 +382,6 @@ export default function JobDetailPage() {
       }
 
       try {
-        setLoadingApplications(true);
         const response = await jobService.getJobApplications(job.id);
         const applicationsData = Array.isArray(response.data)
           ? response.data
@@ -429,8 +392,6 @@ export default function JobDetailPage() {
         }
       } catch (error) {
         console.error("Error fetching applications:", error);
-      } finally {
-        setLoadingApplications(false);
       }
     };
 
@@ -644,98 +605,18 @@ export default function JobDetailPage() {
                   <h2 className={styles.sectionTitle}>
                     {t("jobDetail.applications")} ({applications.length})
                   </h2>
-                  {loadingApplications ? (
-                    <div className={styles.loading}>
-                      {t("jobDetail.loadingApplications")}
-                    </div>
-                  ) : applications.length > 0 ? (
-                    <div className={styles.applicationsList}>
-                      {applications.map((app) => (
-                        <div key={app.id} className={styles.applicationCard}>
-                          <div className={styles.applicationHeader}>
-                            <div className={styles.applicationInfo}>
-                              <div className={styles.applicationName}>
-                                <FaUser />{" "}
-                                {app.interpreter?.fullName ||
-                                  app.interpreter?.email ||
-                                  "Interpreter"}
-                              </div>
-                              <div className={styles.applicationDate}>
-                                {t("jobDetail.applied")}:{" "}
-                                {new Date(
-                                  app.applicationDate ||
-                                    app.appliedAt ||
-                                    app.createdAt
-                                ).toLocaleDateString()}
-                              </div>
-                            </div>
-                            <div
-                              className={`${styles.applicationStatus} ${
-                                app.status === "accepted"
-                                  ? styles.statusAccepted
-                                  : app.status === "rejected"
-                                  ? styles.statusRejected
-                                  : styles.statusPending
-                              }`}
-                            >
-                              {app.status === "accepted" ? (
-                                <>
-                                  <FaCheckCircle /> {t("jobDetail.accepted")}
-                                </>
-                              ) : app.status === "rejected" ? (
-                                <>
-                                  <FaTimesCircle /> {t("jobDetail.rejected")}
-                                </>
-                              ) : (
-                                <>
-                                  <FaClock /> {t("jobDetail.pending")}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {app.coverLetter && (
-                            <div className={styles.applicationCoverLetter}>
-                              <strong>{t("jobDetail.coverLetter")}:</strong>
-                              <p>{app.coverLetter}</p>
-                            </div>
-                          )}
-                          <div className={styles.applicationResume}>
-                            <FaFileAlt />
-                            {app.resumeUrl ? (
-                              <button
-                                onClick={() => {
-                                  setSelectedResumeUrl(app.resumeUrl);
-                                  setResumeModalOpen(true);
-                                }}
-                                className={styles.resumeLink}
-                              >
-                                {t("applications.modal.viewResume") || "Xem CV"}
-                              </button>
-                            ) : (
-                              <span className={styles.noResumeText}>
-                                {t("applications.noResume") || "Chưa có CV"}
-                              </span>
-                            )}
-                          </div>
-                          {app.status === "pending" && (
-                            <div className={styles.applicationActions}>
-                              <button
-                                className={styles.acceptBtn}
-                                onClick={() => handleAcceptApplication(app.id)}
-                              >
-                                <FaCheck /> {t("jobDetail.accept")}
-                              </button>
-                              <button
-                                className={styles.rejectBtn}
-                                onClick={() => handleRejectApplication(app.id)}
-                              >
-                                <FaTimes /> {t("jobDetail.reject")}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                  {applications.length > 0 ? (
+                    <AIRankedApplications
+                      jobId={job?.id}
+                      applications={applications}
+                      onApplicationClick={(app) => {
+                        // Handle application click - could open detail modal
+                        if (app.resumeUrl) {
+                          setSelectedResumeUrl(app.resumeUrl);
+                          setResumeModalOpen(true);
+                        }
+                      }}
+                    />
                   ) : (
                     <div className={styles.emptyApplications}>
                       <p>{t("jobDetail.noApplications")}</p>

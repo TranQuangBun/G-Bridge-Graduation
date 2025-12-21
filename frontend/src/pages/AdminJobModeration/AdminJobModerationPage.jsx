@@ -4,6 +4,7 @@ import { AdminLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService";
+import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import styles from "./AdminJobModerationPage.module.css";
 
@@ -14,9 +15,11 @@ const AdminJobModerationPage = () => {
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("pending"); // pending, approved, rejected, all
+  const [filter, setFilter] = useState("all"); // pending, approved, rejected, all
   const [selectedJob, setSelectedJob] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showOrgApprovalModal, setShowOrgApprovalModal] = useState(false);
+  const [approveOrganization, setApproveOrganization] = useState(false);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(null);
   const [pagination, setPagination] = useState({
@@ -41,9 +44,14 @@ const AdminJobModerationPage = () => {
         ...(filter !== "all" && { reviewStatus: filter }),
       };
       const response = await jobService.getJobs(params);
-      if (response.success && response.data?.jobs) {
-        setJobs(response.data.jobs);
-        setPagination((prev) => response.data.pagination || prev);
+      if (response.success) {
+        // sendPaginated returns data as array directly, pagination as separate field
+        const jobsData = Array.isArray(response.data) ? response.data : (response.data?.jobs || []);
+        const paginationData = response.pagination || response.data?.pagination;
+        setJobs(jobsData);
+        if (paginationData) {
+          setPagination((prev) => paginationData || prev);
+        }
       }
     } catch (error) {
       console.error("Error fetching jobs for moderation:", error);
@@ -58,19 +66,42 @@ const AdminJobModerationPage = () => {
     }
   }, [filter, pagination.page, isAuthenticated, user, fetchJobs]);
 
-  const handleApprove = async (jobId) => {
+  const handleApprove = async (jobId, shouldApproveOrg = false) => {
     setProcessing(jobId);
     try {
+      // If organization needs approval and user confirmed, approve it first
+      if (shouldApproveOrg && selectedJob?.organization?.id) {
+        try {
+          await adminService.approveOrganization(selectedJob.organization.id);
+        } catch (orgError) {
+          console.error("Error approving organization:", orgError);
+          alert("Không thể duyệt tổ chức: " + (orgError.message || "Lỗi không xác định"));
+          setProcessing(null);
+          return;
+        }
+      }
+      
       await jobService.approveJob(jobId, reviewNotes);
       await fetchJobs();
       setShowModal(false);
+      setShowOrgApprovalModal(false);
       setSelectedJob(null);
       setReviewNotes("");
+      setApproveOrganization(false);
     } catch (error) {
       console.error("Error approving job:", error);
       alert(error.message || "Failed to approve job");
     } finally {
       setProcessing(null);
+    }
+  };
+
+  const handleApproveClick = () => {
+    // Check if organization is not approved
+    if (selectedJob?.organization?.approvalStatus !== "approved") {
+      setShowOrgApprovalModal(true);
+    } else {
+      handleApprove(selectedJob.id, false);
     }
   };
 
@@ -102,8 +133,10 @@ const AdminJobModerationPage = () => {
 
   const closeModal = () => {
     setShowModal(false);
+    setShowOrgApprovalModal(false);
     setSelectedJob(null);
     setReviewNotes("");
+    setApproveOrganization(false);
   };
 
   const formatDate = (dateString) => {
@@ -149,45 +182,22 @@ const AdminJobModerationPage = () => {
         </header>
 
         <div className={styles.filters}>
-          <button
-            className={`${styles.filterBtn} ${filter === "pending" ? styles.active : ""}`}
-            onClick={() => {
-              setFilter("pending");
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-          >
-            {t("adminModeration.filters.pending") || "Pending"} (
-            {jobs.filter((j) => j.reviewStatus === "pending").length})
-          </button>
-          <button
-            className={`${styles.filterBtn} ${filter === "approved" ? styles.active : ""}`}
-            onClick={() => {
-              setFilter("approved");
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-          >
-            {t("adminModeration.filters.approved") || "Approved"} (
-            {jobs.filter((j) => j.reviewStatus === "approved").length})
-          </button>
-          <button
-            className={`${styles.filterBtn} ${filter === "rejected" ? styles.active : ""}`}
-            onClick={() => {
-              setFilter("rejected");
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-          >
-            {t("adminModeration.filters.rejected") || "Rejected"} (
-            {jobs.filter((j) => j.reviewStatus === "rejected").length})
-          </button>
-          <button
-            className={`${styles.filterBtn} ${filter === "all" ? styles.active : ""}`}
-            onClick={() => {
-              setFilter("all");
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-          >
-            {t("adminModeration.filters.all") || "All"}
-          </button>
+          <label className={styles.filterLabel}>
+            {t("adminModeration.filterByStatus") || "Lọc theo trạng thái:"}
+            <select
+              className={styles.filterSelect}
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+            >
+              <option value="all">{t("adminModeration.filters.all") || "Tất cả"}</option>
+              <option value="pending">{t("adminModeration.filters.pending") || "Chờ duyệt"}</option>
+              <option value="approved">{t("adminModeration.filters.approved") || "Đã duyệt"}</option>
+              <option value="rejected">{t("adminModeration.filters.rejected") || "Từ chối"}</option>
+            </select>
+          </label>
         </div>
 
         <div className={styles.jobsList}>
@@ -283,40 +293,133 @@ const AdminJobModerationPage = () => {
                   <h3>{t("adminModeration.jobDetails") || "Job Details"}</h3>
                   <div className={styles.detailGrid}>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.company") || "Company"}:</strong>
-                      <span>{selectedJob.organization?.name || "Unknown"}</span>
-                    </div>
-                    <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.location") || "Location"}:</strong>
-                      <span>{selectedJob.province || selectedJob.address || "TBD"}</span>
-                    </div>
-                    <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.salary") || "Salary"}:</strong>
+                      <strong>{t("adminModeration.company") || "Tổ chức"}:</strong>
                       <span>
-                        {selectedJob.minSalary && selectedJob.maxSalary
-                          ? `$${selectedJob.minSalary} - $${selectedJob.maxSalary}`
-                          : selectedJob.minSalary
-                          ? `$${selectedJob.minSalary}+`
-                          : "Negotiable"}
+                        {selectedJob.organization?.name || "Unknown"}
+                        {selectedJob.organization?.approvalStatus !== "approved" && (
+                          <span className={styles.orgWarning}>
+                            {" "}(Chưa duyệt)
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.statusLabel") || "Status"}:</strong>
+                      <strong>Trạng thái tổ chức:</strong>
+                      <span>
+                        {selectedJob.organization?.approvalStatus === "approved" ? (
+                          <span className={styles.statusApproved}>Đã duyệt</span>
+                        ) : selectedJob.organization?.approvalStatus === "pending" ? (
+                          <span className={styles.statusPending}>Chờ duyệt</span>
+                        ) : (
+                          <span className={styles.statusRejected}>Từ chối</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>Hình thức làm việc:</strong>
+                      <span>{selectedJob.workingMode?.name || selectedJob.workingMode?.nameVi || "N/A"}</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>Địa điểm:</strong>
+                      <span>
+                        {[selectedJob.province, selectedJob.commune, selectedJob.address]
+                          .filter(Boolean)
+                          .join(", ") || "TBD"}
+                      </span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>Số lượng:</strong>
+                      <span>{selectedJob.quantity || 1} người</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>Hạn nộp hồ sơ:</strong>
+                      <span>{formatDate(selectedJob.expirationDate)}</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>{t("adminModeration.salary") || "Lương"}:</strong>
+                      <span>
+                        {selectedJob.salaryType === "FIXED" && selectedJob.minSalary
+                          ? `$${selectedJob.minSalary}`
+                          : selectedJob.salaryType === "RANGE" && selectedJob.minSalary && selectedJob.maxSalary
+                          ? `$${selectedJob.minSalary} - $${selectedJob.maxSalary}`
+                          : selectedJob.minSalary
+                          ? `$${selectedJob.minSalary}+`
+                          : "Thỏa thuận"}
+                      </span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>Email liên hệ:</strong>
+                      <span>{selectedJob.contactEmail || "N/A"}</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>Số điện thoại:</strong>
+                      <span>{selectedJob.contactPhone || "N/A"}</span>
+                    </div>
+                    <div className={styles.detailItem}>
+                      <strong>{t("adminModeration.statusLabel") || "Trạng thái"}:</strong>
                       {getReviewStatusBadge(selectedJob.reviewStatus)}
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.createdAt") || "Created"}:</strong>
+                      <strong>{t("adminModeration.createdAt") || "Ngày tạo"}:</strong>
                       <span>{formatDate(selectedJob.createdAt)}</span>
                     </div>
                   </div>
                 </div>
 
+                {selectedJob.domains && selectedJob.domains.length > 0 && (
+                  <div className={styles.modalSection}>
+                    <h3>Lĩnh vực / Ngành nghề</h3>
+                    <div className={styles.tagsList}>
+                      {selectedJob.domains.map((domain) => (
+                        <span key={domain.domainId || domain.id} className={styles.tag}>
+                          {domain.domain?.name || domain.name || domain.domainName}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedJob.requiredLanguages && selectedJob.requiredLanguages.length > 0 && (
+                  <div className={styles.modalSection}>
+                    <h3>Yêu cầu ngôn ngữ</h3>
+                    <div className={styles.languagesList}>
+                      {selectedJob.requiredLanguages.map((lang, idx) => (
+                        <div key={idx} className={styles.languageItem}>
+                          <span className={styles.languageName}>
+                            {lang.language?.name || lang.languageName || "N/A"}
+                          </span>
+                          <span className={styles.languageLevel}>
+                            {lang.level?.name || lang.level?.nameVi || lang.levelName || "N/A"}
+                          </span>
+                          {lang.isSourceLanguage && (
+                            <span className={styles.sourceBadge}>Ngôn ngữ nguồn</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className={styles.modalSection}>
-                  <h3>{t("adminModeration.description") || "Description"}</h3>
+                  <h3>{t("adminModeration.description") || "Mô tả"}</h3>
                   <p className={styles.descriptionText}>
-                    {selectedJob.descriptions || "No description provided"}
+                    {selectedJob.descriptions || "Không có mô tả"}
                   </p>
                 </div>
+
+                {selectedJob.responsibility && (
+                  <div className={styles.modalSection}>
+                    <h3>Nhiệm vụ chính</h3>
+                    <p className={styles.descriptionText}>{selectedJob.responsibility}</p>
+                  </div>
+                )}
+
+                {selectedJob.benefits && (
+                  <div className={styles.modalSection}>
+                    <h3>Quyền lợi</h3>
+                    <p className={styles.descriptionText}>{selectedJob.benefits}</p>
+                  </div>
+                )}
 
                 {selectedJob.reviewNotes && (
                   <div className={styles.modalSection}>
@@ -348,7 +451,7 @@ const AdminJobModerationPage = () => {
                 {selectedJob.reviewStatus !== "approved" && (
                   <button
                     className={styles.approveBtn}
-                    onClick={() => handleApprove(selectedJob.id)}
+                    onClick={handleApproveClick}
                     disabled={processing === selectedJob.id}
                   >
                     {processing === selectedJob.id
@@ -367,6 +470,64 @@ const AdminJobModerationPage = () => {
                       : t("adminModeration.reject") || "Reject"}
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Organization Approval Confirmation Modal */}
+        {showOrgApprovalModal && selectedJob && (
+          <div className={styles.modalOverlay} onClick={() => setShowOrgApprovalModal(false)}>
+            <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.confirmIcon}>
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <circle cx="24" cy="24" r="24" fill="#fef3c7" />
+                  <path
+                    d="M24 16v8M24 28h.01"
+                    stroke="#f59e0b"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <h3>Xác nhận duyệt tổ chức</h3>
+              <p className={styles.confirmText}>
+                Tổ chức <strong>"{selectedJob.organization?.name}"</strong> chưa được duyệt.
+                Bạn có muốn duyệt tổ chức này cùng lúc với công việc không?
+              </p>
+              <div className={styles.warningBox}>
+                <p>
+                  <strong>⚠️ Lưu ý:</strong>
+                </p>
+                <ul>
+                  <li>Nếu duyệt tổ chức, tổ chức sẽ được kích hoạt và có thể đăng thêm công việc</li>
+                  <li>Chủ sở hữu tổ chức sẽ nhận được thông báo về việc phê duyệt</li>
+                  <li>Bạn có thể duyệt công việc mà không duyệt tổ chức, nhưng công việc sẽ không hiển thị công khai cho đến khi tổ chức được duyệt</li>
+                </ul>
+              </div>
+              <div className={styles.modalActions}>
+                <button
+                  className={styles.cancelButton}
+                  onClick={() => {
+                    setShowOrgApprovalModal(false);
+                    setApproveOrganization(false);
+                  }}
+                >
+                  Chỉ duyệt công việc
+                </button>
+                <button
+                  className={styles.confirmApproveButton}
+                  onClick={() => {
+                    setApproveOrganization(true);
+                    setShowOrgApprovalModal(false);
+                    handleApprove(selectedJob.id, true);
+                  }}
+                  disabled={processing === selectedJob.id}
+                >
+                  {processing === selectedJob.id
+                    ? "Đang xử lý..."
+                    : "Duyệt cả tổ chức và công việc"}
+                </button>
               </div>
             </div>
           </div>

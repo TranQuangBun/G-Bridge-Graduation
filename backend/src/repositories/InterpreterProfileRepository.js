@@ -30,7 +30,7 @@ export class InterpreterProfileRepository extends BaseRepository {
       relations: ["user"],
       take: limit,
       skip: offset,
-      order: { createdAt: "DESC" },
+      order: { id: "DESC" },
     });
   }
 }

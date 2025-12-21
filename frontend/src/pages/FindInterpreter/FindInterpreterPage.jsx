@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import interpreterService from "../../services/interpreterService";
 import savedInterpreterService from "../../services/savedInterpreterService";
+import aiMatchingService from "../../services/aiMatchingService";
+import { SuitabilityScoreBadge } from "../../components/AIMatching";
 import { InterpreterModal } from "../../components/InterpreterModal";
 import { toast } from "react-toastify";
 import styles from "./FindInterpreterPage.module.css";
@@ -22,6 +24,8 @@ const FindInterpreterPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const jobId = searchParams.get("jobId"); // Optional: if coming from a job context
 
   // State
   const [interpreters, setInterpreters] = useState([]);
@@ -34,6 +38,10 @@ const FindInterpreterPage = () => {
   // Other input states for custom languages and specializations
   const [otherLanguage, setOtherLanguage] = useState("");
   const [otherSpecialization, setOtherSpecialization] = useState("");
+
+  // AI Recommended interpreters (when jobId is provided)
+  const [aiRecommended, setAiRecommended] = useState([]);
+  const [loadingAIRecommended, setLoadingAIRecommended] = useState(false);
 
   // Temporary filters for modal (not applied yet)
   const [tempFilters, setTempFilters] = useState({
@@ -105,6 +113,46 @@ const FindInterpreterPage = () => {
       navigate("/login");
     }
   }, [user, navigate]);
+
+  // Fetch AI recommended interpreters (only when user clicks button)
+  const handleFetchAIRecommended = async () => {
+    if (!jobId) {
+      toast.error("Job ID is required for AI recommendations");
+      return;
+    }
+    
+    setLoadingAIRecommended(true);
+    try {
+      const response = await aiMatchingService.matchJobToInterpreters(jobId, 5);
+      if (response.success && response.data?.matched_interpreters) {
+        // Map to interpreter format - need to fetch full interpreter data
+        const recommended = [];
+        for (const match of response.data.matched_interpreters) {
+          try {
+            const interpreterRes = await interpreterService.getInterpreterById(match.interpreter_id);
+            if (interpreterRes?.data) {
+              recommended.push({
+                id: match.interpreter_id,
+                interpreter: interpreterRes.data,
+                suitability_score: match.suitability_score,
+                match_priority: match.match_priority,
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching interpreter ${match.interpreter_id}:`, err);
+          }
+        }
+        setAiRecommended(recommended);
+      } else {
+        toast.error("No AI recommendations available");
+      }
+    } catch (error) {
+      console.error("Error fetching AI recommendations:", error);
+      toast.error("Failed to fetch AI recommendations");
+    } finally {
+      setLoadingAIRecommended(false);
+    }
+  };
 
   // Load saved interpreters on mount and when page becomes visible
   useEffect(() => {
@@ -359,6 +407,73 @@ const FindInterpreterPage = () => {
   return (
     <MainLayout>
       <div className={styles.findInterpreterPage}>
+        {/* AI Recommended Section - Only when jobId is provided */}
+        {jobId && (
+          <div className={styles.aiRecommendedSection}>
+            <div className={styles.aiSectionHeader}>
+              <h2 className={styles.aiSectionTitle}>
+                🤖 AI Recommended Interpreters
+              </h2>
+              <p className={styles.aiSectionSubtitle}>
+                Get AI-powered recommendations based on your job requirements
+              </p>
+              {!loadingAIRecommended && aiRecommended.length === 0 && (
+                <button
+                  className={styles.aiFetchButton}
+                  onClick={handleFetchAIRecommended}
+                >
+                  Get AI Recommendations
+                </button>
+              )}
+              {loadingAIRecommended && (
+                <div className={styles.aiLoading}>
+                  <p>AI is analyzing and finding the best interpreters...</p>
+                </div>
+              )}
+            </div>
+            {!loadingAIRecommended && aiRecommended.length > 0 && (
+            <div className={styles.aiRecommendedGrid}>
+              {aiRecommended.map((match) => {
+                const interpreter = match.interpreter;
+                return (
+                  <div key={match.id} className={styles.aiRecommendedCard}>
+                    <div className={styles.aiCardHeader}>
+                      <div className={styles.aiInterpreterInfo}>
+                        <h3 className={styles.aiInterpreterName}>
+                          {interpreter?.user?.name || interpreter?.fullName || interpreter?.name || "Unknown"}
+                        </h3>
+                        <p className={styles.aiInterpreterLanguages}>
+                          {interpreter?.languages?.map((l) => l.language || l).join(", ") || 
+                           interpreter?.profile?.languages?.map((l) => l.language || l).join(", ") || 
+                           "No languages"}
+                        </p>
+                      </div>
+                      <div className={styles.aiScoreSection}>
+                        <SuitabilityScoreBadge
+                          score={match.suitability_score?.overall_score || 0}
+                          level={match.suitability_score?.score_level || "fair"}
+                          size="small"
+                        />
+                        <span className={styles.aiRank}>#{match.match_priority}</span>
+                      </div>
+                    </div>
+                    <p className={styles.aiRecommendation}>
+                      {match.suitability_score?.recommendation}
+                    </p>
+                    <button
+                      className={styles.aiViewButton}
+                      onClick={() => handleViewProfile(match.id)}
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            )}
+          </div>
+        )}
+
         {/* Interpreter Modal */}
         {showModal && selectedInterpreterId && (
           <InterpreterModal

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
 import adminService from "../../services/adminService";
+import organizationService from "../../services/organizationService";
 import { ROUTES } from "../../constants";
 import styles from "./OrganizationApprovalPage.module.css";
 
@@ -18,9 +19,10 @@ const OrganizationApprovalPage = () => {
   const [detailOrg, setDetailOrg] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all"); // all, pending, approved, rejected
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5,
+    limit: 10,
     total: 0,
     totalPages: 1,
   });
@@ -34,26 +36,38 @@ const OrganizationApprovalPage = () => {
   const fetchOrganizations = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await adminService.getPendingOrganizations({
+      const params = {
         page: pagination.page,
         limit: pagination.limit,
-      });
-      if (response.success && response.data) {
-        setOrganizations(response.data.organizations || []);
-        setPagination((prev) => response.data.pagination || prev);
+      };
+
+      // Add approvalStatus filter if not "all"
+      if (statusFilter !== "all") {
+        params.approvalStatus = statusFilter;
+      }
+
+      const response = await organizationService.getOrganizations(params);
+      if (response.success) {
+        // sendPaginated returns data as array directly, pagination as separate field
+        const organizationsData = Array.isArray(response.data) ? response.data : (response.data?.organizations || []);
+        const paginationData = response.pagination || response.data?.pagination;
+        setOrganizations(organizationsData);
+        if (paginationData) {
+          setPagination((prev) => paginationData || prev);
+        }
       }
     } catch (error) {
-      console.error("Error fetching pending organizations:", error);
+      console.error("Error fetching organizations:", error);
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, statusFilter]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {
       fetchOrganizations();
     }
-  }, [isAuthenticated, user, pagination.page, fetchOrganizations]);
+  }, [isAuthenticated, user, pagination.page, statusFilter, fetchOrganizations]);
 
   const handleApprove = async (id) => {
     setProcessing(id);
@@ -107,19 +121,52 @@ const OrganizationApprovalPage = () => {
     setShowDetailModal(true);
   };
 
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      pending: { label: "Chờ duyệt", className: styles.statusPending },
+      approved: { label: "Đã duyệt", className: styles.statusApproved },
+      rejected: { label: "Từ chối", className: styles.statusRejected },
+    };
+    const statusInfo = statusMap[status] || statusMap.pending;
+    return (
+      <span className={`${styles.statusBadge} ${statusInfo.className}`}>
+        {statusInfo.label}
+      </span>
+    );
+  };
+
   return (
     <AdminLayout>
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Duyệt tổ chức</h1>
-          <p>Danh sách tổ chức đang chờ duyệt</p>
+          <p>Quản lý và duyệt tổ chức</p>
+        </div>
+
+        <div className={styles.filters}>
+          <label className={styles.filterLabel}>
+            Lọc theo trạng thái:
+            <select
+              className={styles.filterSelect}
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+            >
+              <option value="all">Tất cả</option>
+              <option value="pending">Chờ duyệt</option>
+              <option value="approved">Đã duyệt</option>
+              <option value="rejected">Từ chối</option>
+            </select>
+          </label>
         </div>
 
         {loading ? (
           <div className={styles.loading}>Đang tải...</div>
         ) : organizations.length === 0 ? (
           <div className={styles.empty}>
-            Không có tổ chức nào đang chờ duyệt
+            Không có tổ chức nào
           </div>
         ) : (
           <>
@@ -129,6 +176,7 @@ const OrganizationApprovalPage = () => {
                   <tr>
                     <th>ID</th>
                     <th>Tên tổ chức</th>
+                    <th>Trạng thái</th>
                     <th>Email</th>
                     <th>Website</th>
                     <th>Chủ sở hữu</th>
@@ -155,10 +203,10 @@ const OrganizationApprovalPage = () => {
                             >
                               {org.name}
                             </button>
-                            <span className={styles.badge}>Chờ duyệt</span>
                           </div>
                         </div>
                       </td>
+                      <td>{getStatusBadge(org.approvalStatus)}</td>
                       <td className={styles.emailCell}>
                         {org.email ? (
                           <span title={org.email}>{org.email}</span>
@@ -187,20 +235,30 @@ const OrganizationApprovalPage = () => {
                       </td>
                       <td>
                         <div className={styles.tableActions}>
-                          <button
-                            className={styles.approveButton}
-                            onClick={() => openApprovalModal(org)}
-                            disabled={processing === org.id}
-                          >
-                            {processing === org.id ? "Đang xử lý..." : "Duyệt"}
-                          </button>
-                          <button
-                            className={styles.rejectButton}
-                            onClick={() => openRejectModal(org)}
-                            disabled={processing === org.id}
-                          >
-                            Từ chối
-                          </button>
+                          {org.approvalStatus === "pending" && (
+                            <>
+                              <button
+                                className={styles.approveButton}
+                                onClick={() => openApprovalModal(org)}
+                                disabled={processing === org.id}
+                              >
+                                {processing === org.id ? "Đang xử lý..." : "Duyệt"}
+                              </button>
+                              <button
+                                className={styles.rejectButton}
+                                onClick={() => openRejectModal(org)}
+                                disabled={processing === org.id}
+                              >
+                                Từ chối
+                              </button>
+                            </>
+                          )}
+                          {org.approvalStatus === "approved" && (
+                            <span className={styles.noAction}>Đã duyệt</span>
+                          )}
+                          {org.approvalStatus === "rejected" && (
+                            <span className={styles.noAction}>Đã từ chối</span>
+                          )}
                         </div>
                       </td>
                     </tr>

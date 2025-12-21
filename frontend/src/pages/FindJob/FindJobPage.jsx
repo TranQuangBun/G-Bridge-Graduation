@@ -7,6 +7,7 @@ import { ROUTES } from "../../constants/enums";
 import jobService from "../../services/jobService.js";
 import savedJobService from "../../services/savedJobService.js";
 import { useAuth } from "../../contexts/AuthContext";
+import { AISuggestedJobsSection } from "../../components/AIMatching";
 import { toast } from "react-toastify";
 
 import {
@@ -1032,6 +1033,8 @@ export default function FindJobPage() {
   return (
     <MainLayout>
       <div className={styles.findJobPage}>
+        {/* AI Suggested Jobs will be integrated into the jobs list */}
+
         {/* Header */}
         <div className={styles.pageHeader}>
           <div className={styles.headerContent}>
@@ -1192,6 +1195,23 @@ export default function FindJobPage() {
                 </select>
               </div>
             </div>
+
+            {/* AI Recommended Jobs Section - Integrated naturally */}
+            {isAuthenticated && user?.role === "interpreter" && (
+              <div className={styles.aiSection}>
+                <div className={styles.aiSectionHeader}>
+                  <h3>
+                    <span className={styles.aiBadge}>AI</span>{" "}
+                    {t("findJob.aiRecommended") || "Recommended for You"}
+                  </h3>
+                </div>
+                <AISuggestedJobsSection 
+                  interpreterId={user.id} 
+                  autoFetch={true}
+                  compact={true}
+                />
+              </div>
+            )}
 
             {/* Jobs Grid */}
             <div className={styles.jobsGrid}>

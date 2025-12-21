@@ -154,5 +154,39 @@ export class JobApplicationService {
     }
     return true;
   }
+
+  async getApplicationsByJobId(jobId) {
+    const [applications] = await this.jobApplicationRepository.findByJobId(
+      jobId,
+      1,
+      1000 // Get all applications for AI matching
+    );
+    
+    // Load interpreter profiles for each application
+    const applicationsWithProfiles = await Promise.all(
+      applications.map(async (app) => {
+        if (app.interpreter?.interpreterProfile) {
+          return {
+            ...app,
+            interpreterProfile: app.interpreter.interpreterProfile,
+          };
+        }
+        // If profile not loaded, fetch it
+        const { InterpreterProfileService } = await import("./InterpreterProfileService.js");
+        const profileService = new InterpreterProfileService();
+        try {
+          const profile = await profileService.getInterpreterProfileByUserId(app.interpreterId);
+          return {
+            ...app,
+            interpreterProfile: profile,
+          };
+        } catch (error) {
+          return app;
+        }
+      })
+    );
+
+    return applicationsWithProfiles;
+  }
 }
 
