@@ -1,0 +1,134 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.circularProgress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg {
+  transform: rotate(-90deg);
+}
+
+.backgroundCircle {
+  opacity: 0.2;
+}
+
+.progressCircle {
+  transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.scoreText {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scoreNumber {
+  font-size: 1.2em;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.scoreLabel {
+  font-size: 0.7em;
+  opacity: 0.7;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Size variants */
+.small .scoreNumber {
+  font-size: 0.9em;
+}
+
+.small .scoreLabel {
+  font-size: 0.6em;
+}
+
+.small .badge {
+  font-size: 0.65em;
+  padding: 3px 8px;
+}
+
+.large .scoreNumber {
+  font-size: 1.5em;
+}
+
+.large .scoreLabel {
+  font-size: 0.8em;
+}
+
+.large .badge {
+  font-size: 0.85em;
+  padding: 6px 16px;
+}
+
+/* Color variants */
+.excellent {
+  color: #10b981;
+}
+
+.excellent .progressCircle {
+  stroke: #10b981;
+}
+
+.excellent.badge {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.good {
+  color: #3b82f6;
+}
+
+.good .progressCircle {
+  stroke: #3b82f6;
+}
+
+.good.badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.fair {
+  color: #f59e0b;
+}
+
+.fair .progressCircle {
+  stroke: #f59e0b;
+}
+
+.fair.badge {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.poor {
+  color: #ef4444;
+}
+
+.poor .progressCircle {
+  stroke: #ef4444;
+}
+
+.poor.badge {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+

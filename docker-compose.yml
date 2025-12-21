@@ -87,6 +87,9 @@ services:
       - MOMO_RETURN_URL=http://localhost:3333/payment/momo/callback
       - MOMO_NOTIFY_URL=http://localhost:4000/api/payments/webhook/momo
       - MOMO_ENVIRONMENT=sandbox
+      
+      # AI Service Configuration
+      - AI_SERVICE_URL=http://ai-service:5000
     ports:
       - "4000:4000"
     volumes:
@@ -159,6 +162,39 @@ services:
     stdin_open: true
     tty: true
     command: npm start
+
+  # AI Matching Service (Python FastAPI)
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: gbridge-ai-service
+    restart: unless-stopped
+    environment:
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      
+      # Service Configuration
+      - API_PORT=5000
+      - API_HOST=0.0.0.0
+      - LOG_LEVEL=INFO
+      
+      # CORS Configuration
+      - ALLOWED_ORIGINS=http://localhost:4000,http://localhost:3333
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount source code for hot reload
+      - ./ai-service/app:/app/app
+    networks:
+      - gbridge-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --timeout=5 --tries=1 http://localhost:5000/api/v1/health 2>&1 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   mysql_data:

@@ -1082,3 +1082,145 @@
     width: 100%;
   }
 }
+
+/* AI Recommended Section */
+.aiRecommendedSection {
+  max-width: 1400px;
+  margin: 0 auto 40px;
+  padding: 0 20px;
+}
+
+.aiSectionHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.aiSectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.aiSectionSubtitle {
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.aiFetchButton {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  margin-top: 12px;
+}
+
+.aiFetchButton:hover {
+  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+}
+
+.aiLoading {
+  padding: 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.aiLoading p {
+  margin: 0;
+}
+
+.aiRecommendedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.aiRecommendedCard {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.aiRecommendedCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+}
+
+.aiCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.aiInterpreterInfo {
+  flex: 1;
+}
+
+.aiInterpreterName {
+  margin: 0 0 4px 0;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.aiInterpreterLanguages {
+  margin: 0;
+  font-size: 0.9em;
+  color: #6b7280;
+}
+
+.aiScoreSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.aiRank {
+  font-size: 0.75em;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.aiRecommendation {
+  margin: 12px 0;
+  font-size: 0.9em;
+  color: #4b5563;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.aiViewButton {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+}
+
+.aiViewButton:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}

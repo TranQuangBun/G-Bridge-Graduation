@@ -7,6 +7,8 @@ import { ROUTES } from "../../constants";
 import jobService from "../../services/jobService";
 import organizationService from "../../services/organizationService";
 import languageService from "../../services/languageService";
+import aiMatchingService from "../../services/aiMatchingService";
+import { AIMatchModal, MatchReasonsCard } from "../../components/AIMatching";
 import { toast } from "react-toastify";
 import styles from "./PostJobPage.module.css";
 
@@ -121,6 +123,14 @@ const PostJobPage = () => {
   const [editingOrganizationId, setEditingOrganizationId] = useState(null);
   const [jobData, setJobData] = useState(defaultJobData);
   const [languageRequirements, setLanguageRequirements] = useState([]);
+  
+  // AI Matching states
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [aiMatches, setAiMatches] = useState([]);
+  const [selectedMatchDetails, setSelectedMatchDetails] = useState(null);
+  const [loadingAISuggestions, setLoadingAISuggestions] = useState(false);
+  const [createdJobId, setCreatedJobId] = useState(null); // Store job ID after creation
+  const [aiSuggestionsFetched, setAiSuggestionsFetched] = useState(false); // Track if AI suggestions have been fetched
 
   const isClientOrAdmin = user?.role === "client" || user?.role === "admin";
 
@@ -686,6 +696,11 @@ const PostJobPage = () => {
         response = await jobService.updateJob(editJobId, payload);
         if (response?.success) {
           toast.success("Job updated successfully");
+          // Auto-fetch AI suggestions after job update
+          if (response.data?.id) {
+            setCreatedJobId(response.data.id);
+            handleFetchAISuggestions();
+          }
           navigate(ROUTES.MY_JOBS);
         } else {
           throw new Error(response?.message || "Unable to update job");
@@ -695,7 +710,19 @@ const PostJobPage = () => {
         response = await jobService.createJob(payload);
         if (response?.success) {
           toast.success(t("postJob.messages.success"));
-          navigate(ROUTES.DASHBOARD);
+          
+          // Store job ID for AI suggestions
+          const jobId = response.data?.id || response.data?.job?.id;
+          if (jobId) {
+            setCreatedJobId(jobId);
+            // Auto-fetch AI suggestions after a short delay
+            setTimeout(() => {
+              handleFetchAISuggestions();
+            }, 500);
+          }
+          
+          // Don't navigate away, stay on page to see AI suggestions
+          // User can manually navigate if needed
         } else {
           throw new Error(response?.message || "Unable to submit job");
         }
@@ -729,6 +756,39 @@ const PostJobPage = () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split("T")[0];
   }, []);
+
+  // Fetch AI suggested interpreters
+  const handleFetchAISuggestions = async () => {
+    const jobId = createdJobId || editJobId;
+    if (!jobId) {
+      return; // Silently return if no job ID
+    }
+
+    if (aiSuggestionsFetched) {
+      return; // Don't fetch again if already fetched
+    }
+
+    setLoadingAISuggestions(true);
+    try {
+      const aiResponse = await aiMatchingService.matchJobToInterpreters(jobId, 5); // Fetch top 5 for sidebar
+      if (aiResponse.success && aiResponse.data?.matched_interpreters) {
+        setAiMatches(aiResponse.data.matched_interpreters);
+        setAiSuggestionsFetched(true);
+      }
+    } catch (error) {
+      console.error("Error fetching AI suggestions:", error);
+      // Don't show error toast, just fail silently
+    } finally {
+      setLoadingAISuggestions(false);
+    }
+  };
+
+  // Auto-fetch AI suggestions when job is created
+  useEffect(() => {
+    if (createdJobId && !aiSuggestionsFetched && !loadingAISuggestions) {
+      handleFetchAISuggestions();
+    }
+  }, [createdJobId]);
 
   // Show loading state while fetching job data for edit
   if (isEditMode && loadingJobData) {
@@ -1499,10 +1559,126 @@ const PostJobPage = () => {
                   </p>
                 )}
               </div>
+
+              {/* AI Suggested Interpreters Section - Integrated naturally */}
+              {createdJobId && (
+                <div className={styles.previewSection}>
+                  <div className={styles.aiSectionHeader}>
+                    <h4>
+                      <span className={styles.aiBadge}>AI</span>{" "}
+                      {t("postJob.preview.aiSuggestions") || "Suggested Interpreters"}
+                    </h4>
+                    {loadingAISuggestions && (
+                      <span className={styles.aiLoadingText}>Analyzing...</span>
+                    )}
+                  </div>
+                  {loadingAISuggestions ? (
+                    <div className={styles.aiLoadingState}>
+                      <p>Finding the best interpreters for this job...</p>
+                    </div>
+                  ) : aiMatches.length > 0 ? (
+                    <div className={styles.aiMatchesList}>
+                      {aiMatches.slice(0, 3).map((match) => (
+                        <div
+                          key={match.interpreter_id || match.id}
+                          className={styles.aiMatchCard}
+                          onClick={() => {
+                            setSelectedMatchDetails(match);
+                            setShowAISuggestions(true);
+                          }}
+                        >
+                          <div className={styles.aiMatchHeader}>
+                            <span className={styles.aiMatchName}>
+                              {match.interpreter?.user?.name ||
+                                match.interpreter?.fullName ||
+                                match.interpreter?.name ||
+                                "Interpreter"}
+                            </span>
+                            {match.suitability_score && (
+                              <span
+                                className={`${styles.aiMatchScore} ${
+                                  match.suitability_score.overall_score >= 80
+                                    ? styles.excellent
+                                    : match.suitability_score.overall_score >= 60
+                                    ? styles.good
+                                    : styles.fair
+                                }`}
+                              >
+                                {Math.round(match.suitability_score.overall_score)}%
+                              </span>
+                            )}
+                          </div>
+                          {match.suitability_score?.recommendation && (
+                            <p className={styles.aiMatchReason}>
+                              {match.suitability_score.recommendation.substring(0, 80)}
+                              ...
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                      {aiMatches.length > 3 && (
+                        <button
+                          className={styles.viewAllButton}
+                          onClick={() => setShowAISuggestions(true)}
+                        >
+                          View all {aiMatches.length} suggestions →
+                        </button>
+                      )}
+                    </div>
+                  ) : aiSuggestionsFetched && !loadingAISuggestions ? (
+                    <p className={styles.noSuggestions}>
+                      No AI suggestions available at this time.
+                    </p>
+                  ) : null}
+                </div>
+              )}
             </div>
           </aside>
         </div>
       </div>
+
+      {/* AI Suggested Interpreters Modal */}
+      <AIMatchModal
+        isOpen={showAISuggestions}
+        onClose={() => {
+          setShowAISuggestions(false);
+          navigate(ROUTES.DASHBOARD);
+        }}
+        title="AI Suggested Interpreters"
+        matches={aiMatches.map((match) => ({
+          interpreter_id: match.interpreter_id,
+          interpreter: match.interpreter || {},
+          suitability_score: match.suitability_score,
+          match_priority: match.match_priority,
+        }))}
+        type="interpreters"
+        onViewDetails={(match) => {
+          setSelectedMatchDetails(match);
+        }}
+        onInvite={(match) => {
+          // TODO: Implement invite functionality
+          toast.info("Invite functionality coming soon");
+        }}
+      />
+
+      {/* Match Details Modal */}
+      {selectedMatchDetails && selectedMatchDetails.suitability_score && (
+        <div className={styles.matchDetailsOverlay} onClick={() => setSelectedMatchDetails(null)}>
+          <div className={styles.matchDetailsModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.matchDetailsHeader}>
+              <h2>AI Match Analysis</h2>
+              <button onClick={() => setSelectedMatchDetails(null)}>×</button>
+            </div>
+            <div className={styles.matchDetailsContent}>
+              <MatchReasonsCard
+                suitabilityScore={selectedMatchDetails.suitability_score}
+                expandable={false}
+                defaultExpanded={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 };
