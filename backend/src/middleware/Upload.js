@@ -122,4 +122,32 @@ export const uploadJobDocument = createUploadMiddleware({
   allowedExtensions: ["jpeg", "jpg", "png", "pdf", "doc", "docx"],
 });
 
+export const uploadMessageFile = createUploadMiddleware({
+  directory: "messages",
+  filePrefix: "msg",
+  maxSize: 10 * 1024 * 1024, // 10MB
+  allowedMimeTypes: [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+  ],
+  allowedExtensions: [
+    "jpeg",
+    "jpg",
+    "png",
+    "gif",
+    "webp",
+    "pdf",
+    "doc",
+    "docx",
+    "txt",
+  ],
+});
+
 export default uploadAvatar;

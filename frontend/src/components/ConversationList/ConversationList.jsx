@@ -50,6 +50,13 @@ function ConversationList({
     );
   });
 
+  console.log("ConversationList - conversations:", conversations);
+  console.log(
+    "ConversationList - filteredConversations:",
+    filteredConversations
+  );
+  console.log("ConversationList - searchQuery:", searchQuery);
+
   if (loading) {
     return (
       <div className={styles.conversationList}>
@@ -110,7 +117,9 @@ function ConversationList({
                 )}
                 {conversation.unreadCount > 0 && (
                   <span className={styles.unreadBadge}>
-                    {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                    {conversation.unreadCount > 99
+                      ? "99+"
+                      : conversation.unreadCount}
                   </span>
                 )}
               </div>
@@ -188,4 +197,3 @@ function ConversationList({
 }
 
 export default ConversationList;
-

@@ -19,6 +19,15 @@ const AdminJobModerationPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(null);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [actionJobId, setActionJobId] = useState(null);
+  const [counts, setCounts] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    all: 0,
+  });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -32,6 +41,27 @@ const AdminJobModerationPage = () => {
     }
   }, [isAuthenticated, authLoading, user, navigate]);
 
+  // Fetch counts for all statuses
+  const fetchCounts = useCallback(async () => {
+    try {
+      const [pendingRes, approvedRes, rejectedRes, allRes] = await Promise.all([
+        jobService.getJobs({ page: 1, limit: 1, reviewStatus: "pending" }),
+        jobService.getJobs({ page: 1, limit: 1, reviewStatus: "approved" }),
+        jobService.getJobs({ page: 1, limit: 1, reviewStatus: "rejected" }),
+        jobService.getJobs({ page: 1, limit: 1 }),
+      ]);
+
+      setCounts({
+        pending: pendingRes.pagination?.total || 0,
+        approved: approvedRes.pagination?.total || 0,
+        rejected: rejectedRes.pagination?.total || 0,
+        all: allRes.pagination?.total || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching counts:", error);
+    }
+  }, []);
+
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
@@ -41,9 +71,14 @@ const AdminJobModerationPage = () => {
         ...(filter !== "all" && { reviewStatus: filter }),
       };
       const response = await jobService.getJobs(params);
-      if (response.success && response.data?.jobs) {
-        setJobs(response.data.jobs);
-        setPagination((prev) => response.data.pagination || prev);
+      console.log("Jobs response:", response);
+      if (response.success) {
+        // Backend returns { data: [jobs], pagination: {...} }
+        const jobsData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.jobs || [];
+        setJobs(jobsData);
+        setPagination((prev) => response.pagination || prev);
       }
     } catch (error) {
       console.error("Error fetching jobs for moderation:", error);
@@ -55,17 +90,27 @@ const AdminJobModerationPage = () => {
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {
       fetchJobs();
+      fetchCounts();
     }
-  }, [filter, pagination.page, isAuthenticated, user, fetchJobs]);
+  }, [filter, pagination.page, isAuthenticated, user, fetchJobs, fetchCounts]);
 
-  const handleApprove = async (jobId) => {
+  const confirmApprove = (jobId) => {
+    setActionJobId(jobId);
+    setShowApproveConfirm(true);
+  };
+
+  const handleApprove = async () => {
+    const jobId = actionJobId;
     setProcessing(jobId);
+    setShowApproveConfirm(false);
     try {
       await jobService.approveJob(jobId, reviewNotes);
       await fetchJobs();
+      await fetchCounts();
       setShowModal(false);
       setSelectedJob(null);
       setReviewNotes("");
+      setActionJobId(null);
     } catch (error) {
       console.error("Error approving job:", error);
       alert(error.message || "Failed to approve job");
@@ -74,18 +119,30 @@ const AdminJobModerationPage = () => {
     }
   };
 
-  const handleReject = async (jobId) => {
+  const confirmReject = (jobId) => {
     if (!reviewNotes.trim()) {
-      alert(t("adminModeration.reviewNotesRequired") || "Review notes are required for rejection");
+      alert(
+        t("adminModeration.reviewNotesRequired") ||
+          "Review notes are required for rejection"
+      );
       return;
     }
+    setActionJobId(jobId);
+    setShowRejectConfirm(true);
+  };
+
+  const handleReject = async () => {
+    const jobId = actionJobId;
     setProcessing(jobId);
+    setShowRejectConfirm(false);
     try {
       await jobService.rejectJob(jobId, reviewNotes);
       await fetchJobs();
+      await fetchCounts();
       setShowModal(false);
       setSelectedJob(null);
       setReviewNotes("");
+      setActionJobId(null);
     } catch (error) {
       console.error("Error rejecting job:", error);
       alert(error.message || "Failed to reject job");
@@ -118,9 +175,18 @@ const AdminJobModerationPage = () => {
 
   const getReviewStatusBadge = (status) => {
     const statusMap = {
-      pending: { label: t("adminModeration.status.pending") || "Pending", className: styles.statusPending },
-      approved: { label: t("adminModeration.status.approved") || "Approved", className: styles.statusApproved },
-      rejected: { label: t("adminModeration.status.rejected") || "Rejected", className: styles.statusRejected },
+      pending: {
+        label: t("adminModeration.status.pending") || "Pending",
+        className: styles.statusPending,
+      },
+      approved: {
+        label: t("adminModeration.status.approved") || "Approved",
+        className: styles.statusApproved,
+      },
+      rejected: {
+        label: t("adminModeration.status.rejected") || "Rejected",
+        className: styles.statusRejected,
+      },
     };
     const statusInfo = statusMap[status] || statusMap.pending;
     return (
@@ -144,49 +210,58 @@ const AdminJobModerationPage = () => {
         <header className={styles.pageHeader}>
           <h1>{t("adminModeration.title") || "Job Moderation"}</h1>
           <p className={styles.subtitle}>
-            {t("adminModeration.subtitle") || "Review and approve or reject job postings"}
+            {t("adminModeration.subtitle") ||
+              "Review and approve or reject job postings"}
           </p>
         </header>
 
         <div className={styles.filters}>
           <button
-            className={`${styles.filterBtn} ${filter === "pending" ? styles.active : ""}`}
+            className={`${styles.filterBtn} ${
+              filter === "pending" ? styles.active : ""
+            }`}
             onClick={() => {
               setFilter("pending");
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
           >
             {t("adminModeration.filters.pending") || "Pending"} (
-            {jobs.filter((j) => j.reviewStatus === "pending").length})
+            {counts.pending})
           </button>
           <button
-            className={`${styles.filterBtn} ${filter === "approved" ? styles.active : ""}`}
+            className={`${styles.filterBtn} ${
+              filter === "approved" ? styles.active : ""
+            }`}
             onClick={() => {
               setFilter("approved");
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
           >
             {t("adminModeration.filters.approved") || "Approved"} (
-            {jobs.filter((j) => j.reviewStatus === "approved").length})
+            {counts.approved})
           </button>
           <button
-            className={`${styles.filterBtn} ${filter === "rejected" ? styles.active : ""}`}
+            className={`${styles.filterBtn} ${
+              filter === "rejected" ? styles.active : ""
+            }`}
             onClick={() => {
               setFilter("rejected");
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
           >
             {t("adminModeration.filters.rejected") || "Rejected"} (
-            {jobs.filter((j) => j.reviewStatus === "rejected").length})
+            {counts.rejected})
           </button>
           <button
-            className={`${styles.filterBtn} ${filter === "all" ? styles.active : ""}`}
+            className={`${styles.filterBtn} ${
+              filter === "all" ? styles.active : ""
+            }`}
             onClick={() => {
               setFilter("all");
               setPagination((prev) => ({ ...prev, page: 1 }));
             }}
           >
-            {t("adminModeration.filters.all") || "All"}
+            {t("adminModeration.filters.all") || "All"} ({counts.all})
           </button>
         </div>
 
@@ -229,12 +304,15 @@ const AdminJobModerationPage = () => {
                 </div>
                 <div className={styles.jobPreview}>
                   <p className={styles.jobDescription}>
-                    {job.descriptions?.substring(0, 200) || "No description available"}
+                    {job.descriptions?.substring(0, 200) ||
+                      "No description available"}
                     {job.descriptions?.length > 200 ? "..." : ""}
                   </p>
                   {job.reviewNotes && (
                     <div className={styles.reviewNotes}>
-                      <strong>{t("adminModeration.reviewNotes") || "Review Notes"}:</strong>{" "}
+                      <strong>
+                        {t("adminModeration.reviewNotes") || "Review Notes"}:
+                      </strong>{" "}
                       {job.reviewNotes}
                     </div>
                   )}
@@ -249,18 +327,22 @@ const AdminJobModerationPage = () => {
             <button
               className={styles.pageBtn}
               disabled={pagination.page === 1}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+              }
             >
               {t("common.previous") || "Previous"}
             </button>
             <span className={styles.pageInfo}>
-              {t("common.page") || "Page"} {pagination.page} {t("common.of") || "of"}{" "}
-              {pagination.totalPages}
+              {t("common.page") || "Page"} {pagination.page}{" "}
+              {t("common.of") || "of"} {pagination.totalPages}
             </span>
             <button
               className={styles.pageBtn}
               disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+              }
             >
               {t("common.next") || "Next"}
             </button>
@@ -270,7 +352,10 @@ const AdminJobModerationPage = () => {
         {/* Review Modal */}
         {showModal && selectedJob && (
           <div className={styles.modalOverlay} onClick={closeModal}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className={styles.modalHeader}>
                 <h2>{selectedJob.title}</h2>
                 <button className={styles.closeBtn} onClick={closeModal}>
@@ -283,15 +368,23 @@ const AdminJobModerationPage = () => {
                   <h3>{t("adminModeration.jobDetails") || "Job Details"}</h3>
                   <div className={styles.detailGrid}>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.company") || "Company"}:</strong>
+                      <strong>
+                        {t("adminModeration.company") || "Company"}:
+                      </strong>
                       <span>{selectedJob.organization?.name || "Unknown"}</span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.location") || "Location"}:</strong>
-                      <span>{selectedJob.province || selectedJob.address || "TBD"}</span>
+                      <strong>
+                        {t("adminModeration.location") || "Location"}:
+                      </strong>
+                      <span>
+                        {selectedJob.province || selectedJob.address || "TBD"}
+                      </span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.salary") || "Salary"}:</strong>
+                      <strong>
+                        {t("adminModeration.salary") || "Salary"}:
+                      </strong>
                       <span>
                         {selectedJob.minSalary && selectedJob.maxSalary
                           ? `$${selectedJob.minSalary} - $${selectedJob.maxSalary}`
@@ -301,11 +394,15 @@ const AdminJobModerationPage = () => {
                       </span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.statusLabel") || "Status"}:</strong>
+                      <strong>
+                        {t("adminModeration.statusLabel") || "Status"}:
+                      </strong>
                       {getReviewStatusBadge(selectedJob.reviewStatus)}
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.createdAt") || "Created"}:</strong>
+                      <strong>
+                        {t("adminModeration.createdAt") || "Created"}:
+                      </strong>
                       <span>{formatDate(selectedJob.createdAt)}</span>
                     </div>
                   </div>
@@ -320,8 +417,13 @@ const AdminJobModerationPage = () => {
 
                 {selectedJob.reviewNotes && (
                   <div className={styles.modalSection}>
-                    <h3>{t("adminModeration.previousNotes") || "Previous Review Notes"}</h3>
-                    <p className={styles.notesText}>{selectedJob.reviewNotes}</p>
+                    <h3>
+                      {t("adminModeration.previousNotes") ||
+                        "Previous Review Notes"}
+                    </h3>
+                    <p className={styles.notesText}>
+                      {selectedJob.reviewNotes}
+                    </p>
                   </div>
                 )}
 
@@ -331,7 +433,10 @@ const AdminJobModerationPage = () => {
                     className={styles.notesTextarea}
                     value={reviewNotes}
                     onChange={(e) => setReviewNotes(e.target.value)}
-                    placeholder={t("adminModeration.notesPlaceholder") || "Add review notes (required for rejection)..."}
+                    placeholder={
+                      t("adminModeration.notesPlaceholder") ||
+                      "Add review notes (required for rejection)..."
+                    }
                     rows={4}
                   />
                 </div>
@@ -348,7 +453,7 @@ const AdminJobModerationPage = () => {
                 {selectedJob.reviewStatus !== "approved" && (
                   <button
                     className={styles.approveBtn}
-                    onClick={() => handleApprove(selectedJob.id)}
+                    onClick={() => confirmApprove(selectedJob.id)}
                     disabled={processing === selectedJob.id}
                   >
                     {processing === selectedJob.id
@@ -359,7 +464,7 @@ const AdminJobModerationPage = () => {
                 {selectedJob.reviewStatus !== "rejected" && (
                   <button
                     className={styles.rejectBtn}
-                    onClick={() => handleReject(selectedJob.id)}
+                    onClick={() => confirmReject(selectedJob.id)}
                     disabled={processing === selectedJob.id}
                   >
                     {processing === selectedJob.id
@@ -371,10 +476,57 @@ const AdminJobModerationPage = () => {
             </div>
           </div>
         )}
+
+        {/* Approve Confirmation Modal */}
+        {showApproveConfirm && (
+          <div className={styles.modalOverlay}>
+            <div className={`${styles.modal} ${styles.confirmModal}`}>
+              <h2>📝 Xác nhận duyệt công việc</h2>
+              <p>Bạn có chắc chắn muốn duyệt công việc này không?</p>
+              <div className={styles.modalFooter}>
+                <button
+                  className={styles.cancelBtn}
+                  onClick={() => {
+                    setShowApproveConfirm(false);
+                    setActionJobId(null);
+                  }}
+                >
+                  Hủy
+                </button>
+                <button className={styles.approveBtn} onClick={handleApprove}>
+                  Xác nhận duyệt
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reject Confirmation Modal */}
+        {showRejectConfirm && (
+          <div className={styles.modalOverlay}>
+            <div className={`${styles.modal} ${styles.confirmModal}`}>
+              <h2>⚠️ Xác nhận từ chối công việc</h2>
+              <p>Bạn có chắc chắn muốn từ chối công việc này không?</p>
+              <div className={styles.modalFooter}>
+                <button
+                  className={styles.cancelBtn}
+                  onClick={() => {
+                    setShowRejectConfirm(false);
+                    setActionJobId(null);
+                  }}
+                >
+                  Hủy
+                </button>
+                <button className={styles.rejectBtn} onClick={handleReject}>
+                  Xác nhận từ chối
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
 };
 
 export default AdminJobModerationPage;
-

@@ -77,8 +77,7 @@ export const UserSchema = new EntitySchema({
       unique: true,
     },
     passwordHash: {
-      type: "varchar",
-      length: 255,
+      type: "text",
     },
     role: {
       type: "enum",
@@ -95,8 +94,7 @@ export const UserSchema = new EntitySchema({
       nullable: true,
     },
     avatar: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     isActive: {
@@ -120,8 +118,7 @@ export const UserSchema = new EntitySchema({
       nullable: true,
     },
     resetPasswordToken: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     resetPasswordExpiry: {

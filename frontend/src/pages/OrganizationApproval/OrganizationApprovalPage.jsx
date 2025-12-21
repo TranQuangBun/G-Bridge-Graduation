@@ -34,16 +34,26 @@ const OrganizationApprovalPage = () => {
   const fetchOrganizations = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await adminService.getPendingOrganizations({
+      const response = await adminService.getOrganizations({
         page: pagination.page,
         limit: pagination.limit,
+        status: "pending", // Only show pending for approval
       });
-      if (response.success && response.data) {
-        setOrganizations(response.data.organizations || []);
-        setPagination((prev) => response.data.pagination || prev);
+      console.log("Organizations response:", response);
+      if (response.success) {
+        // Backend returns { data: [organizations], pagination: {...} }
+        const orgsData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.organizations || [];
+        setOrganizations(orgsData);
+        setPagination((prev) => response.pagination || prev);
+      } else {
+        console.error("Response not successful:", response);
+        setOrganizations([]);
       }
     } catch (error) {
       console.error("Error fetching pending organizations:", error);
+      setOrganizations([]);
     } finally {
       setLoading(false);
     }
@@ -130,7 +140,7 @@ const OrganizationApprovalPage = () => {
                     <th>ID</th>
                     <th>Tên tổ chức</th>
                     <th>Email</th>
-                    <th>Website</th>
+                    <th>Giấy phép KD</th>
                     <th>Chủ sở hữu</th>
                     <th>Hành động</th>
                   </tr>
@@ -166,18 +176,19 @@ const OrganizationApprovalPage = () => {
                           "—"
                         )}
                       </td>
-                      <td className={styles.websiteCell}>
-                        {org.website ? (
+                      <td className={styles.licenseCell}>
+                        {org.businessLicense ? (
                           <a
-                            href={org.website}
+                            href={org.businessLicense}
                             target="_blank"
                             rel="noopener noreferrer"
-                            title={org.website}
+                            className={styles.viewLicenseBtn}
+                            title="Xem giấy phép kinh doanh"
                           >
-                            Link
+                            📄 Xem file
                           </a>
                         ) : (
-                          "—"
+                          <span className={styles.noFile}>—</span>
                         )}
                       </td>
                       <td>

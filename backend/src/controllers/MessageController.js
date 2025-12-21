@@ -11,6 +11,10 @@ export async function getConversations(req, res) {
     const userId = req.user?.sub || req.user?.id;
     const { includeArchived = false, includeDeleted = false } = req.query;
 
+    console.log("getConversations - userId:", userId);
+    console.log("getConversations - includeArchived:", includeArchived);
+    console.log("getConversations - includeDeleted:", includeDeleted);
+
     if (!userId) {
       return sendError(res, "User ID is required", 401);
     }
@@ -21,10 +25,21 @@ export async function getConversations(req, res) {
       includeDeleted === "true"
     );
 
+    console.log(
+      "getConversations - raw conversations count:",
+      conversations.length
+    );
+    console.log(
+      "getConversations - raw conversations:",
+      JSON.stringify(conversations, null, 2)
+    );
+
     // Transform conversations to include other participant info
     const transformedConversations = conversations.map((conv) => {
       const isParticipant1 = conv.participant1Id === parseInt(userId);
-      const otherParticipant = isParticipant1 ? conv.participant2 : conv.participant1;
+      const otherParticipant = isParticipant1
+        ? conv.participant2
+        : conv.participant1;
       const unreadCount = isParticipant1
         ? conv.participant1UnreadCount
         : conv.participant2UnreadCount;
@@ -61,7 +76,11 @@ export async function getConversations(req, res) {
       };
     });
 
-    return sendSuccess(res, transformedConversations, "Conversations retrieved successfully");
+    return sendSuccess(
+      res,
+      transformedConversations,
+      "Conversations retrieved successfully"
+    );
   } catch (error) {
     logError(error, "getting conversations");
     return sendError(res, "Error retrieving conversations", 500, error);
@@ -89,6 +108,25 @@ export async function getConversation(req, res) {
 
     const transformed = {
       id: conversation.id,
+      application: conversation.application
+        ? {
+            id: conversation.application.id,
+            jobId: conversation.application.jobId,
+            status: conversation.application.status,
+            completionRequestedBy:
+              conversation.application.completionRequestedBy,
+            completionConfirmedBy:
+              conversation.application.completionConfirmedBy,
+            completedAt: conversation.application.completedAt,
+            job: conversation.application.job
+              ? {
+                  id: conversation.application.job.id,
+                  title: conversation.application.job.title,
+                  clientId: conversation.application.job.clientId,
+                }
+              : null,
+          }
+        : null,
       otherParticipant: {
         id: otherParticipant.id,
         fullName: otherParticipant.fullName,
@@ -161,10 +199,17 @@ export async function createOrGetConversation(req, res) {
       createdAt: conversation.createdAt,
     };
 
-    return sendSuccess(res, transformed, "Conversation retrieved/created successfully");
+    return sendSuccess(
+      res,
+      transformed,
+      "Conversation retrieved/created successfully"
+    );
   } catch (error) {
     logError(error, "creating/getting conversation");
-    if (error.message.includes("Cannot create conversation") || error.message.includes("approved")) {
+    if (
+      error.message.includes("Cannot create conversation") ||
+      error.message.includes("approved")
+    ) {
       return sendError(res, error.message, 403);
     }
     return sendError(res, "Error creating/getting conversation", 500, error);
@@ -184,10 +229,11 @@ export async function createConversationFromApplication(req, res) {
       return sendError(res, "Application ID is required", 400);
     }
 
-    const conversation = await conversationService.getOrCreateConversationFromApplication(
-      applicationId,
-      userId
-    );
+    const conversation =
+      await conversationService.getOrCreateConversationFromApplication(
+        applicationId,
+        userId
+      );
 
     const isParticipant1 = conversation.participant1Id === parseInt(userId);
     const otherParticipant = isParticipant1
@@ -211,13 +257,24 @@ export async function createConversationFromApplication(req, res) {
       createdAt: conversation.createdAt,
     };
 
-    return sendSuccess(res, transformed, "Conversation created successfully", 201);
+    return sendSuccess(
+      res,
+      transformed,
+      "Conversation created successfully",
+      201
+    );
   } catch (error) {
     logError(error, "creating conversation from application");
-    if (error.message.includes("not found") || error.message.includes("not authorized")) {
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("not authorized")
+    ) {
       return sendError(res, error.message, 404);
     }
-    if (error.message.includes("must be approved") || error.message.includes("approved")) {
+    if (
+      error.message.includes("must be approved") ||
+      error.message.includes("approved")
+    ) {
       return sendError(res, error.message, 403);
     }
     return sendError(res, "Error creating conversation", 500, error);
@@ -365,8 +422,15 @@ export async function getMessages(req, res) {
     );
   } catch (error) {
     logError(error, "getting messages");
-    if (error.message.includes("not found") || error.message.includes("Unauthorized")) {
-      return sendError(res, error.message, error.message.includes("not found") ? 404 : 403);
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("Unauthorized")
+    ) {
+      return sendError(
+        res,
+        error.message,
+        error.message.includes("not found") ? 404 : 403
+      );
     }
     return sendError(res, "Error retrieving messages", 500, error);
   }
@@ -409,8 +473,15 @@ export async function sendMessage(req, res) {
     return sendSuccess(res, transformed, "Message sent successfully", 201);
   } catch (error) {
     logError(error, "sending message");
-    if (error.message.includes("not found") || error.message.includes("Unauthorized")) {
-      return sendError(res, error.message, error.message.includes("not found") ? 404 : 403);
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("Unauthorized")
+    ) {
+      return sendError(
+        res,
+        error.message,
+        error.message.includes("not found") ? 404 : 403
+      );
     }
     return sendError(res, "Error sending message", 500, error);
   }
@@ -425,9 +496,12 @@ export async function deleteMessage(req, res) {
       return sendError(res, "User ID is required", 401);
     }
 
-    await messageService.deleteMessage(messageId, userId);
+    const deletedMessage = await messageService.deleteMessage(
+      messageId,
+      userId
+    );
 
-    return sendSuccess(res, null, "Message deleted successfully");
+    return sendSuccess(res, deletedMessage, "Message deleted successfully");
   } catch (error) {
     logError(error, "deleting message");
     if (error.message.includes("not found")) {
@@ -440,3 +514,86 @@ export async function deleteMessage(req, res) {
   }
 }
 
+export async function updateMessage(req, res) {
+  try {
+    const { messageId } = req.params;
+    const { content } = req.body;
+    const userId = req.user?.sub || req.user?.id;
+
+    if (!userId) {
+      return sendError(res, "User ID is required", 401);
+    }
+
+    if (!content || !content.trim()) {
+      return sendError(res, "Message content is required", 400);
+    }
+
+    const updatedMessage = await messageService.updateMessage(
+      messageId,
+      userId,
+      content.trim()
+    );
+
+    return sendSuccess(res, updatedMessage, "Message updated successfully");
+  } catch (error) {
+    logError(error, "updating message");
+    if (error.message.includes("not found")) {
+      return sendError(res, error.message, 404);
+    }
+    if (error.message.includes("Unauthorized")) {
+      return sendError(res, error.message, 403);
+    }
+    return sendError(res, "Error updating message", 500, error);
+  }
+}
+
+export async function sendMessageWithFile(req, res) {
+  try {
+    const { conversationId } = req.params;
+    const { content } = req.body;
+    const userId = req.user?.sub || req.user?.id;
+
+    if (!userId) {
+      return sendError(res, "User ID is required", 401);
+    }
+
+    if (!req.file) {
+      return sendError(res, "File is required", 400);
+    }
+
+    // Convert file path to URL
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    // req.file.path is like: uploads\messages\msg-123-456.jpg
+    const relativePath = req.file.path.replace(/\\/g, "/");
+    const fileUrl = `${baseUrl}/${relativePath}`;
+
+    const fileData = {
+      fileUrl: fileUrl,
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype,
+      fileSize: req.file.size,
+    };
+
+    const message = await messageService.sendMessage(
+      conversationId,
+      userId,
+      content || "",
+      fileData
+    );
+
+    return sendSuccess(res, message, "Message with file sent successfully");
+  } catch (error) {
+    logError(error, "sending message with file");
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("Unauthorized")
+    ) {
+      return sendError(
+        res,
+        error.message,
+        error.message.includes("not found") ? 404 : 403
+      );
+    }
+    return sendError(res, "Error sending message with file", 500, error);
+  }
+}

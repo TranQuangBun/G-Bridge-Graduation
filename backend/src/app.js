@@ -54,7 +54,7 @@ const createApp = async () => {
       origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
+
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
@@ -67,17 +67,24 @@ const createApp = async () => {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  
+
   // Ensure uploads directories exist
   const uploadsDir = path.join(__dirname, "../uploads");
-  const uploadsSubdirs = ["avatars", "certifications", "resumes", "job-documents"];
+  const uploadsSubdirs = [
+    "avatars",
+    "certifications",
+    "resumes",
+    "job-documents",
+    "messages",
+    "business-licenses",
+  ];
   uploadsSubdirs.forEach((subdir) => {
     const dirPath = path.join(uploadsDir, subdir);
     if (!existsSync(dirPath)) {
       mkdirSync(dirPath, { recursive: true });
     }
   });
-  
+
   app.use("/uploads", express.static(uploadsDir));
 
   // Register routes
@@ -114,7 +121,7 @@ const createApp = async () => {
   app.get("/health", async (_, res) => {
     try {
       const { AppDataSource } = await import("./config/DataSource.js");
-      
+
       // Check if database is initialized and connected
       if (!AppDataSource.isInitialized) {
         return res.status(503).json({
@@ -126,7 +133,7 @@ const createApp = async () => {
 
       // Perform actual database query to ensure connection is working
       await AppDataSource.query("SELECT 1");
-      
+
       return res.status(200).json({
         status: "healthy",
         message: "Server and database are ready",
@@ -177,4 +184,3 @@ const createApp = async () => {
 };
 
 export default createApp;
-

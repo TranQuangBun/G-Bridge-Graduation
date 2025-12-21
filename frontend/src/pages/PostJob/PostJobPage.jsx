@@ -72,6 +72,28 @@ const DEFAULT_LEVELS = [
   { id: 6, name: "Native", nameVi: "Bản ngữ" },
 ];
 
+// Domain names mapping for Vietnamese
+const DOMAIN_NAMES_VI = {
+  Business: "Kinh doanh",
+  Conference: "Hội nghị",
+  Education: "Giáo dục",
+  Legal: "Pháp lý",
+  Media: "Truyền thông",
+  Medical: "Y tế",
+  Technical: "Kỹ thuật",
+  Tourism: "Du lịch",
+};
+
+// Level names mapping for Vietnamese
+const LEVEL_NAMES_VI = {
+  Beginner: "Sơ cấp",
+  Elementary: "Cơ bản",
+  Intermediate: "Trung cấp",
+  "Upper Intermediate": "Trung cấp cao",
+  Advanced: "Cao cấp",
+  Native: "Bản ngữ",
+};
+
 const defaultJobData = {
   organizationId: "",
   workingModeId: "",
@@ -94,7 +116,7 @@ const defaultJobData = {
 };
 
 const PostJobPage = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -1314,17 +1336,25 @@ const PostJobPage = () => {
                 <div className={styles.field}>
                   <label>{t("postJob.form.labels.domains")}</label>
                   <div className={styles.domainList}>
-                    {domains.map((domain) => (
-                      <label key={domain.id} className={styles.domainOption}>
-                        <input
-                          type="checkbox"
-                          value={domain.id}
-                          checked={jobData.domainIds.includes(domain.id)}
-                          onChange={() => toggleDomainSelection(domain.id)}
-                        />
-                        {domain.name || domain.nameVi}
-                      </label>
-                    ))}
+                    {domains.map((domain) => {
+                      const displayName =
+                        lang === "vi"
+                          ? DOMAIN_NAMES_VI[domain.name] ||
+                            domain.nameVi ||
+                            domain.name
+                          : domain.name || domain.nameVi;
+                      return (
+                        <label key={domain.id} className={styles.domainOption}>
+                          <input
+                            type="checkbox"
+                            value={domain.id}
+                            checked={jobData.domainIds.includes(domain.id)}
+                            onChange={() => toggleDomainSelection(domain.id)}
+                          />
+                          {displayName}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1431,18 +1461,29 @@ const PostJobPage = () => {
                                   required
                                 >
                                   <option value="">
-                                    {t("postJob.form.placeholders.selectLevel")}
+                                    {t(
+                                      "postJob.form.placeholders.selectLevel"
+                                    ) || "Chọn cấp độ thành thạo"}
                                   </option>
                                   {(levels && levels.length > 0
                                     ? levels
                                     : DEFAULT_LEVELS
-                                  ).map((level) => (
-                                    <option key={level.id} value={level.id}>
-                                      {level.name ||
-                                        level.nameVi ||
-                                        `Level ${level.id}`}
-                                    </option>
-                                  ))}
+                                  ).map((level) => {
+                                    const displayName =
+                                      lang === "vi"
+                                        ? LEVEL_NAMES_VI[level.name] ||
+                                          level.nameVi ||
+                                          level.name ||
+                                          `Level ${level.id}`
+                                        : level.name ||
+                                          level.nameVi ||
+                                          `Level ${level.id}`;
+                                    return (
+                                      <option key={level.id} value={level.id}>
+                                        {displayName}
+                                      </option>
+                                    );
+                                  })}
                                 </select>
                               </div>
                               <label className={styles.checkboxLabel}>
@@ -1458,7 +1499,8 @@ const PostJobPage = () => {
                                   }
                                 />
                                 <span>
-                                  {t("postJob.form.labels.sourceLanguage")}
+                                  {t("postJob.form.labels.sourceLanguage") ||
+                                    "Ngôn ngữ nguồn"}
                                 </span>
                               </label>
                             </div>

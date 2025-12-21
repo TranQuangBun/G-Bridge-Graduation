@@ -50,16 +50,23 @@ const jobService = {
         if (applicationData.resumeType) {
           formData.append("resumeType", applicationData.resumeType);
         }
-        
-        const response = await apiClient.post(`/jobs/${jobId}/apply`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+
+        const response = await apiClient.post(
+          `/jobs/${jobId}/apply`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
         return response.data;
       } else {
         // Send as JSON if no file
-        const response = await apiClient.post(`/jobs/${jobId}/apply`, applicationData);
+        const response = await apiClient.post(
+          `/jobs/${jobId}/apply`,
+          applicationData
+        );
         return response.data;
       }
     } catch (error) {
@@ -101,12 +108,26 @@ const jobService = {
     }
   },
 
+  // Get client's posted jobs
+  getClientJobs: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/jobs/my", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching client jobs:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
   // Accept application (client only)
   acceptApplication: async (applicationId, reviewNotes = "") => {
     try {
-      const response = await apiClient.patch(`/jobs/applications/${applicationId}/accept`, {
-        reviewNotes,
-      });
+      const response = await apiClient.patch(
+        `/jobs/applications/${applicationId}/accept`,
+        {
+          reviewNotes,
+        }
+      );
       return response.data;
     } catch (error) {
       console.error("Error accepting application:", error);
@@ -117,12 +138,26 @@ const jobService = {
   // Reject application (client only)
   rejectApplication: async (applicationId, reviewNotes = "") => {
     try {
-      const response = await apiClient.patch(`/jobs/applications/${applicationId}/reject`, {
-        reviewNotes,
-      });
+      const response = await apiClient.patch(
+        `/jobs/applications/${applicationId}/reject`,
+        {
+          reviewNotes,
+        }
+      );
       return response.data;
     } catch (error) {
       console.error("Error rejecting application:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Close job (client only)
+  closeJob: async (jobId) => {
+    try {
+      const response = await apiClient.patch(`/jobs/${jobId}/close`);
+      return response.data;
+    } catch (error) {
+      console.error("Error closing job:", error);
       throw new Error(getErrorMessage(error));
     }
   },
@@ -245,10 +280,51 @@ const jobService = {
         }
       });
 
-      const response = await apiClient.get(`/job-applications?${params.toString()}`);
+      const response = await apiClient.get(
+        `/job-applications?${params.toString()}`
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching job applications:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Request job completion
+  requestJobCompletion: async (applicationId) => {
+    try {
+      const response = await apiClient.post(
+        `/job-applications/${applicationId}/request-completion`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error requesting job completion:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Confirm job completion
+  confirmJobCompletion: async (applicationId) => {
+    try {
+      const response = await apiClient.post(
+        `/job-applications/${applicationId}/confirm-completion`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error confirming job completion:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Cancel job completion request
+  cancelJobCompletionRequest: async (applicationId) => {
+    try {
+      const response = await apiClient.post(
+        `/job-applications/${applicationId}/cancel-completion`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error cancelling job completion request:", error);
       throw new Error(getErrorMessage(error));
     }
   },

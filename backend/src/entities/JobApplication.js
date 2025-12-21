@@ -23,6 +23,9 @@ export class JobApplication {
   applicationDate;
   reviewedAt;
   reviewNotes;
+  completionRequestedBy;
+  completionConfirmedBy;
+  completedAt;
   createdAt;
   updatedAt;
   job;
@@ -65,8 +68,7 @@ export const JobApplicationSchema = new EntitySchema({
       nullable: true,
     },
     resumeUrl: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     resumeType: {
@@ -84,6 +86,18 @@ export const JobApplicationSchema = new EntitySchema({
     },
     reviewNotes: {
       type: "text",
+      nullable: true,
+    },
+    completionRequestedBy: {
+      type: "int",
+      nullable: true,
+    },
+    completionConfirmedBy: {
+      type: "int",
+      nullable: true,
+    },
+    completedAt: {
+      type: "datetime",
       nullable: true,
     },
     createdAt: {

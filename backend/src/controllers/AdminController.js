@@ -64,6 +64,21 @@ export async function rejectCertification(req, res) {
 }
 
 // Organization Approval
+export async function getOrganizations(req, res) {
+  try {
+    const result = await adminService.getOrganizations(req.query);
+    return sendPaginated(
+      res,
+      result.organizations,
+      result.pagination,
+      "Organizations fetched successfully"
+    );
+  } catch (error) {
+    logError(error, "Fetching organizations");
+    return sendError(res, "Error fetching organizations", 500, error);
+  }
+}
+
 export async function getPendingOrganizations(req, res) {
   try {
     const result = await adminService.getPendingOrganizations(req.query);
@@ -188,8 +203,13 @@ export async function updateUser(req, res) {
     const user = await adminService.updateUser(id, req.body);
     return sendSuccess(res, user, "User updated successfully");
   } catch (error) {
-    if (error instanceof AppError || error.message === "User not found" || error.message === "Email already exists") {
-      const statusCode = error.statusCode || (error.message === "User not found" ? 404 : 409);
+    if (
+      error instanceof AppError ||
+      error.message === "User not found" ||
+      error.message === "Email already exists"
+    ) {
+      const statusCode =
+        error.statusCode || (error.message === "User not found" ? 404 : 409);
       return sendError(res, error.message, statusCode);
     }
     logError(error, "Updating user");
@@ -250,4 +270,3 @@ export async function getAllPayments(req, res) {
     return sendError(res, "Error fetching payments", 500, error);
   }
 }
-
