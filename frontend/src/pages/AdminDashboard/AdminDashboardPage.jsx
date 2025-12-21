@@ -72,7 +72,7 @@ const AdminDashboardPage = () => {
 
           {/* Pending Approvals */}
           <div className={styles.statCard}>
-            <div className={styles.statIcon}>⏳</div>
+            <div className={styles.statIcon}></div>
             <div className={styles.statContent}>
               <h3>Chờ duyệt</h3>
               <p className={styles.statValue}>{stats.pendingApprovals?.total || 0}</p>
@@ -94,7 +94,7 @@ const AdminDashboardPage = () => {
 
           {/* Total Organizations */}
           <div className={styles.statCard}>
-            <div className={styles.statIcon}>🏢</div>
+            <div className={styles.statIcon}></div>
             <div className={styles.statContent}>
               <h3>Tổng tổ chức</h3>
               <p className={styles.statValue}>{stats.total?.organizations || 0}</p>
@@ -109,7 +109,7 @@ const AdminDashboardPage = () => {
               className={styles.actionButton}
               onClick={() => navigate("/admin/certifications")}
             >
-              <span className={styles.actionIcon}>✓</span>
+              <span className={styles.actionIcon}></span>
               <span>Duyệt chứng chỉ</span>
               {stats.pendingApprovals?.certifications > 0 && (
                 <span className={styles.badge}>
@@ -121,7 +121,7 @@ const AdminDashboardPage = () => {
               className={styles.actionButton}
               onClick={() => navigate("/admin/organizations")}
             >
-              <span className={styles.actionIcon}>🏢</span>
+              <span className={styles.actionIcon}></span>
               <span>Duyệt tổ chức</span>
               {stats.pendingApprovals?.organizations > 0 && (
                 <span className={styles.badge}>
@@ -133,7 +133,7 @@ const AdminDashboardPage = () => {
               className={styles.actionButton}
               onClick={() => navigate("/admin/notifications")}
             >
-              <span className={styles.actionIcon}>📢</span>
+              <span className={styles.actionIcon}></span>
               <span>Tạo thông báo hệ thống</span>
             </button>
             <button
@@ -154,7 +154,7 @@ const AdminDashboardPage = () => {
               className={styles.actionButton}
               onClick={() => navigate(ROUTES.ADMIN_JOB_MODERATION)}
             >
-              <span className={styles.actionIcon}>💼</span>
+              <span className={styles.actionIcon}></span>
               <span>Duyệt công việc</span>
             </button>
           </div>

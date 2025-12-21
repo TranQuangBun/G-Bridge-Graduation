@@ -6,12 +6,15 @@ import draftToHtml from "draftjs-to-html";
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
+import alertService from "../../services/alertService";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import styles from "./SystemNotificationsPage.module.css";
 
 const SystemNotificationsPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
@@ -40,7 +43,7 @@ const SystemNotificationsPage = () => {
     // Check if message has content (strip HTML tags)
     const messageText = htmlContent.replace(/<[^>]*>/g, "").trim();
     if (!messageText) {
-      alert("Vui lòng nhập nội dung thông báo");
+      await alertService.error(t("admin.systemNotifications.contentRequired"));
       setLoading(false);
       return;
     }
@@ -73,7 +76,7 @@ const SystemNotificationsPage = () => {
       }
     } catch (error) {
       console.error("Error creating system notification:", error);
-      alert(error.message || "Không thể tạo thông báo hệ thống");
+      await alertService.error(error.message || t("admin.systemNotifications.createFailed"));
     } finally {
       setLoading(false);
     }

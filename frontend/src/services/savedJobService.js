@@ -13,7 +13,6 @@ const getAllSavedJobs = async () => {
     const token = getAuthToken();
     const userId = JSON.parse(localStorage.getItem("user"))?.id;
 
-    console.log("📡 Fetching saved jobs for userId:", userId);
 
     const response = await axios.get(`${API_URL}/saved-jobs`, {
       headers: {
@@ -24,25 +23,15 @@ const getAllSavedJobs = async () => {
       },
     });
 
-    console.log("📦 Raw API response (jobs):", response.data);
-
     // Extract data from response
     const data = response.data.data || response.data;
-
-    console.log("📊 Extracted data (jobs):", data);
-    console.log("📊 Is array?", Array.isArray(data));
-    if (Array.isArray(data)) {
-      console.log("📊 Data length:", data.length);
-      console.log("📊 First item:", data[0]);
-    }
 
     return {
       success: true,
       data: Array.isArray(data) ? data : [],
     };
   } catch (error) {
-    console.error("❌ Error fetching saved jobs:", error);
-    console.error("❌ Error response:", error.response?.data);
+    console.error("Error fetching saved jobs:", error);
     return {
       success: false,
       message: error.response?.data?.message || "Failed to fetch saved jobs",

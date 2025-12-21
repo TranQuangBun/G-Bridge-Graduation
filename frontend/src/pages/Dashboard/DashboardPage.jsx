@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import styles from "./DashboardPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
 import notificationService from "../../services/notificationService.js";
 import paymentService from "../../services/paymentService.js";
+import organizationService from "../../services/organizationService.js";
 import {
   FaChartBar,
   FaClipboardList,
@@ -83,9 +84,13 @@ const CLIENT_SIDEBAR_MENU = [
 function DashboardPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeMenu, setActiveMenu] = useState("overview");
+  const [showOrgPrompt, setShowOrgPrompt] = useState(false);
+  const [organizations, setOrganizations] = useState([]);
+  const [organizationsLoading, setOrganizationsLoading] = useState(false);
 
   // Get sidebar menu based on user role
   const SIDEBAR_MENU =
@@ -129,42 +134,6 @@ function DashboardPage() {
     seconds: 0,
   });
 
-  // Settings state (reserved for future use)
-  // eslint-disable-next-line no-unused-vars
-  const [settingsData, setSettingsData] = useState({
-    avatar: null,
-    name: user?.fullName || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    role: user?.role || "interpreter",
-  });
-  // eslint-disable-next-line no-unused-vars
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
-  // eslint-disable-next-line no-unused-vars
-  const [themeMode, setThemeMode] = useState("light");
-  // eslint-disable-next-line no-unused-vars
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  // eslint-disable-next-line no-unused-vars
-  const [pushNotifications, setPushNotifications] = useState(true);
-  // eslint-disable-next-line no-unused-vars
-  const [smsNotifications, setSmsNotifications] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  // eslint-disable-next-line no-unused-vars
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-
   // Redirect to login if not authenticated
   useEffect(() => {
     // Đợi cho loading xong trước khi redirect
@@ -186,6 +155,20 @@ function DashboardPage() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  const fetchOrganizations = async () => {
+    try {
+      setOrganizationsLoading(true);
+      const response = await organizationService.getOrganizations();
+      const orgs = response?.data || [];
+      setOrganizations(orgs);
+    } catch (error) {
+      console.error("Error fetching organizations:", error);
+      setOrganizations([]);
+    } finally {
+      setOrganizationsLoading(false);
+    }
+  };
 
   // Fetch subscription status and update countdown
   useEffect(() => {
@@ -210,6 +193,22 @@ function DashboardPage() {
 
     fetchSubscription();
   }, [isAuthenticated, loading]);
+
+  // Fetch organizations for client
+  useEffect(() => {
+    if (user?.role === "client" && isAuthenticated && !loading) {
+      fetchOrganizations();
+    }
+  }, [user?.role, isAuthenticated, loading]);
+
+  // Check if user came from registration
+  useEffect(() => {
+    if (location.state?.showOrgPrompt && user?.role === "client") {
+      setShowOrgPrompt(true);
+      // Clear state to prevent showing again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, user?.role]);
 
   // Update countdown timer
   useEffect(() => {
@@ -457,56 +456,6 @@ function DashboardPage() {
     }
   };
 
-  const formatDateTime = (value) => {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getNotificationTypeLabel = (type) => {
-    if (!type) return "";
-    const normalized = type.toLowerCase();
-    switch (normalized) {
-      case "job_application_submitted":
-        return (
-          t("dashboard.notifications.types.jobApplicationSubmitted") ||
-          "Job application"
-        );
-      case "job_application_status":
-        return (
-          t("dashboard.notifications.types.jobApplicationStatus") ||
-          "Application updated"
-        );
-      case "booking_request_created":
-        return (
-          t("dashboard.notifications.types.bookingRequestCreated") ||
-          "Booking request"
-        );
-      case "booking_status_updated":
-        return (
-          t("dashboard.notifications.types.bookingStatusUpdated") ||
-          "Booking update"
-        );
-      case "payment_success":
-        return (
-          t("dashboard.notifications.types.paymentSuccess") || "Payment success"
-        );
-      case "subscription_expiring":
-        return (
-          t("dashboard.notifications.types.subscriptionExpiring") ||
-          "Subscription reminder"
-        );
-      default:
-        return normalized.replace(/_/g, " ");
-    }
-  };
-
   const handleMarkNotificationRead = async (notificationId) => {
     try {
       setUpdatingNotificationId(notificationId);
@@ -604,6 +553,70 @@ function DashboardPage() {
   return (
     <MainLayout>
       <div className={styles.dashboardRoot}>
+        {/* Organization Prompt Modal */}
+        {showOrgPrompt && user?.role === "client" && organizations.length === 0 && (
+          <div className={styles.orgPromptModalOverlay}>
+            <div className={styles.orgPromptModal}>
+              <div className={styles.orgPromptModalHeader}>
+                <h2>{t("dashboard.organizationPrompt.title")}</h2>
+                <button
+                  className={styles.orgPromptModalClose}
+                  onClick={() => setShowOrgPrompt(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.orgPromptModalContent}>
+                <p>{t("dashboard.organizationPrompt.description")}</p>
+                <p className={styles.orgPromptModalSubtext}>
+                  {t("dashboard.organizationPrompt.subtext")}
+                </p>
+              </div>
+              <div className={styles.orgPromptModalFooter}>
+                <button
+                  className={styles.orgPromptModalButton}
+                  onClick={() => {
+                    setShowOrgPrompt(false);
+                    navigate(ROUTES.POST_JOB);
+                  }}
+                >
+                  {t("dashboard.organizationPrompt.createOrganization")}
+                </button>
+                <button
+                  className={styles.orgPromptModalButtonSecondary}
+                  onClick={() => setShowOrgPrompt(false)}
+                >
+                  {t("dashboard.organizationPrompt.later")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Organization Banner */}
+        {user?.role === "client" && 
+         !organizationsLoading && 
+         organizations.length === 0 && 
+         !showOrgPrompt && (
+          <div className={styles.orgBanner}>
+            <div className={styles.orgBannerContent}>
+              <div className={styles.orgBannerIcon}>
+                <FaBuilding />
+              </div>
+              <div className={styles.orgBannerText}>
+                <h4>{t("dashboard.organizationBanner.title")}</h4>
+                <p>{t("dashboard.organizationBanner.description")}</p>
+              </div>
+              <button
+                className={styles.orgBannerButton}
+                onClick={() => navigate(ROUTES.POST_JOB)}
+              >
+                {t("dashboard.organizationBanner.createNow")}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Sidebar */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
@@ -712,7 +725,7 @@ function DashboardPage() {
                   </div>
                 ) : notifications.length === 0 ? (
                   <div className={styles.notificationsEmpty}>
-                    <span className={styles.emptyIcon}>🎉</span>
+                    <span className={styles.emptyIcon}></span>
                     <h3>
                       {t("notificationsPage.emptyTitle") ||
                         "You're all caught up!"}

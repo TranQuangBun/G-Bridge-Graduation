@@ -26,9 +26,11 @@ import {
 } from "../validators/JobValidators.js";
 import { NotificationService } from "../services/NotificationService.js";
 import { NotificationType } from "../entities/Notification.js";
+import { ConversationService } from "../services/ConversationService.js";
 
 const jobService = new JobService();
 const notificationService = new NotificationService();
+const conversationService = new ConversationService();
 
 export async function getJobs(req, res) {
   try {
@@ -72,10 +74,18 @@ export async function getJobs(req, res) {
       .leftJoinAndSelect("requiredCertificates.certificate", "certificate");
 
     // Always start with a base WHERE clause to avoid andWhere issues
+    // For public users, only show approved jobs with open status
     let hasWhere = false;
+    
+    // Default filter: only show approved jobs (unless reviewStatus is explicitly provided)
+    if (!reviewStatus) {
+      queryBuilder.where("job.reviewStatus = :reviewStatus", { reviewStatus: "approved" });
+      hasWhere = true;
+    }
 
     if (search) {
-      queryBuilder.where("job.title LIKE :search", { search: `%${search}%` });
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("job.title LIKE :search", { search: `%${search}%` });
       hasWhere = true;
     }
 
@@ -301,12 +311,40 @@ export async function createJob(req, res) {
     } = req.body;
 
     const jobRepository = AppDataSource.getRepository(Job);
+    const organizationRepository = AppDataSource.getRepository(Organization);
     const jobDomainRepository = AppDataSource.getRepository(JobDomain);
     const jobRequiredLanguageRepository =
       AppDataSource.getRepository(JobRequiredLanguage);
     const jobRequiredCertificateRepository = AppDataSource.getRepository(
       JobRequiredCertificate
     );
+
+    // Verify organization exists and is approved
+    const organization = await organizationRepository.findOne({
+      where: { id: parseInt(organizationId) },
+    });
+
+    if (!organization) {
+      return sendError(res, "Organization not found", 404);
+    }
+
+    // Check if organization is approved (required before posting jobs)
+    if (organization.approvalStatus !== "approved") {
+      return sendError(
+        res,
+        "Organization must be approved before posting jobs. Please wait for admin approval.",
+        403
+      );
+    }
+
+    // Check if organization is active
+    if (!organization.isActive) {
+      return sendError(
+        res,
+        "Organization is not active. Please contact support.",
+        403
+      );
+    }
 
     const job = jobRepository.create({
       organizationId,
@@ -326,6 +364,7 @@ export async function createJob(req, res) {
       contactEmail,
       contactPhone,
       statusOpenStop: "open",
+      reviewStatus: "pending", // Job must be approved by admin before being visible
       createdDate: new Date(),
     });
 
@@ -407,6 +446,34 @@ export async function createJob(req, res) {
         })
       );
       await jobRequiredCertificateRepository.save(certificateRecords);
+    }
+
+    // Notify all admins about new job pending review
+    try {
+      const User = (await import("../entities/User.js")).User;
+      const userRepository = AppDataSource.getRepository(User);
+      const admins = await userRepository.find({
+        where: { role: "admin", isActive: true },
+        select: ["id"],
+      });
+
+      for (const admin of admins) {
+        await notificationService.createNotification({
+          recipientId: admin.id,
+          actorId: organization.ownerUserId || null,
+          type: NotificationType.JOB_REVIEW_STATUS,
+          title: "New job pending review",
+          message: `Job "${savedJob.title}" from "${organization.name}" is pending review.`,
+          metadata: {
+            jobId: savedJob.id,
+            organizationId: organization.id,
+            type: "job_pending_review",
+          },
+        });
+      }
+    } catch (notifyError) {
+      // Log error but don't fail job creation
+      logError(notifyError, "Sending job creation notification to admins");
     }
 
     return sendSuccess(res, savedJob, "Job created successfully", 201);
@@ -1204,6 +1271,23 @@ export async function acceptApplication(req, res) {
       } catch (notifyError) {
         logError(notifyError, "sending application acceptance notification");
       }
+    }
+
+    // Automatically create conversation between client and interpreter
+    try {
+      const clientId = application.job?.organization?.ownerUserId;
+      const interpreterId = application.interpreterId;
+      
+      if (clientId && interpreterId) {
+        await conversationService.getOrCreateConversation(
+          clientId,
+          interpreterId,
+          true // Skip approval check since application is already approved
+        );
+      }
+    } catch (conversationError) {
+      // Log error but don't fail the acceptance
+      logError(conversationError, "creating conversation from accepted application");
     }
 
     return sendSuccess(res, application, "Application accepted successfully");

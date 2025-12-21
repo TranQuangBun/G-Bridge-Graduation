@@ -44,6 +44,15 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
+  // Check if user is active
+  if (user && user.isActive === false) {
+    // User account is deactivated, redirect to login with message
+    return <Navigate to={ROUTES.LOGIN} state={{ 
+      from: location,
+      message: "Your account has been deactivated. Please contact support." 
+    }} replace />;
+  }
+
   // If roles are specified, check if user has required role
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
     // Redirect to appropriate dashboard based on role

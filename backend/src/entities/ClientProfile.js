@@ -88,7 +88,8 @@ export const ClientProfileSchema = new EntitySchema({
       unique: true,
     },
     companyName: {
-      type: "text",
+      type: "varchar",
+      length: 255,
     },
     companyType: {
       type: "enum",

@@ -12,6 +12,8 @@
     "docs:generate": "echo 'Swagger docs are auto-generated from JSDoc comments. No script needed.'",
     "docs:dev": "npm run docs:generate && npm run dev",
     "create-admin": "node scripts/create-admin.js",
+    "seed:demo": "node scripts/seed-demo-data.js",
+    "seed:subscriptions": "node scripts/seed-subscription-plans.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

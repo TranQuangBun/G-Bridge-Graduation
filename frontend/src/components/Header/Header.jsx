@@ -63,12 +63,6 @@ const Header = () => {
 
         // Filter conversations with unread messages
         const conversations = conversationsResponse.data || [];
-        console.log("🔍 Loading conversations for dropdown:", conversations);
-        console.log("🔍 User ID:", user?.id || user?.sub);
-        console.log(
-          "🔍 Unread count from API:",
-          countResponse.data?.unreadCount
-        );
 
         const unread = conversations.filter((conv) => {
           let unreadCount = 0;
@@ -76,9 +70,6 @@ const Header = () => {
           // Check if conversation has otherParticipant structure (transformed)
           if (conv.otherParticipant) {
             unreadCount = Number(conv.unreadCount) || 0;
-            console.log(
-              `📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`
-            );
           } else {
             // Fallback to raw structure
             const isParticipant1 =
@@ -88,44 +79,16 @@ const Header = () => {
             unreadCount = isParticipant1
               ? Number(rawUnread1) || 0
               : Number(rawUnread2) || 0;
-            console.log(
-              `📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`
-            );
           }
 
           const hasUnread = unreadCount > 0;
-          if (hasUnread) {
-            console.log(`✅ Found unread conversation ${conv.id}:`, {
-              id: conv.id,
-              unreadCount,
-              lastMessage: conv.lastMessage,
-              lastMessageAt: conv.lastMessageAt,
-              otherParticipant: conv.otherParticipant,
-            });
-          } else if (conv.lastMessage) {
-            console.log(
-              `⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`,
-              {
-                id: conv.id,
-                unreadCount,
-                lastMessage: conv.lastMessage,
-              }
-            );
-          }
           return hasUnread;
         });
 
-        console.log(
-          `📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`
-        );
-        console.log("📋 Filtered unread conversations:", unread);
 
         // If no unread but we have unread count > 0, show recent conversations with messages
         let conversationsToShow = unread;
         if (unread.length === 0 && countResponse.data?.unreadCount > 0) {
-          console.log(
-            "⚠️ No unread conversations found but unreadCount > 0, showing recent conversations with messages"
-          );
           conversationsToShow = conversations
             .filter((conv) => conv.lastMessage) // Has at least one message
             .sort((a, b) => {
@@ -145,7 +108,6 @@ const Header = () => {
           })
           .slice(0, 5);
 
-        console.log("✅ Final conversations to display:", sorted);
         setUnreadConversations(sorted);
       } catch (error) {
         console.error("Error loading unread message data:", error);
@@ -178,10 +140,9 @@ const Header = () => {
         const conversations = conversationsResponse.data || [];
 
         console.log(
-          "🔍 All conversations when opening dropdown:",
+          "All conversations when opening dropdown:",
           conversations
         );
-        console.log("🔍 User ID:", user?.id || user?.sub);
 
         // Filter conversations with unread messages
         const unread = conversations.filter((conv) => {
@@ -190,9 +151,6 @@ const Header = () => {
           // Check if conversation has otherParticipant structure (transformed)
           if (conv.otherParticipant) {
             unreadCount = Number(conv.unreadCount) || 0;
-            console.log(
-              `📬 Conversation ${conv.id}: unreadCount = ${conv.unreadCount} (raw) -> ${unreadCount} (parsed)`
-            );
           } else {
             // Fallback to raw structure
             const isParticipant1 =
@@ -202,44 +160,16 @@ const Header = () => {
             unreadCount = isParticipant1
               ? Number(rawUnread1) || 0
               : Number(rawUnread2) || 0;
-            console.log(
-              `📬 Conversation ${conv.id}: participant1Unread=${rawUnread1}, participant2Unread=${rawUnread2}, isParticipant1=${isParticipant1}, final=${unreadCount}`
-            );
           }
 
           const hasUnread = unreadCount > 0;
-          if (hasUnread) {
-            console.log(`✅ Found unread conversation ${conv.id}:`, {
-              id: conv.id,
-              unreadCount,
-              lastMessage: conv.lastMessage,
-              lastMessageAt: conv.lastMessageAt,
-              otherParticipant: conv.otherParticipant,
-            });
-          } else if (conv.lastMessage) {
-            console.log(
-              `⚠️ Conversation ${conv.id} has lastMessage but unreadCount=0:`,
-              {
-                id: conv.id,
-                unreadCount,
-                lastMessage: conv.lastMessage,
-              }
-            );
-          }
           return hasUnread;
         });
 
-        console.log(
-          `📊 Total conversations: ${conversations.length}, Unread: ${unread.length}`
-        );
-        console.log("📋 Filtered unread conversations:", unread);
 
         // If no unread but we have unread count > 0, show recent conversations with messages
         let conversationsToShow = unread;
         if (unread.length === 0 && unreadMessageCount > 0) {
-          console.log(
-            "⚠️ No unread conversations found but unreadMessageCount > 0, showing recent conversations with messages"
-          );
           conversationsToShow = conversations
             .filter((conv) => conv.lastMessage) // Has at least one message
             .sort((a, b) => {
@@ -259,7 +189,6 @@ const Header = () => {
           })
           .slice(0, 5);
 
-        console.log("✅ Final conversations to display:", sorted);
         setUnreadConversations(sorted);
       } catch (error) {
         console.error("Error loading conversations for dropdown:", error);

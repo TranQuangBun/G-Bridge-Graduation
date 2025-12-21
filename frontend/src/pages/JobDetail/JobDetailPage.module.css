@@ -357,7 +357,7 @@
 
 .requirementsList li::before,
 .benefitsList li::before {
-  content: "✓ ";
+  content: "";
   color: #0369a1;
   font-weight: 700;
   margin-right: 8px;

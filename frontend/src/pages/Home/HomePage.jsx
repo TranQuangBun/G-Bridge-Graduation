@@ -14,119 +14,12 @@ import jobService from "../../services/jobService.js";
 import minhAnhAvatar from "../../assets/images/avatar/minhanh.png";
 import namAvatar from "../../assets/images/avatar/nam.png";
 import huongAvatar from "../../assets/images/avatar/huonng.png";
-import samsungLogo from "../../assets/images/company/amazon.png";
-import ministryLogo from "../../assets/images/company/fpt.png";
-import vinmecLogo from "../../assets/images/company/Family Caregiver Alliance.png";
 import { FaGlobe, FaBolt, FaBriefcase, FaBriefcase as FaBriefcaseIcon, FaLanguage, FaPlus, FaBookmark, FaMapMarkerAlt, FaDollarSign, FaClock } from "react-icons/fa";
-
-const MOCK_JOBS_DATA = [
-  {
-    id: 1,
-    title: "English-Japanese Interpreter",
-    company: "Samsung Electronics",
-    companyLogo: samsungLogo,
-    location: "Ho Chi Minh City",
-    salary: "$1,200-1,600",
-    type: "Full-time",
-    urgent: true,
-    skills: ["English", "Japanese", "Technology"],
-  },
-  {
-    id: 2,
-    title: "International Conference Interpreter",
-    company: "Ministry of Foreign Affairs",
-    companyLogo: ministryLogo,
-    location: "Hanoi",
-    salary: "$1,400-2,200",
-    type: "Project-based",
-    urgent: false,
-    skills: ["English", "French", "Diplomacy"],
-  },
-  {
-    id: 3,
-    title: "Medical Interpreter - General Hospital",
-    company: "Vinmec Hospital",
-    companyLogo: vinmecLogo,
-    location: "Ho Chi Minh City",
-    salary: "$900-1,400",
-    type: "Part-time",
-    urgent: false,
-    skills: ["English", "Medicine", "Healthcare"],
-  },
-  {
-    id: 4,
-    title: "On-site Factory Interpreter",
-    company: "Samsung Electronics",
-    companyLogo: samsungLogo,
-    location: "Bac Ninh",
-    salary: "$750-1,050",
-    type: "Shift-based",
-    urgent: true,
-    skills: ["Korean", "Manufacturing", "Reporting"],
-  },
-  {
-    id: 5,
-    title: "Legal Contract Interpreter",
-    company: "Ministry of Foreign Affairs",
-    companyLogo: ministryLogo,
-    location: "Hanoi",
-    salary: "$1,800-2,700",
-    type: "Full-time",
-    urgent: false,
-    skills: ["English", "Law", "Contracts"],
-  },
-  {
-    id: 6,
-    title: "Medical Documentation Translator",
-    company: "Vinmec Hospital",
-    companyLogo: vinmecLogo,
-    location: "Da Nang",
-    salary: "$950-1,450",
-    type: "Remote",
-    urgent: false,
-    skills: ["English", "Medical", "Translation"],
-  },
-  {
-    id: 7,
-    title: "Internal Training Interpreter",
-    company: "Samsung Electronics",
-    companyLogo: samsungLogo,
-    location: "Thai Nguyen",
-    salary: "$950-1,350",
-    type: "Full-time",
-    urgent: false,
-    skills: ["English", "Training", "Note-taking"],
-  },
-  {
-    id: 8,
-    title: "Logistics & Supply Chain Interpreter",
-    company: "Ministry of Foreign Affairs",
-    companyLogo: ministryLogo,
-    location: "Hai Phong",
-    salary: "$1,150-1,550",
-    type: "Project-based",
-    urgent: false,
-    skills: ["Chinese", "Logistics", "Supply Chain"],
-  },
-  {
-    id: 9,
-    title: "Medical Symposium Interpreter",
-    company: "Vinmec Hospital",
-    companyLogo: vinmecLogo,
-    location: "Ho Chi Minh City",
-    salary: "$1,600-2,000",
-    type: "Event-based",
-    urgent: true,
-    skills: ["English", "Conference", "Medical"],
-  },
-];
 
 const HomePage = () => {
   const { lang, t } = useLanguage();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [jobsData, setJobsData] = useState([]);
-  // const [jobsLoading, setJobsLoading] = useState(true); // Reserved for future use
-  // const [jobsError, setJobsError] = useState(null); // Reserved for future use
 
   // Anim refs
   const heroRef = useScrollAnimation("animate-on-scroll");
@@ -146,8 +39,6 @@ const HomePage = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        // setJobsLoading(true); // Reserved for future use
-        // setJobsError(null); // Reserved for future use
         const response = await jobService.getJobs({ limit: 9, page: 1, status: "open" });
         if (response.success && response.data?.jobs) {
           // Transform API data to match UI format
@@ -169,17 +60,13 @@ const HomePage = () => {
               ...(job.domains?.map((d) => d.name || "") || []),
             ].filter(Boolean),
           }));
-          setJobsData(transformedJobs.length > 0 ? transformedJobs : MOCK_JOBS_DATA);
+          setJobsData(transformedJobs);
         } else {
-          setJobsData(MOCK_JOBS_DATA);
+          setJobsData([]);
         }
       } catch (error) {
         console.error("Error fetching jobs:", error);
-        // setJobsError(error.message); // Reserved for future use
-        // Fallback to mock data on error
-        setJobsData(MOCK_JOBS_DATA);
-      } finally {
-        // setJobsLoading(false); // Reserved for future use
+        setJobsData([]);
       }
     };
 
@@ -240,9 +127,9 @@ const HomePage = () => {
   
   // Map icon keys to FontAwesome icons
   const iconMap = {
-    "🌐": FaGlobe,
-    "⚡": FaBolt,
-    "💼": FaBriefcase,
+    globe: FaGlobe,
+    bolt: FaBolt,
+    briefcase: FaBriefcase,
   };
   
   // Transform features to include icon components

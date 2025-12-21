@@ -26,105 +26,6 @@ import {
 } from "react-icons/fa";
 import JobCompletionWidget from "../../components/JobCompletionWidget/JobCompletionWidget.jsx";
 
-// Unused mock data - kept for reference
-/* const MOCK_APPLICATIONS = [
-  {
-    id: 1,
-    company: "GlobalSpeak",
-    logo: FaBuilding,
-    position: "Senior English-Vietnamese Conference Interpreter",
-    jobType: "Full-time",
-    workType: "Remote",
-    location: "Ho Chi Minh City",
-    salary: "$2,500-3,500",
-    dateApplied: "2025-01-10",
-    status: "Under Review",
-    description:
-      "Leading global language services company seeking experienced interpreter for high-level conferences and business meetings.",
-    requirements: [
-      "5+ years conference interpreting experience",
-      "Professional certification",
-      "Fluent English and Vietnamese",
-    ],
-  },
-  {
-    id: 2,
-    company: "MedLingua",
-    logo: FaHospital,
-    position: "Medical Interpreter - Vietnamese",
-    jobType: "Part-time",
-    workType: "On-site",
-    location: "District 1, Ho Chi Minh City",
-    salary: "$25-35/hour",
-    dateApplied: "2025-01-08",
-    status: "Shortlisted",
-    description:
-      "Healthcare interpretation services for Vietnamese-speaking patients in medical settings.",
-    requirements: [
-      "Medical terminology knowledge",
-      "Healthcare interpreting certification",
-      "Compassionate communication skills",
-    ],
-  },
-  {
-    id: 3,
-    company: "EduBridge",
-    logo: FaGraduationCap,
-    position: "Educational Content Translator",
-    jobType: "Contract",
-    workType: "Remote",
-    location: "Remote",
-    salary: "$30-40/hour",
-    dateApplied: "2025-01-05",
-    status: "Rejected",
-    description:
-      "Translate educational materials and online courses from English to Vietnamese for K-12 students.",
-    requirements: [
-      "Education background preferred",
-      "Translation experience",
-      "Understanding of pedagogical concepts",
-    ],
-  },
-  {
-    id: 4,
-    company: "TechTranslate",
-    logo: FaLaptop,
-    position: "Technical Document Translator",
-    jobType: "Full-time",
-    workType: "Hybrid",
-    location: "Hanoi",
-    salary: "$2,000-2,800",
-    dateApplied: "2025-01-03",
-    status: "Interview Scheduled",
-    description:
-      "Translate technical documentation, software interfaces, and user manuals for technology companies.",
-    requirements: [
-      "Technical translation experience",
-      "Software localization knowledge",
-      "CAT tools proficiency",
-    ],
-  },
-  {
-    id: 5,
-    company: "LegalLingo",
-    logo: FaBalanceScale,
-    position: "Legal Interpreter",
-    jobType: "Part-time",
-    workType: "On-site",
-    location: "District 3, Ho Chi Minh City",
-    salary: "$40-50/hour",
-    dateApplied: "2025-01-01",
-    status: "Active",
-    description:
-      "Provide interpretation services for legal proceedings, client meetings, and document review sessions.",
-    requirements: [
-      "Legal interpreting certification",
-      "Court interpreting experience",
-      "Confidentiality protocols knowledge",
-    ],
-  },
-]; */
-
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
   { id: "overview", icon: FaChartBar, labelKey: "overview", active: false },
@@ -194,7 +95,6 @@ function MyApplicationsPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [applications, setApplications] = useState([]);
-  // const [loading, setLoading] = useState(true); // Reserved for future use
   const [processingApplication, setProcessingApplication] = useState(null);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
@@ -208,7 +108,6 @@ function MyApplicationsPage() {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        // setLoading(true); // Reserved for future use
         const response = await jobService.getMyApplications();
 
         // Handle response from sendPaginated (data is array directly)
@@ -280,8 +179,6 @@ function MyApplicationsPage() {
       } catch (error) {
         console.error("Error fetching applications:", error);
         setApplications([]);
-      } finally {
-        // setLoading(false); // Reserved for future use
       }
     };
 
@@ -431,9 +328,6 @@ function MyApplicationsPage() {
   };
 
   const handleViewDetails = (application) => {
-    console.log("🔍 Selected Application:", application);
-    console.log("📊 Application Status:", application?.status);
-    console.log("✅ Is Approved?", isApplicationApproved(application));
     setSelectedApplication(application);
   };
 
@@ -586,9 +480,7 @@ function MyApplicationsPage() {
   const confirmCancelRequest = async (applicationId) => {
     setProcessingCompletion(applicationId);
     try {
-      const response = await jobService.cancelJobCompletionRequest(
-        applicationId
-      );
+      await jobService.cancelJobCompletionRequest(applicationId);
 
       // Update applications list
       setApplications((prev) =>
@@ -1016,7 +908,7 @@ function MyApplicationsPage() {
 
             {filteredApplications.length === 0 && (
               <div className={styles.emptyState}>
-                <span className={styles.emptyIcon}>📋</span>
+                <span className={styles.emptyIcon}></span>
                 <h3>{t("applications.noApplications")}</h3>
                 <p>
                   {user?.role === "client"
@@ -1122,7 +1014,7 @@ function MyApplicationsPage() {
                     {isApplicationApproved(selectedApplication) && (
                       <div className={styles.acceptedContactSection}>
                         <h4 className={styles.acceptedContactTitle}>
-                          ✅ {t("applications.modal.contactApplicant")}
+                          {t("applications.modal.contactApplicant")}
                         </h4>
                         <div className={styles.acceptedContactInfo}>
                           {selectedApplication.interpreter?.email && (
@@ -1367,9 +1259,9 @@ function MyApplicationsPage() {
                           onClick={() =>
                             handleStartConversation(selectedApplication)
                           }
-                          title="Nhắn tin với ứng viên"
+                          title={t("applications.modal.chatWithApplicant") || "Chat with applicant"}
                         >
-                          💬 {t("common.startChat") || "Nhắn tin"}
+                          {t("common.startChat") || "Nhắn tin"}
                         </button>
                         {selectedApplication.resumeUrl && (
                           <button
@@ -1406,9 +1298,9 @@ function MyApplicationsPage() {
                           onClick={() =>
                             handleStartConversation(selectedApplication)
                           }
-                          title="Nhắn tin với nhà tuyển dụng"
+                          title={t("applications.modal.chatWithEmployer") || "Chat with employer"}
                         >
-                          💬 {t("common.startChat") || "Nhắn tin"}
+                          {t("common.startChat") || "Nhắn tin"}
                         </button>
                         <button
                           className={styles.iconBtn}
@@ -1816,7 +1708,7 @@ function MyApplicationsPage() {
                   {processingCompletion ===
                   completionModalData.applicationId ? (
                     <>
-                      ⏳ {t("applications.modal.processing") || "Đang xử lý..."}
+                      {t("applications.modal.processing") || "Processing..."}
                     </>
                   ) : (
                     <>

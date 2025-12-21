@@ -202,7 +202,7 @@ const RevenueManagementPage = () => {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>✅</div>
+              <div className={styles.statIcon}></div>
               <div className={styles.statContent}>
                 <h3>Giao dịch thành công</h3>
                 <p className={styles.statValue}>
@@ -217,7 +217,7 @@ const RevenueManagementPage = () => {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>⏳</div>
+              <div className={styles.statIcon}></div>
               <div className={styles.statContent}>
                 <h3>Đang chờ</h3>
                 <p className={styles.statValue}>
@@ -227,7 +227,7 @@ const RevenueManagementPage = () => {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>❌</div>
+              <div className={styles.statIcon}></div>
               <div className={styles.statContent}>
                 <h3>Thất bại</h3>
                 <p className={styles.statValue}>

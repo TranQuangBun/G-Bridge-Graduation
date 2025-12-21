@@ -11,7 +11,7 @@ export {
 } from "./ClientProfile.js";
 export { Language, ProficiencyLevel, LanguageSchema } from "./Language.js";
 export { Certification, CertificationStatus, CertificationSchema } from "./Certification.js";
-export { Organization, OrganizationSchema } from "./Organization.js";
+export { Organization, OrganizationStatus, OrganizationSchema } from "./Organization.js";
 export { WorkingMode, WorkingModeSchema } from "./WorkingMode.js";
 export { Domain, DomainSchema } from "./Domain.js";
 export { Level, LevelSchema } from "./Level.js";

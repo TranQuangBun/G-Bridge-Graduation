@@ -9,12 +9,6 @@ import {
   FaEdit,
   FaTimes,
   FaCheck,
-  FaPaperclip,
-  FaImage,
-  FaFilePdf,
-  FaFileWord,
-  FaFileAlt,
-  FaDownload,
 } from "react-icons/fa";
 import messageService from "../../services/messageService.js";
 import EmojiPicker from "emoji-picker-react";
@@ -41,9 +35,6 @@ function ChatWindow({
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingContent, setEditingContent] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const isInitialLoad = useRef(true);
@@ -414,34 +405,18 @@ function ChatWindow({
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !selectedFile) || sending || !conversation?.id)
-      return;
+    if (!newMessage.trim() || sending || !conversation?.id) return;
 
     const messageContent = newMessage.trim();
-    const fileToSend = selectedFile;
-
     setNewMessage("");
-    setSelectedFile(null);
-    setPreviewUrl(null);
     setSending(true);
 
     try {
-      let sentMessage;
-
-      if (fileToSend) {
-        // Send message with file
-        sentMessage = await messageService.sendMessageWithFile(
-          conversation.id,
-          messageContent || "",
-          fileToSend
-        );
-      } else {
-        // Send text message only
-        sentMessage = await messageService.sendMessage(
-          conversation.id,
-          messageContent
-        );
-      }
+      // Send text message only
+      const sentMessage = await messageService.sendMessage(
+        conversation.id,
+        messageContent
+      );
 
       // Add message to local state
       setMessages((prev) => {
@@ -459,60 +434,11 @@ function ChatWindow({
     } catch (error) {
       console.error("Error sending message:", error);
       setNewMessage(messageContent); // Restore message on error
-      setSelectedFile(fileToSend);
-      if (fileToSend) {
-        const url = URL.createObjectURL(fileToSend);
-        setPreviewUrl(url);
-      }
     } finally {
       setSending(false);
     }
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Check file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("File quá lớn! Kích thước tối đa 10MB.");
-      return;
-    }
-
-    setSelectedFile(file);
-
-    // Create preview for images
-    if (file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const getFileIcon = (fileType) => {
-    if (fileType?.includes("pdf")) return <FaFilePdf />;
-    if (fileType?.includes("word") || fileType?.includes("doc"))
-      return <FaFileWord />;
-    return <FaFileAlt />;
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
 
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm("Bạn có chắc muốn xóa tin nhắn này?")) return;
@@ -781,43 +707,6 @@ function ChatWindow({
                       ) : (
                         // Normal message display
                         <>
-                          {/* Display file/image if exists */}
-                          {message.fileUrl && (
-                            <div className={styles.messageFile}>
-                              {message.fileType?.startsWith("image/") ? (
-                                <img
-                                  src={message.fileUrl}
-                                  alt={message.fileName}
-                                  className={styles.messageImage}
-                                  onClick={() =>
-                                    window.open(message.fileUrl, "_blank")
-                                  }
-                                />
-                              ) : (
-                                <div className={styles.fileAttachment}>
-                                  <div className={styles.fileIcon}>
-                                    {getFileIcon(message.fileType)}
-                                  </div>
-                                  <div className={styles.fileInfo}>
-                                    <span className={styles.fileName}>
-                                      {message.fileName}
-                                    </span>
-                                    <span className={styles.fileSize}>
-                                      {formatFileSize(message.fileSize)}
-                                    </span>
-                                  </div>
-                                  <a
-                                    href={message.fileUrl}
-                                    download={message.fileName}
-                                    className={styles.downloadBtn}
-                                    title="Tải về"
-                                  >
-                                    <FaDownload />
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          )}
                           {message.content && (
                             <p className={styles.messageText}>
                               {message.content}
@@ -833,7 +722,7 @@ function ChatWindow({
                               {formatTime(message.createdAt)}
                             </span>
                             {isOwn && message.isRead && (
-                              <span className={styles.readIndicator}>✓</span>
+                              <span className={styles.readIndicator}></span>
                             )}
                           </div>
                           <div className={styles.messageActions}>
@@ -845,7 +734,7 @@ function ChatWindow({
                               title="Copy tin nhắn"
                             >
                               {copiedMessageId === message.id ? (
-                                "✓"
+                                ""
                               ) : (
                                 <FaCopy />
                               )}
@@ -897,23 +786,6 @@ function ChatWindow({
       </div>
 
       <form className={styles.messageInput} onSubmit={handleSendMessage}>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          accept="image/*,.pdf,.doc,.docx,.txt"
-          style={{ display: "none" }}
-        />
-
-        <button
-          type="button"
-          className={styles.attachButton}
-          onClick={() => fileInputRef.current?.click()}
-          title="Đính kèm file"
-        >
-          <FaPaperclip />
-        </button>
-
         <button
           type="button"
           className={styles.emojiButton}
@@ -934,36 +806,6 @@ function ChatWindow({
           </div>
         )}
 
-        {/* File preview */}
-        {selectedFile && (
-          <div className={styles.filePreview}>
-            {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className={styles.previewImage}
-              />
-            ) : (
-              <div className={styles.filePreviewInfo}>
-                <span className={styles.filePreviewIcon}>
-                  {getFileIcon(selectedFile.type)}
-                </span>
-                <span className={styles.filePreviewName}>
-                  {selectedFile.name}
-                </span>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleRemoveFile}
-              className={styles.removeFileBtn}
-              title="Xóa file"
-            >
-              <FaTimes />
-            </button>
-          </div>
-        )}
-
         <input
           type="text"
           value={newMessage}
@@ -978,7 +820,7 @@ function ChatWindow({
         <button
           type="submit"
           className={styles.sendButton}
-          disabled={(!newMessage.trim() && !selectedFile) || sending}
+          disabled={!newMessage.trim() || sending}
         >
           <FaPaperPlane />
         </button>

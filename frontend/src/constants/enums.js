@@ -20,7 +20,6 @@ export const ROUTES = {
   ADMIN_NOTIFICATIONS: "/admin/notifications",
   ADMIN_USERS: "/admin/users",
   ADMIN_REVENUE: "/admin/revenue",
-  ADMIN_REGISTER: "/admin/register",
   POST_JOB: "/post-job",
   MY_JOBS: "/dashboard/my-jobs",
   PROFILE: "/profile",
