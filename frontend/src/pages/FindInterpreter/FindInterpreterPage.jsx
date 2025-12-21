@@ -8,7 +8,7 @@ import savedInterpreterService from "../../services/savedInterpreterService";
 import aiMatchingService from "../../services/aiMatchingService";
 import { SuitabilityScoreBadge } from "../../components/AIMatching";
 import { InterpreterModal } from "../../components/InterpreterModal";
-import { toast } from "react-toastify";
+import toastService from "../../services/toastService";
 import styles from "./FindInterpreterPage.module.css";
 import {
   FaStar,
@@ -18,6 +18,7 @@ import {
   FaBookmark,
   FaRegBookmark,
   FaInfoCircle,
+  FaLanguage,
 } from "react-icons/fa";
 
 const FindInterpreterPage = () => {
@@ -42,6 +43,7 @@ const FindInterpreterPage = () => {
   // AI Recommended interpreters (when jobId is provided)
   const [aiRecommended, setAiRecommended] = useState([]);
   const [loadingAIRecommended, setLoadingAIRecommended] = useState(false);
+  const [showAIResults, setShowAIResults] = useState(false);
 
   // Temporary filters for modal (not applied yet)
   const [tempFilters, setTempFilters] = useState({
@@ -74,34 +76,20 @@ const FindInterpreterPage = () => {
     totalPages: 0,
   });
 
-  // Debug: Log when interpreters state changes
-  useEffect(() => {
-    console.log("🔄 Interpreters state updated:", interpreters.length, "items");
-    if (interpreters.length > 0) {
-      console.log("📋 Sample interpreter:", {
-        id: interpreters[0].id,
-        name: interpreters[0].fullName,
-        experience: interpreters[0].profile?.experience || 0,
-      });
-    }
-  }, [interpreters]);
 
   // Load saved interpreters function
   const loadSavedInterpreters = useCallback(async () => {
     try {
       const result = await savedInterpreterService.getAllSavedInterpreters();
-      console.log("🔄 Loading saved interpreters:", result);
 
       if (result.success && result.data && Array.isArray(result.data)) {
         const savedIds = new Set(result.data.map((item) => item.id));
-        console.log("✅ Saved IDs loaded:", Array.from(savedIds));
         setSavedInterpreters(savedIds);
       } else {
-        console.log("⚠️ No saved data or invalid format");
         setSavedInterpreters(new Set());
       }
     } catch (error) {
-      console.error("❌ Error loading saved interpreters:", error);
+      console.error("Error loading saved interpreters:", error);
       setSavedInterpreters(new Set());
     }
   }, []);
@@ -109,21 +97,22 @@ const FindInterpreterPage = () => {
   // Check authentication
   useEffect(() => {
     if (!user) {
-      toast.error("Please login to view interpreters");
+      toastService.error(t("findInterpreter.errors.loginRequired"));
       navigate("/login");
     }
-  }, [user, navigate]);
+  }, [user, navigate, t]);
 
   // Fetch AI recommended interpreters (only when user clicks button)
   const handleFetchAIRecommended = async () => {
     if (!jobId) {
-      toast.error("Job ID is required for AI recommendations");
+      toastService.error(t("findInterpreter.errors.jobIdRequired"));
       return;
     }
     
     setLoadingAIRecommended(true);
+    setShowAIResults(true); // Show AI results instead of normal list
     try {
-      const response = await aiMatchingService.matchJobToInterpreters(jobId, 5);
+      const response = await aiMatchingService.matchJobToInterpreters(jobId, 10);
       if (response.success && response.data?.matched_interpreters) {
         // Map to interpreter format - need to fetch full interpreter data
         const recommended = [];
@@ -143,12 +132,15 @@ const FindInterpreterPage = () => {
           }
         }
         setAiRecommended(recommended);
+        toastService.success(t("findInterpreter.ai.found").replace("{count}", recommended.length));
       } else {
-        toast.error("No AI recommendations available");
+        toastService.error(t("findInterpreter.errors.aiNotFound"));
+        setShowAIResults(false);
       }
     } catch (error) {
       console.error("Error fetching AI recommendations:", error);
-      toast.error("Failed to fetch AI recommendations");
+      toastService.error(t("findInterpreter.errors.aiRecommendationsFailed"));
+      setShowAIResults(false);
     } finally {
       setLoadingAIRecommended(false);
     }
@@ -164,7 +156,6 @@ const FindInterpreterPage = () => {
     // Reload saved interpreters when user returns to tab
     const handleVisibilityChange = () => {
       if (!document.hidden && user) {
-        console.log("🔄 Page visible again, reloading saved interpreters");
         loadSavedInterpreters();
       }
     };
@@ -179,7 +170,6 @@ const FindInterpreterPage = () => {
   useEffect(() => {
     if (!user) return;
 
-    console.log("⚡ useEffect triggered, filters changed");
 
     // Only debounce search input
     if (filters.search !== "") {
@@ -194,9 +184,7 @@ const FindInterpreterPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.sortBy, filters.sortOrder, user]);
   
-  // eslint-disable-next-line no-unused-vars
   const fetchInterpreters = async () => {
-    console.log("🔍 Fetching interpreters with filters:", filters);
     setLoading(true);
     try {
       // Build query filters and remove empty values
@@ -233,13 +221,7 @@ const FindInterpreterPage = () => {
         queryFilters.location = filters.location.trim();
       }
 
-      console.log("📤 Sending API request with filters:", queryFilters);
       const response = await interpreterService.getInterpreters(queryFilters);
-      console.log("📥 Received response:", response);
-      console.log(
-        "📥 Interpreters count:",
-        response.data?.interpreters?.length || 0
-      );
 
       // Map interpreterProfile to profile for consistency
       const interpretersWithProfile = (response.data.interpreters || []).map(
@@ -249,19 +231,13 @@ const FindInterpreterPage = () => {
         })
       );
 
-      console.log("✅ Mapped interpreters:", interpretersWithProfile.length);
-      console.log("👤 First interpreter sample:", interpretersWithProfile[0]);
 
       setInterpreters(interpretersWithProfile);
       setPagination(response.data.pagination || {});
 
-      console.log(
-        "✅ State updated - interpreters count:",
-        interpretersWithProfile.length
-      );
     } catch (error) {
-      console.error("❌ Error fetching interpreters:", error);
-      toast.error("Failed to load interpreters");
+      console.error("Error fetching interpreters:", error);
+      toastService.error(t("findInterpreter.errors.loadFailed"));
       setInterpreters([]); // Clear on error
     } finally {
       setLoading(false);
@@ -275,7 +251,6 @@ const FindInterpreterPage = () => {
   };
 
   const handleFilterChange = (key, value) => {
-    console.log(`🔧 Filter change: ${key} = ${value}`);
     setFilters({ ...filters, [key]: value, page: 1 });
   };
 
@@ -358,9 +333,6 @@ const FindInterpreterPage = () => {
     e.stopPropagation();
 
     const isSaved = savedInterpreters.has(interpreterId);
-    console.log(
-      `🔘 Toggle save for interpreter ${interpreterId}, currently saved: ${isSaved}`
-    );
 
     // Optimistic UI update
     setSavedInterpreters((prev) => {
@@ -379,15 +351,14 @@ const FindInterpreterPage = () => {
       : await savedInterpreterService.saveInterpreter(interpreterId);
 
     if (result.success) {
-      console.log(`✅ ${isSaved ? "Unsaved" : "Saved"} successfully`);
-      toast.success(
+      toastService.success(
         isSaved
-          ? "Interpreter removed from saved"
-          : "Interpreter saved successfully"
+          ? t("findInterpreter.saveInterpreter.unsaveSuccess")
+          : t("findInterpreter.saveInterpreter.saveSuccess")
       );
     } else {
       console.error(
-        `❌ Failed to ${isSaved ? "unsave" : "save"}:`,
+        `Failed to ${isSaved ? "unsave" : "save"}:`,
         result.message
       );
       // Rollback on error
@@ -400,77 +371,28 @@ const FindInterpreterPage = () => {
         }
         return newSet;
       });
-      toast.error(result.message || "Failed to update saved status");
+      toastService.error(result.message || t("findInterpreter.errors.updateSavedFailed"));
     }
   };
 
   return (
     <MainLayout>
       <div className={styles.findInterpreterPage}>
-        {/* AI Recommended Section - Only when jobId is provided */}
+        {/* AI Button in Toolbar - Only when jobId is provided */}
         {jobId && (
-          <div className={styles.aiRecommendedSection}>
-            <div className={styles.aiSectionHeader}>
-              <h2 className={styles.aiSectionTitle}>
-                🤖 AI Recommended Interpreters
-              </h2>
-              <p className={styles.aiSectionSubtitle}>
-                Get AI-powered recommendations based on your job requirements
-              </p>
-              {!loadingAIRecommended && aiRecommended.length === 0 && (
-                <button
-                  className={styles.aiFetchButton}
-                  onClick={handleFetchAIRecommended}
-                >
-                  Get AI Recommendations
-                </button>
-              )}
-              {loadingAIRecommended && (
-                <div className={styles.aiLoading}>
-                  <p>AI is analyzing and finding the best interpreters...</p>
-                </div>
-              )}
-            </div>
-            {!loadingAIRecommended && aiRecommended.length > 0 && (
-            <div className={styles.aiRecommendedGrid}>
-              {aiRecommended.map((match) => {
-                const interpreter = match.interpreter;
-                return (
-                  <div key={match.id} className={styles.aiRecommendedCard}>
-                    <div className={styles.aiCardHeader}>
-                      <div className={styles.aiInterpreterInfo}>
-                        <h3 className={styles.aiInterpreterName}>
-                          {interpreter?.user?.name || interpreter?.fullName || interpreter?.name || "Unknown"}
-                        </h3>
-                        <p className={styles.aiInterpreterLanguages}>
-                          {interpreter?.languages?.map((l) => l.language || l).join(", ") || 
-                           interpreter?.profile?.languages?.map((l) => l.language || l).join(", ") || 
-                           "No languages"}
-                        </p>
-                      </div>
-                      <div className={styles.aiScoreSection}>
-                        <SuitabilityScoreBadge
-                          score={match.suitability_score?.overall_score || 0}
-                          level={match.suitability_score?.score_level || "fair"}
-                          size="small"
-                        />
-                        <span className={styles.aiRank}>#{match.match_priority}</span>
-                      </div>
-                    </div>
-                    <p className={styles.aiRecommendation}>
-                      {match.suitability_score?.recommendation}
-                    </p>
-                    <button
-                      className={styles.aiViewButton}
-                      onClick={() => handleViewProfile(match.id)}
-                    >
-                      View Profile
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            )}
+          <div className={styles.aiToolbarSection}>
+            <button
+              className={`${styles.aiFetchButton} ${showAIResults ? styles.active : ""}`}
+              onClick={showAIResults ? () => setShowAIResults(false) : handleFetchAIRecommended}
+              disabled={loadingAIRecommended}
+            >
+              {loadingAIRecommended 
+                ? "AI Analyzing..." 
+                : showAIResults 
+                ? "Show All Interpreters" 
+                : "🤖 Get AI Recommendations"
+              }
+            </button>
           </div>
         )}
 
@@ -763,9 +685,9 @@ const FindInterpreterPage = () => {
                 className={styles.selectInput}
               >
                 <option value="">Any</option>
-                <option value="4">4+ ⭐</option>
-                <option value="4.5">4.5+ ⭐</option>
-                <option value="4.8">4.8+ ⭐</option>
+                <option value="4">4+</option>
+                <option value="4.5">4.5+</option>
+                <option value="4.8">4.8+</option>
               </select>
             </div>
 
@@ -814,15 +736,93 @@ const FindInterpreterPage = () => {
               </div>
             </div>
 
-            {/* Interpreter Grid */}
-            {loading ? (
-              <div className={styles.loadingState}>
-                <div className={styles.spinner}></div>
-                <p>{t("common.loading")}</p>
-              </div>
-            ) : interpreters.length > 0 ? (
+            {/* AI Recommended Interpreters - Replaces normal grid when active */}
+            {showAIResults && jobId ? (
               <div className={styles.interpreterGrid}>
-                {interpreters.map((interpreter) => (
+                {loadingAIRecommended ? (
+                  <div className={styles.loadingState}>
+                    <div className={styles.spinner}></div>
+                    <p>AI is analyzing and finding the best interpreters...</p>
+                  </div>
+                ) : aiRecommended.length > 0 ? (
+                  aiRecommended.map((match) => {
+                    const interpreter = match.interpreter;
+                    return (
+                      <div key={match.id} className={styles.interpreterCard}>
+                        <div className={styles.cardHeader}>
+                          <div className={styles.avatarContainer}>
+                            {interpreter?.avatar ? (
+                              <img
+                                src={`http://localhost:4000${interpreter.avatar}`}
+                                alt={interpreter.fullName}
+                                className={styles.avatar}
+                              />
+                            ) : (
+                              <div className={styles.avatarPlaceholder}>
+                                {interpreter?.fullName?.charAt(0)?.toUpperCase() || "I"}
+                              </div>
+                            )}
+                            <div className={styles.aiBadge}>AI #{match.match_priority}</div>
+                          </div>
+                          <h3 className={styles.interpreterName}>
+                            {interpreter?.user?.name || interpreter?.fullName || interpreter?.name || "Unknown"}
+                          </h3>
+                          <div className={styles.ratingRow}>
+                            <SuitabilityScoreBadge
+                              score={match.suitability_score?.overall_score || 0}
+                              level={match.suitability_score?.score_level || "fair"}
+                              size="small"
+                            />
+                          </div>
+                        </div>
+                        <div className={styles.cardBody}>
+                          <p className={styles.aiRecommendation}>
+                            {match.suitability_score?.recommendation}
+                          </p>
+                          <div className={styles.infoRow}>
+                            <span className={styles.icon}>
+                              <FaLanguage />
+                            </span>
+                            <span>
+                              {interpreter?.languages?.map((l) => l.language || l).join(", ") || 
+                               interpreter?.profile?.languages?.map((l) => l.language || l).join(", ") || 
+                               "No languages"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={styles.cardActions}>
+                          <button
+                            className={styles.viewButton}
+                            onClick={() => handleViewProfile(match.id)}
+                          >
+                            View Profile
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>No AI recommendations available</p>
+                    <button
+                      className={styles.aiFetchButton}
+                      onClick={() => setShowAIResults(false)}
+                    >
+                      Show All Interpreters
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Normal Interpreter Grid */
+              loading ? (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner}></div>
+                  <p>{t("common.loading")}</p>
+                </div>
+              ) : interpreters.length > 0 ? (
+                <div className={styles.interpreterGrid}>
+                  {interpreters.map((interpreter) => (
                   <div key={interpreter.id} className={styles.interpreterCard}>
                     {/* Avatar */}
                     <div className={styles.cardHeader}>
@@ -964,18 +964,19 @@ const FindInterpreterPage = () => {
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>🔍</div>
-                <h3>{t("findInterpreter.noResults.title")}</h3>
-                <p>{t("findInterpreter.noResults.description")}</p>
-                <button
-                  className={styles.clearBtn}
-                  onClick={handleClearFilters}
-                >
-                  {t("findInterpreter.filters.clearAll")}
-                </button>
-              </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon}></div>
+                  <h3>{t("findInterpreter.noResults.title")}</h3>
+                  <p>{t("findInterpreter.noResults.description")}</p>
+                  <button
+                    className={styles.clearBtn}
+                    onClick={handleClearFilters}
+                  >
+                    {t("findInterpreter.filters.clearAll")}
+                  </button>
+                </div>
+              )
             )}
 
             {/* Pagination */}

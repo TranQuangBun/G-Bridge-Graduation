@@ -1197,7 +1197,7 @@
 
 .descriptionSection h4::before,
 .requirementsSection h4::before {
-  content: "📄";
+  content: "";
   font-size: 1rem;
 }
 
@@ -1224,7 +1224,7 @@
 }
 
 .requirementsSection li::before {
-  content: "✓";
+  content: "";
   color: var(--primary);
   font-weight: bold;
   position: absolute;

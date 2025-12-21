@@ -47,48 +47,6 @@ const AdvancedInterpreterFinder = () => {
     "Tourism",
   ];
 
-  const mockInterpreters = [
-    {
-      id: 1,
-      name: "Sarah Anderson",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      rating: 5.0,
-      reviews: 127,
-      hourlyRate: 45,
-      isOnline: true,
-      badges: ["IELTS 8.5", "Medical Certified", "TEDx Speaker"],
-      languages: ["English", "Vietnamese"],
-      experience: "8+ years",
-      completedJobs: 234,
-    },
-    {
-      id: 2,
-      name: "Takeshi Yamamoto",
-      avatar: "https://i.pravatar.cc/150?img=12",
-      rating: 4.9,
-      reviews: 93,
-      hourlyRate: 55,
-      isOnline: false,
-      badges: ["JLPT N1", "Legal Expert", "Court Certified"],
-      languages: ["Japanese", "Vietnamese"],
-      experience: "10+ years",
-      completedJobs: 312,
-    },
-    {
-      id: 3,
-      name: "Marie Dubois",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      rating: 4.8,
-      reviews: 156,
-      hourlyRate: 50,
-      isOnline: true,
-      badges: ["DELF C2", "Business Pro", "UN Experience"],
-      languages: ["French", "Vietnamese"],
-      experience: "12+ years",
-      completedJobs: 445,
-    },
-  ];
-
   const toggleFilter = (filterId) => {
     setActiveFilters((prev) =>
       prev.includes(filterId)
@@ -248,109 +206,15 @@ const AdvancedInterpreterFinder = () => {
             Top Rated Interpreters
           </h2>
           <p className="text-gray-600">
-            {mockInterpreters.length} professionals available
+            0 professionals available
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockInterpreters.map((interpreter) => (
-            <div
-              key={interpreter.id}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer transform hover:-translate-y-1"
-            >
-              {/* Card Header with Avatar */}
-              <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 p-6 pb-20">
-                <div className="absolute top-4 right-4">
-                  {interpreter.isOnline && (
-                    <span className="flex items-center gap-1 bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                      Online
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <img
-                      src={interpreter.avatar}
-                      alt={interpreter.name}
-                      className="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover"
-                    />
-                    {interpreter.isOnline && (
-                      <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Content */}
-              <div className="p-6 -mt-12 relative">
-                <div className="bg-white rounded-xl shadow-md p-4 mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
-                    {interpreter.name}
-                  </h3>
-
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    {renderStars(interpreter.rating)}
-                    <span className="text-sm font-semibold text-gray-700">
-                      {interpreter.rating}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ({interpreter.reviews} reviews)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <FaDollarSign className="text-green-600" />
-                    <span className="text-3xl font-bold text-gray-900">
-                      ${interpreter.hourlyRate}
-                    </span>
-                    <span className="text-sm text-gray-500">/hour</span>
-                  </div>
-                </div>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {interpreter.badges.map((badge, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full"
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-gray-500 text-xs mb-1">Experience</div>
-                    <div className="font-semibold text-gray-900">
-                      {interpreter.experience}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-gray-500 text-xs mb-1">Completed</div>
-                    <div className="font-semibold text-gray-900">
-                      {interpreter.completedJobs} jobs
-                    </div>
-                  </div>
-                </div>
-
-                {/* Voice Sample Button */}
-                <button className="w-full bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 mb-3 group">
-                  <FaVolumeUp className="group-hover:scale-110 transition-transform" />
-                  <span>Listen to Voice Sample</span>
-                  <FaPlay className="text-xs" />
-                </button>
-
-                {/* Book Now Button */}
-                <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
-                  Book Now
-                </button>
-              </div>
-            </div>
-          ))}
+          {/* No interpreters to display */}
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-500">No interpreters found. Please use the search above to find interpreters.</p>
+          </div>
         </div>
       </div>
     </div>

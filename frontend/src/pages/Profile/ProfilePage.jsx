@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import styles from "./ProfilePage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import authService from "../../services/authService";
 import languageService from "../../services/languageService";
 import certificationService from "../../services/certificationService";
-import { toast } from "react-toastify";
+import toastService from "../../services/toastService";
 import {
   FaChartBar,
   FaClipboardList,
@@ -172,8 +172,9 @@ const LANGUAGE_CERTIFICATIONS = {
 };
 
 const ProfilePage = () => {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     user,
     profile: userProfile,
@@ -190,6 +191,7 @@ const ProfilePage = () => {
 
   // States for editing
   const [activeMenu, setActiveMenu] = useState("profile");
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
   const [isEditingProfessional, setIsEditingProfessional] = useState(false);
   const [isEditingCompanyInfo, setIsEditingCompanyInfo] = useState(false);
@@ -276,12 +278,6 @@ const ProfilePage = () => {
   useEffect(() => {
     if (userProfile && user?.role === "interpreter" && !isEditingProfessional) {
       // Only reset form when not editing and userProfile changes
-      console.log("Resetting professional form from userProfile:", {
-        userProfile,
-        specializations: userProfile.specializations,
-        specializationsType: typeof userProfile.specializations,
-        isArray: Array.isArray(userProfile.specializations),
-      });
       setProfessionalForm({
         hourlyRate: userProfile.hourlyRate || "",
         experience: userProfile.experience || "",
@@ -438,6 +434,15 @@ const ProfilePage = () => {
 
   const missingFields = getMissingFields();
 
+  // Check if user came from registration and show onboarding modal
+  useEffect(() => {
+    if (location.state?.showOnboarding && user?.role === "interpreter") {
+      setShowOnboardingModal(true);
+      // Clear state to prevent showing again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, user?.role]);
+
   // Handle avatar upload
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -445,13 +450,13 @@ const ProfilePage = () => {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toastService.error("Please select an image file");
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
+      toastService.error("File size must be less than 5MB");
       return;
     }
 
@@ -459,9 +464,9 @@ const ProfilePage = () => {
     try {
       await authService.uploadAvatar(file);
       await refreshUser();
-      toast.success("Avatar updated successfully!");
+      toastService.success("Avatar updated successfully!");
     } catch (error) {
-      toast.error(error.message || "Failed to upload avatar");
+      toastService.error(error.message || "Failed to upload avatar");
     } finally {
       setLoading(false);
     }
@@ -481,9 +486,9 @@ const ProfilePage = () => {
       await authService.updateUserProfile(basicInfoForm);
       await refreshUser();
       setIsEditingBasicInfo(false);
-      toast.success("Profile updated successfully!");
+      toastService.success("Profile updated successfully!");
     } catch (error) {
-      toast.error(error.message || "Failed to update profile");
+      toastService.error(error.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
@@ -515,26 +520,7 @@ const ProfilePage = () => {
         portfolio: professionalForm.portfolio,
       };
 
-      console.log("Frontend - Sending update request:", {
-        dataToUpdate,
-        specializations: dataToUpdate.specializations,
-        specializationsType: typeof dataToUpdate.specializations,
-        isArray: Array.isArray(dataToUpdate.specializations),
-        length: dataToUpdate.specializations?.length,
-        professionalFormState: professionalForm,
-        professionalFormSpecializations: professionalForm.specializations,
-        specializationsArray: specializationsArray,
-      });
-
       const result = await authService.updateInterpreterProfile(dataToUpdate);
-
-      console.log("Frontend - Update response:", {
-        result,
-        profile: result.profile,
-        specializations: result.profile?.specializations,
-        specializationsType: typeof result.profile?.specializations,
-        isArray: Array.isArray(result.profile?.specializations),
-      });
 
       // Update profile immediately from response before refreshing
       if (result.profile) {
@@ -550,10 +536,10 @@ const ProfilePage = () => {
       // Then refresh from backend to ensure consistency
       await refreshUser();
       setIsEditingProfessional(false);
-      toast.success("Professional info updated successfully!");
+      toastService.success("Professional info updated successfully!");
     } catch (error) {
       console.error("Frontend - Update error:", error);
-      toast.error(error.message || "Failed to update professional info");
+      toastService.error(error.message || "Failed to update professional info");
     } finally {
       setLoading(false);
     }
@@ -596,17 +582,13 @@ const ProfilePage = () => {
         businessLicense: null,
       });
 
-      toast.success(
-        lang === "vi"
-          ? "Cập nhật thông tin công ty thành công!"
-          : "Company information updated successfully!"
+      toastService.success(
+        t("profile.company.updateSuccess") || "Company information updated successfully!"
       );
     } catch (error) {
-      toast.error(
+      toastService.error(
         error.message ||
-          (lang === "vi"
-            ? "Cập nhật thông tin công ty thất bại"
-            : "Failed to update company information")
+          t("profile.company.updateFailed") || "Failed to update company information"
       );
     } finally {
       setLoading(false);
@@ -624,21 +606,15 @@ const ProfilePage = () => {
       await refreshUser();
       // After refresh, the new status will be the opposite of previous
       const newStatus = !previousStatus;
-      toast.success(
+      toastService.success(
         newStatus
-          ? lang === "vi"
-            ? "Đã bật trạng thái hoạt động"
-            : "Profile activated"
-          : lang === "vi"
-          ? "Đã tắt trạng thái hoạt động"
-          : "Profile deactivated"
+          ? t("profile.activeStatus.activated") || "Profile activated"
+          : t("profile.activeStatus.deactivated") || "Profile deactivated"
       );
     } catch (error) {
-      toast.error(
+      toastService.error(
         error.message ||
-          (lang === "vi"
-            ? "Không thể thay đổi trạng thái"
-            : "Failed to toggle active status")
+          t("profile.activeStatus.toggleFailed") || "Failed to toggle active status"
       );
     } finally {
       setLoading(false);
@@ -697,7 +673,7 @@ const ProfilePage = () => {
       if (suggestions.length > 0) {
         setSuggestedCertifications(suggestions);
         setShowSuggestedCerts(true);
-        toast.success(
+        toastService.success(
           t("profile.languages.success.added") +
             ` ${t("profile.certifications.suggestedFound").replace(
               "{count}",
@@ -705,10 +681,10 @@ const ProfilePage = () => {
             )}`
         );
       } else {
-        toast.success(t("profile.languages.success.added"));
+        toastService.success(t("profile.languages.success.added"));
       }
     } catch (error) {
-      toast.error(error.message || t("profile.languages.errors.addFailed"));
+      toastService.error(error.message || t("profile.languages.errors.addFailed"));
     } finally {
       setLoading(false);
     }
@@ -778,10 +754,8 @@ const ProfilePage = () => {
   // Handle remove language
   const handleRemoveLanguage = async (languageId) => {
     showConfirmModal(
-      lang === "vi" ? "Xác nhận xóa" : "Confirm Delete",
-      lang === "vi"
-        ? "Bạn có chắc chắn muốn xóa ngôn ngữ này?"
-        : "Are you sure you want to delete this language?",
+      t("profile.confirm.deleteLanguage") || "Confirm Delete",
+      t("profile.confirm.deleteLanguageMessage") || "Are you sure you want to delete this language?",
       async () => {
         setLoading(true);
 
@@ -789,12 +763,12 @@ const ProfilePage = () => {
           if (languageId) {
             await languageService.deleteLanguage(languageId);
             await refreshUser();
-            toast.success(t("profile.languages.success.removed"));
+            toastService.success(t("profile.languages.success.removed"));
           } else {
-            toast.error(t("profile.languages.errors.cannotRemove"));
+            toastService.error(t("profile.languages.errors.cannotRemove"));
           }
         } catch (error) {
-          toast.error(
+          toastService.error(
             error.message || t("profile.languages.errors.removeFailed")
           );
         } finally {
@@ -819,13 +793,13 @@ const ProfilePage = () => {
       if (!certificationForm.name?.trim()) {
         errors.push(
           t("profile.certifications.errors.nameRequired") ||
-            "Vui lòng nhập tên chứng chỉ"
+            "Please enter certification name"
         );
       }
       if (!isDraft && !certificationForm.organization?.trim()) {
         errors.push(
           t("profile.certifications.errors.organizationRequired") ||
-            "Vui lòng nhập tổ chức cấp"
+            "Please enter issuing organization"
         );
       }
       if (
@@ -834,19 +808,19 @@ const ProfilePage = () => {
       ) {
         errors.push(
           t("profile.certifications.errors.yearInvalid") ||
-            "Năm cấp phải là số gồm 4 chữ số"
+            "Year must be a 4-digit number"
         );
       }
       if (
         certificationForm.expiryYear &&
         !/^\d{4}$/.test(String(certificationForm.expiryYear))
       ) {
-        errors.push("Năm hết hạn phải là số gồm 4 chữ số");
+        errors.push(t("profile.certifications.errors.expiryYearInvalid") || "Expiry year must be a 4-digit number");
       }
       if (!isDraft && !certificationForm.certificationImage) {
         errors.push(
           t("profile.certifications.errors.uploadRequired") ||
-            "Vui lòng chọn file chứng chỉ (ảnh/PDF)"
+            "Please upload a certification image"
         );
       } else if (certificationForm.certificationImage) {
         const file = certificationForm.certificationImage;
@@ -859,39 +833,24 @@ const ProfilePage = () => {
           "application/pdf",
         ];
         if (!validTypes.includes(file.type)) {
-          errors.push("File phải là ảnh hoặc PDF");
+          errors.push(t("profile.certifications.errors.invalidFileTypeImageOrPdf") || "File must be an image or PDF");
         }
         if (file.size > 10 * 1024 * 1024) {
-          errors.push("Kích thước file tối đa 10MB");
+          errors.push(t("profile.certifications.errors.fileSizeMax") || "File size must be less than 10MB");
         }
       }
 
       if (errors.length > 0) {
-        errors.forEach((msg) => toast.error(msg));
+        errors.forEach((msg) => toastService.error(msg));
         setLoading(false);
         return;
       }
 
-      console.log("📝 [FRONTEND] Starting add certification process");
-      console.log("📝 [FRONTEND] Certification form data:", {
-        name: certificationForm.name,
-        score: certificationForm.score,
-        year: certificationForm.year,
-        organization: certificationForm.organization,
-        hasImage: !!certificationForm.certificationImage,
-        imageFile: certificationForm.certificationImage
-          ? {
-              name: certificationForm.certificationImage.name,
-              type: certificationForm.certificationImage.type,
-              size: certificationForm.certificationImage.size,
-            }
-          : null,
-      });
 
       // Validate image upload is required (skip for draft)
       if (!isDraft && !certificationForm.certificationImage) {
-        console.error("❌ [FRONTEND] No image file provided");
-        toast.error(t("profile.certifications.errors.uploadRequired"));
+        console.error("No image file provided");
+        toastService.error(t("profile.certifications.errors.uploadRequired"));
         setLoading(false);
         return;
       }
@@ -914,8 +873,7 @@ const ProfilePage = () => {
 
       // If editing, use update API instead of create
       if (isEditing && editingCert?.id) {
-        console.log("🔄 [FRONTEND] Updating certification:", editingCert.id);
-        const updateResult = await certificationService.updateCertification(
+        await certificationService.updateCertification(
           editingCert.id,
           certificationData
         );
@@ -937,28 +895,17 @@ const ProfilePage = () => {
           ? t("profile.certifications.draftSaved") || "Draft saved successfully"
           : t("profile.certifications.updated") ||
             "Certification updated successfully";
-        toast.success(successMessage);
+        toastService.success(successMessage);
         setLoading(false);
         return;
       }
 
-      console.log(
-        "🔄 [FRONTEND] Step 1: Creating certification with data:",
-        certificationData
-      );
 
       // Step 1: Create certification
       const result = await certificationService.addCertification(
         certificationData
       );
 
-      console.log("✅ [FRONTEND] Step 1 completed. Certification created:", {
-        result,
-        fullResult: JSON.stringify(result, null, 2),
-        certification: result.data || result.certification || result,
-        certificationId:
-          result.data?.id || result.certification?.id || result.id,
-      });
 
       // Step 2: Upload image (this will change status to "pending")
       // Try multiple possible response structures
@@ -970,49 +917,17 @@ const ProfilePage = () => {
           ? result.data.id
           : null);
 
-      console.log("🔍 [FRONTEND] Extracted certification ID:", certId);
 
       if (certId && certificationForm.certificationImage) {
-        console.log(
-          "🔄 [FRONTEND] Step 2: Uploading image for certification ID:",
-          certId
+        await certificationService.uploadCertificationImage(
+          certId,
+          certificationForm.certificationImage
         );
-        console.log("🔄 [FRONTEND] Image file details:", {
-          name: certificationForm.certificationImage.name,
-          type: certificationForm.certificationImage.type,
-          size: certificationForm.certificationImage.size,
-        });
 
-        const uploadResult =
-          await certificationService.uploadCertificationImage(
-            certId,
-            certificationForm.certificationImage
-          );
-
-        console.log("✅ [FRONTEND] Step 2 completed. Image uploaded:", {
-          uploadResult,
-          fullUploadResult: JSON.stringify(uploadResult, null, 2),
-          imageUrl:
-            uploadResult.data?.imageUrl ||
-            uploadResult.data?.certification?.imageUrl ||
-            uploadResult.imageUrl ||
-            uploadResult.certification?.imageUrl,
-          certification:
-            uploadResult.data?.certification || uploadResult.certification,
-        });
       } else {
-        console.error(
-          "❌ [FRONTEND] No certification ID returned from create:",
-          {
-            result,
-            resultKeys: Object.keys(result || {}),
-            resultData: result.data,
-            resultCertification: result.certification,
-          }
-        );
+        console.error("No certification ID returned from create:", result);
       }
 
-      console.log("🔄 [FRONTEND] Refreshing user data...");
       await refreshUser();
 
       setIsAddingCertification(false);
@@ -1028,20 +943,14 @@ const ProfilePage = () => {
         expiryYear: "",
         certificationImage: null,
       });
-      console.log("✅ [FRONTEND] Certification added successfully");
       const successMessage = isDraft
         ? t("profile.certifications.draftSaved") || "Draft saved successfully"
         : t("profile.certifications.success.added") ||
           "Certification submitted for review";
-      toast.success(successMessage);
+      toastService.success(successMessage);
     } catch (error) {
-      console.error("❌ [FRONTEND] Error adding certification:", error);
-      console.error("❌ [FRONTEND] Error details:", {
-        message: error.message,
-        response: error.response,
-        data: error.response?.data,
-      });
-      toast.error(
+      console.error("Error adding certification:", error);
+      toastService.error(
         error.message || t("profile.certifications.errors.addFailed")
       );
     } finally {
@@ -1052,10 +961,8 @@ const ProfilePage = () => {
   // Handle remove certification
   const handleRemoveCertification = async (index) => {
     showConfirmModal(
-      lang === "vi" ? "Xác nhận xóa" : "Confirm Delete",
-      lang === "vi"
-        ? "Bạn có chắc chắn muốn xóa chứng chỉ này?"
-        : "Are you sure you want to delete this certification?",
+      t("profile.confirm.deleteCertification") || "Confirm Delete",
+      t("profile.confirm.deleteCertificationMessage") || "Are you sure you want to delete this certification?",
       async () => {
         setLoading(true);
 
@@ -1066,12 +973,12 @@ const ProfilePage = () => {
               certificationToRemove.id
             );
             await refreshUser();
-            toast.success(t("profile.certifications.success.removed"));
+            toastService.success(t("profile.certifications.success.removed"));
           } else {
-            toast.error(t("profile.certifications.errors.cannotRemove"));
+            toastService.error(t("profile.certifications.errors.cannotRemove"));
           }
         } catch (error) {
-          toast.error(
+          toastService.error(
             error.message || t("profile.certifications.errors.removeFailed")
           );
         } finally {
@@ -1082,15 +989,9 @@ const ProfilePage = () => {
   };
 
   // Handle add specialization
+  // eslint-disable-next-line no-unused-vars
   const handleAddSpecialization = (spec) => {
     const trimmedSpec = spec?.trim();
-    console.log("handleAddSpecialization called:", {
-      spec,
-      trimmedSpec,
-      trimmedLength: trimmedSpec?.length,
-      currentForm: professionalForm,
-      currentSpecializations: professionalForm.specializations,
-    });
 
     if (trimmedSpec && trimmedSpec.length > 0) {
       setProfessionalForm((prev) => {
@@ -1100,23 +1001,13 @@ const ProfilePage = () => {
         );
         if (!exists) {
           const newSpecializations = [...prev.specializations, trimmedSpec];
-          console.log("Adding specialization:", {
-            newSpec: trimmedSpec,
-            currentSpecializations: prev.specializations,
-            newArray: newSpecializations,
-            newLength: newSpecializations.length,
-          });
           return {
             ...prev,
             specializations: newSpecializations,
           };
-        } else {
-          console.log("Specialization already exists:", trimmedSpec);
         }
         return prev;
       });
-    } else {
-      console.log("Invalid specialization (empty or null):", spec);
     }
   };
 
@@ -1197,6 +1088,76 @@ const ProfilePage = () => {
         {/* Main Content */}
         <div className={styles.mainContent}>
           <div className={styles.profileContentWrapper}>
+            {/* Onboarding Modal */}
+            {showOnboardingModal && user?.role === "interpreter" && (
+              <div className={styles.onboardingModalOverlay}>
+                <div className={styles.onboardingModal}>
+                  <div className={styles.onboardingModalHeader}>
+                    <h2>{t("profile.onboarding.title")}</h2>
+                    <button
+                      className={styles.onboardingModalClose}
+                      onClick={() => setShowOnboardingModal(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className={styles.onboardingModalContent}>
+                    <p>{t("profile.onboarding.description")}</p>
+                    <div className={styles.onboardingProgressInfo}>
+                      <div className={styles.onboardingProgressItem}>
+                        <span className={styles.onboardingProgressLabel}>
+                          {t("profile.onboarding.currentProgress")}:
+                        </span>
+                        <span className={styles.onboardingProgressValue}>
+                          {profileCompleteness}%
+                        </span>
+                      </div>
+                      {missingFields.length > 0 && (
+                        <div className={styles.onboardingProgressItem}>
+                          <span className={styles.onboardingProgressLabel}>
+                            {t("profile.onboarding.missingFields")}:
+                          </span>
+                          <span className={styles.onboardingProgressValue}>
+                            {missingFields.length}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {missingFields.length > 0 && (
+                      <div className={styles.onboardingMissingFields}>
+                        <p className={styles.onboardingMissingFieldsTitle}>
+                          {t("profile.onboarding.missingFieldsList")}:
+                        </p>
+                        <div className={styles.onboardingMissingFieldsList}>
+                          {missingFields.slice(0, 5).map((field, index) => (
+                            <span
+                              key={index}
+                              className={styles.onboardingMissingFieldTag}
+                            >
+                              {t(`profile.completeness.fields.${field}`)}
+                            </span>
+                          ))}
+                          {missingFields.length > 5 && (
+                            <span className={styles.onboardingMissingFieldTag}>
+                              +{missingFields.length - 5} {t("profile.onboarding.more")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.onboardingModalFooter}>
+                    <button
+                      className={styles.onboardingModalButton}
+                      onClick={() => setShowOnboardingModal(false)}
+                    >
+                      {t("profile.onboarding.start")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Profile Completeness Alert */}
             {profileCompleteness < 100 && (
               <div className={styles.completenessAlert}>
@@ -1330,9 +1291,7 @@ const ProfilePage = () => {
                       {user.role === "interpreter" && (
                         <div className={styles.infoItem}>
                           <label>
-                            {lang === "vi"
-                              ? "Trạng thái hoạt động"
-                              : "Active Status"}
+                            {t("profile.activeStatus.label") || "Active Status"}
                           </label>
                           <div className={styles.toggleContainer}>
                             <label className={styles.toggleSwitch}>
@@ -1346,18 +1305,12 @@ const ProfilePage = () => {
                             </label>
                             <span className={styles.toggleLabel}>
                               {user.isActive !== false
-                                ? lang === "vi"
-                                  ? "Đang hoạt động"
-                                  : "Active"
-                                : lang === "vi"
-                                ? "Đã tắt"
-                                : "Inactive"}
+                                ? t("profile.activeStatus.active") || "Active"
+                                : t("profile.activeStatus.inactive") || "Inactive"}
                             </span>
                           </div>
                           <p className={styles.toggleDescription}>
-                            {lang === "vi"
-                              ? "Khi tắt, hồ sơ của bạn sẽ không hiển thị trong kết quả tìm kiếm"
-                              : "When off, your profile will not appear in search results"}
+                            {t("profile.activeStatus.whenOff") || "When off, your profile will not appear in search results"}
                           </p>
                         </div>
                       )}
@@ -1596,7 +1549,7 @@ const ProfilePage = () => {
                         <div className={styles.suggestedCertsContainer}>
                           <div className={styles.suggestedHeader}>
                             <h4>
-                              💡 {t("profile.certifications.suggestedTitle")}
+                              {t("profile.certifications.suggestedTitle")}
                             </h4>
                             <button
                               className={styles.dismissBtn}
@@ -1615,7 +1568,7 @@ const ProfilePage = () => {
                                   handleQuickAddCertification(cert)
                                 }
                               >
-                                <span className={styles.certIcon}>📜</span>
+                                <span className={styles.certIcon}></span>
                                 <div className={styles.suggestedInfo}>
                                   <strong>{cert.name}</strong>
                                   <small>{cert.organization}</small>
@@ -1642,21 +1595,13 @@ const ProfilePage = () => {
                                     }`}
                                   >
                                     {cert.verificationStatus === "draft" &&
-                                      `📝 ${t(
-                                        "profile.certifications.statusDraft"
-                                      )}`}
+                                      t("profile.certifications.statusDraft")}
                                     {cert.verificationStatus === "pending" &&
-                                      `⏳ ${t(
-                                        "profile.certifications.statusPending"
-                                      )}`}
+                                      t("profile.certifications.statusPending")}
                                     {cert.verificationStatus === "approved" &&
-                                      `✅ ${t(
-                                        "profile.certifications.statusApproved"
-                                      )}`}
+                                      t("profile.certifications.statusApproved")}
                                     {cert.verificationStatus === "rejected" &&
-                                      `❌ ${t(
-                                        "profile.certifications.statusRejected"
-                                      )}`}
+                                      t("profile.certifications.statusRejected")}
                                   </span>
                                 )}
                               </div>
@@ -1701,7 +1646,6 @@ const ProfilePage = () => {
                                 disabled={loading}
                                 title={t("common.edit") || "Edit"}
                               >
-                                ✏️
                               </button>
                               <button
                                 className={styles.removeBtn}
@@ -1808,7 +1752,7 @@ const ProfilePage = () => {
                           </div>
 
                           <div className={styles.formGroup}>
-                            <label>Năm hết hạn</label>
+                            <label>{t("profile.certifications.expiryYear") || "Expiry Year"}</label>
                             <input
                               type="text"
                               value={certificationForm.expiryYear}
@@ -1818,14 +1762,14 @@ const ProfilePage = () => {
                                   expiryYear: e.target.value,
                                 })
                               }
-                              placeholder="VD: 2026"
+                              placeholder={t("profile.certifications.expiryYearPlaceholder") || "e.g., 2026"}
                             />
                           </div>
                         </div>
 
                         <div className={styles.formGrid2}>
                           <div className={styles.formGroup}>
-                            <label>Mã chứng chỉ</label>
+                            <label>{t("profile.certifications.credentialId") || "Credential ID"}</label>
                             <input
                               type="text"
                               value={certificationForm.credentialId}
@@ -1835,7 +1779,7 @@ const ProfilePage = () => {
                                   credentialId: e.target.value,
                                 })
                               }
-                              placeholder="VD: ABC-12345"
+                              placeholder={t("profile.certifications.credentialIdPlaceholder") || "e.g., ABC-12345"}
                             />
                           </div>
                         </div>
@@ -1843,7 +1787,7 @@ const ProfilePage = () => {
                         <div
                           className={`${styles.formGroup} ${styles.fullWidth}`}
                         >
-                          <label>Mô tả</label>
+                          <label>{t("profile.certifications.description") || "Description"}</label>
                           <textarea
                             rows={3}
                             value={certificationForm.description}
@@ -1853,7 +1797,7 @@ const ProfilePage = () => {
                                 description: e.target.value,
                               })
                             }
-                            placeholder="Mô tả ngắn về chứng chỉ"
+                            placeholder={t("profile.certifications.descriptionPlaceholder") || "Short description about the certification"}
                           />
                         </div>
 
@@ -1871,7 +1815,7 @@ const ProfilePage = () => {
                               if (file) {
                                 const validTypes = ["application/pdf"];
                                 if (!validTypes.includes(file.type)) {
-                                  toast.error(
+                                  toastService.error(
                                     t(
                                       "profile.certifications.errors.invalidFileType"
                                     ) || "Please select a PDF file only"
@@ -1883,7 +1827,7 @@ const ProfilePage = () => {
                                 // Check file size (10MB max)
                                 const maxSize = 10 * 1024 * 1024;
                                 if (file.size > maxSize) {
-                                  toast.error(
+                                  toastService.error(
                                     t(
                                       "profile.certifications.errors.fileTooLarge"
                                     ) || "File size must be less than 10MB"
@@ -1892,7 +1836,7 @@ const ProfilePage = () => {
                                   return;
                                 }
                                 if (file.size > 10 * 1024 * 1024) {
-                                  toast.error(
+                                  toastService.error(
                                     t(
                                       "profile.certifications.errors.fileSizeLimit"
                                     ) || "File size must be less than 10MB"
@@ -1964,9 +1908,7 @@ const ProfilePage = () => {
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
                   <h3 className={styles.cardTitle}>
-                    {lang === "vi"
-                      ? "Thông tin công ty"
-                      : "Company Information"}
+                    {t("profile.company.title") || "Company Information"}
                   </h3>
                   <button
                     className={styles.editBtn}
@@ -1975,12 +1917,8 @@ const ProfilePage = () => {
                     }
                   >
                     {isEditingCompanyInfo
-                      ? lang === "vi"
-                        ? "Hủy"
-                        : "Cancel"
-                      : lang === "vi"
-                      ? "Chỉnh sửa"
-                      : "Edit"}
+                      ? t("profile.cancel") || "Cancel"
+                      : t("profile.edit") || "Edit"}
                   </button>
                 </div>
 
@@ -1989,33 +1927,33 @@ const ProfilePage = () => {
                     <div className={styles.infoGrid}>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Tên công ty" : "Company Name"}
+                          {t("profile.company.companyName") || "Company Name"}
                         </label>
                         <p>
                           {userProfile?.companyName ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Loại công ty" : "Company Type"}
+                          {t("profile.company.companyType") || "Company Type"}
                         </label>
                         <p>
                           {userProfile?.companyType ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Quy mô công ty" : "Company Size"}
+                          {t("profile.company.companySize") || "Company Size"}
                         </label>
                         <p>
                           {userProfile?.companySize ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
-                        <label>{lang === "vi" ? "Website" : "Website"}</label>
+                        <label>{t("profile.company.website") || "Website"}</label>
                         <p>
                           {userProfile?.website ? (
                             <a
@@ -2026,52 +1964,48 @@ const ProfilePage = () => {
                             >
                               {userProfile.website}
                             </a>
-                          ) : lang === "vi" ? (
-                            "Chưa cung cấp"
                           ) : (
-                            "Not provided"
+                            t("profile.company.notProvided") || "Not provided"
                           )}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Ngành nghề" : "Industry"}
+                          {t("profile.company.industry") || "Industry"}
                         </label>
                         <p>
                           {userProfile?.industry ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
-                        <label>{lang === "vi" ? "Mô tả" : "Description"}</label>
+                        <label>{t("profile.company.description") || "Description"}</label>
                         <p>
                           {userProfile?.description ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Trụ sở chính" : "Headquarters"}
+                          {t("profile.company.headquarters") || "Headquarters"}
                         </label>
                         <p>
                           {userProfile?.headquarters ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi" ? "Năm thành lập" : "Founded Year"}
+                          {t("profile.company.foundedYear") || "Founded Year"}
                         </label>
                         <p>
                           {userProfile?.foundedYear ||
-                            (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
+                            (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
                         <label>
-                          {lang === "vi"
-                            ? "Giấy phép kinh doanh"
-                            : "Business License"}
+                          {t("profile.company.businessLicense") || "Business License"}
                         </label>
                         {userProfile?.businessLicense ? (
                           <div className={styles.licenseInfo}>
@@ -2085,7 +2019,7 @@ const ProfilePage = () => {
                               rel="noopener noreferrer"
                               className={styles.viewCertBtn}
                             >
-                              {lang === "vi" ? "Xem giấy phép" : "View License"}
+                              {t("profile.company.viewLicense") || "View License"}
                             </a>
                             {userProfile?.licenseVerificationStatus && (
                               <span
@@ -2093,27 +2027,21 @@ const ProfilePage = () => {
                                   styles[userProfile.licenseVerificationStatus]
                                 }`}
                               >
-                                {userProfile.licenseVerificationStatus ===
+                                {(userProfile.licenseVerificationStatus ===
                                   "pending" &&
-                                  `⏳ ${
-                                    lang === "vi" ? "Chờ duyệt" : "Pending"
-                                  }`}
-                                {userProfile.licenseVerificationStatus ===
+                                  t("profile.verificationStatus.pending")) || "Pending"}
+                                {(userProfile.licenseVerificationStatus ===
                                   "approved" &&
-                                  `✅ ${
-                                    lang === "vi" ? "Đã xác minh" : "Verified"
-                                  }`}
-                                {userProfile.licenseVerificationStatus ===
+                                  (t("profile.verificationStatus.verified") || "Verified"))}
+                                {(userProfile.licenseVerificationStatus ===
                                   "rejected" &&
-                                  `❌ ${
-                                    lang === "vi" ? "Từ chối" : "Rejected"
-                                  }`}
+                                  (t("profile.verificationStatus.rejected") || "Rejected"))}
                               </span>
                             )}
                           </div>
                         ) : (
                           <p>
-                            {lang === "vi" ? "Chưa tải lên" : "Not uploaded"}
+                            {t("profile.company.notUploaded") || "Not uploaded"}
                           </p>
                         )}
                       </div>
@@ -2125,7 +2053,7 @@ const ProfilePage = () => {
                     >
                       <div className={styles.formGroup}>
                         <label>
-                          {lang === "vi" ? "Tên công ty" : "Company Name"} *
+                          {t("profile.company.companyName") || "Company Name"} *
                         </label>
                         <input
                           type="text"
@@ -2137,18 +2065,14 @@ const ProfilePage = () => {
                             })
                           }
                           required
-                          placeholder={
-                            lang === "vi"
-                              ? "Nhập tên công ty"
-                              : "Enter company name"
-                          }
+                          placeholder={t("profile.company.companyNamePlaceholder") || "Enter company name"}
                         />
                       </div>
 
                       <div className={styles.formRow}>
                         <div className={styles.formGroup}>
                           <label>
-                            {lang === "vi" ? "Loại công ty" : "Company Type"}
+                            {t("profile.company.companyType") || "Company Type"}
                           </label>
                           <select
                             value={companyInfoForm.companyType}
@@ -2160,37 +2084,35 @@ const ProfilePage = () => {
                             }
                           >
                             <option value="">
-                              {lang === "vi"
-                                ? "Chọn loại công ty"
-                                : "Select company type"}
+                              {t("profile.company.selectCompanyType") || "Select company type"}
                             </option>
                             <option value="startup">
-                              {lang === "vi" ? "Startup" : "Startup"}
+                              {t("profile.company.types.startup") || "Startup"}
                             </option>
                             <option value="corporation">
-                              {lang === "vi" ? "Tập đoàn" : "Corporation"}
+                              {t("profile.company.types.corporation") || "Corporation"}
                             </option>
                             <option value="nonprofit">
-                              {lang === "vi" ? "Phi lợi nhuận" : "Nonprofit"}
+                              {t("profile.company.types.nonprofit") || "Nonprofit"}
                             </option>
                             <option value="government">
-                              {lang === "vi" ? "Chính phủ" : "Government"}
+                              {t("profile.company.types.government") || "Government"}
                             </option>
                             <option value="healthcare">
-                              {lang === "vi" ? "Y tế" : "Healthcare"}
+                              {t("profile.company.types.healthcare") || "Healthcare"}
                             </option>
                             <option value="education">
-                              {lang === "vi" ? "Giáo dục" : "Education"}
+                              {t("profile.company.types.education") || "Education"}
                             </option>
                             <option value="other">
-                              {lang === "vi" ? "Khác" : "Other"}
+                              {t("profile.company.types.other") || "Other"}
                             </option>
                           </select>
                         </div>
 
                         <div className={styles.formGroup}>
                           <label>
-                            {lang === "vi" ? "Quy mô công ty" : "Company Size"}
+                            {t("profile.company.companySize") || "Company Size"}
                           </label>
                           <select
                             value={companyInfoForm.companySize}
@@ -2202,29 +2124,27 @@ const ProfilePage = () => {
                             }
                           >
                             <option value="">
-                              {lang === "vi"
-                                ? "Chọn quy mô"
-                                : "Select company size"}
+                              {t("profile.company.selectCompanySize") || "Select company size"}
                             </option>
                             <option value="size_1_10">
-                              1-10 {lang === "vi" ? "nhân viên" : "employees"}
+                              1-10 {t("profile.company.employees") || "employees"}
                             </option>
                             <option value="size_11_50">
-                              11-50 {lang === "vi" ? "nhân viên" : "employees"}
+                              11-50 {t("profile.company.employees") || "employees"}
                             </option>
                             <option value="size_51_200">
-                              51-200 {lang === "vi" ? "nhân viên" : "employees"}
+                              51-200 {t("profile.company.employees") || "employees"}
                             </option>
                             <option value="size_201_500">
                               201-500{" "}
-                              {lang === "vi" ? "nhân viên" : "employees"}
+                              {t("profile.company.employees") || "employees"}
                             </option>
                             <option value="size_501_1000">
                               501-1000{" "}
-                              {lang === "vi" ? "nhân viên" : "employees"}
+                              {t("profile.company.employees") || "employees"}
                             </option>
                             <option value="size_1001_plus">
-                              1001+ {lang === "vi" ? "nhân viên" : "employees"}
+                              1001+ {t("profile.company.employees") || "employees"}
                             </option>
                           </select>
                         </div>
@@ -2232,7 +2152,7 @@ const ProfilePage = () => {
 
                       <div className={styles.formRow}>
                         <div className={styles.formGroup}>
-                          <label>{lang === "vi" ? "Website" : "Website"}</label>
+                          <label>{t("profile.company.website") || "Website"}</label>
                           <input
                             type="url"
                             value={companyInfoForm.website}
@@ -2248,7 +2168,7 @@ const ProfilePage = () => {
 
                         <div className={styles.formGroup}>
                           <label>
-                            {lang === "vi" ? "Năm thành lập" : "Founded Year"}
+                            {t("profile.company.foundedYear") || "Founded Year"}
                           </label>
                           <input
                             type="number"
@@ -2268,7 +2188,7 @@ const ProfilePage = () => {
 
                       <div className={styles.formGroup}>
                         <label>
-                          {lang === "vi" ? "Ngành nghề" : "Industry"}
+                          {t("profile.company.industry") || "Industry"}
                         </label>
                         <input
                           type="text"
@@ -2279,17 +2199,13 @@ const ProfilePage = () => {
                               industry: e.target.value,
                             })
                           }
-                          placeholder={
-                            lang === "vi"
-                              ? "Ví dụ: Công nghệ, Dịch vụ, Sản xuất..."
-                              : "e.g., Technology, Services, Manufacturing..."
-                          }
+                          placeholder={t("profile.company.industryPlaceholder") || "e.g., Technology, Services, Manufacturing..."}
                         />
                       </div>
 
                       <div className={styles.formGroup}>
                         <label>
-                          {lang === "vi" ? "Trụ sở chính" : "Headquarters"}
+                          {t("profile.company.headquarters") || "Headquarters"}
                         </label>
                         <input
                           type="text"
@@ -2300,19 +2216,13 @@ const ProfilePage = () => {
                               headquarters: e.target.value,
                             })
                           }
-                          placeholder={
-                            lang === "vi"
-                              ? "Địa chỉ trụ sở chính"
-                              : "Headquarters address"
-                          }
+                          placeholder={t("profile.company.headquartersPlaceholder") || "Headquarters address"}
                         />
                       </div>
 
                       <div className={styles.formGroup}>
                         <label>
-                          {lang === "vi"
-                            ? "Mô tả công ty"
-                            : "Company Description"}
+                          {t("profile.company.description") || "Description"}
                         </label>
                         <textarea
                           value={companyInfoForm.description}
@@ -2323,11 +2233,7 @@ const ProfilePage = () => {
                             })
                           }
                           rows={5}
-                          placeholder={
-                            lang === "vi"
-                              ? "Mô tả về công ty của bạn..."
-                              : "Describe your company..."
-                          }
+                          placeholder={t("profile.company.descriptionPlaceholder") || "Describe your company..."}
                         />
                       </div>
 
@@ -2337,12 +2243,8 @@ const ProfilePage = () => {
                         disabled={loading}
                       >
                         {loading
-                          ? lang === "vi"
-                            ? "Đang lưu..."
-                            : "Saving..."
-                          : lang === "vi"
-                          ? "Lưu thay đổi"
-                          : "Save Changes"}
+                          ? t("profile.company.saving") || "Saving..."
+                          : t("profile.company.saveChanges") || "Save Changes"}
                       </button>
                     </form>
                   )}
@@ -2464,15 +2366,6 @@ const ProfilePage = () => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
                                 const value = e.target.value;
-                                console.log(
-                                  "Enter pressed, adding specialization:",
-                                  {
-                                    value,
-                                    trimmed: value?.trim(),
-                                    currentSpecializations:
-                                      professionalForm.specializations,
-                                  }
-                                );
                                 if (value && value.trim().length > 0) {
                                   handleAddSpecialization(value);
                                   e.target.value = "";
@@ -2488,15 +2381,6 @@ const ProfilePage = () => {
                                 "specialization-input"
                               );
                               const value = input?.value;
-                              console.log(
-                                "Add button clicked, adding specialization:",
-                                {
-                                  value,
-                                  trimmed: value?.trim(),
-                                  currentSpecializations:
-                                    professionalForm.specializations,
-                                }
-                              );
                               if (value && value.trim().length > 0) {
                                 handleAddSpecialization(value);
                                 input.value = "";
@@ -2504,7 +2388,7 @@ const ProfilePage = () => {
                             }}
                             className={styles.addSpecializationBtn}
                           >
-                            {lang === "vi" ? "Thêm" : "Add"}
+                            {t("profile.add") || "Add"}
                           </button>
                           <div className={styles.specializationTags}>
                             {professionalForm.specializations.map(
@@ -2548,9 +2432,7 @@ const ProfilePage = () => {
 
                       <div className={styles.formGroup}>
                         <label>
-                          {lang === "vi"
-                            ? "Giấy phép đăng ký kinh doanh (PDF)"
-                            : "Business Registration License (PDF)"}
+                          {t("profile.company.businessLicenseLabel") || "Business Registration License (PDF)"}
                         </label>
                         <input
                           type="file"
@@ -2559,19 +2441,15 @@ const ProfilePage = () => {
                             const file = e.target.files?.[0];
                             if (file) {
                               if (file.type !== "application/pdf") {
-                                toast.error(
-                                  lang === "vi"
-                                    ? "Chỉ chấp nhận file PDF"
-                                    : "Only PDF files are accepted"
+                                toastService.error(
+                                  t("profile.certifications.errors.invalidFileType") || "Only PDF files are accepted"
                                 );
                                 e.target.value = "";
                                 return;
                               }
                               if (file.size > 10 * 1024 * 1024) {
-                                toast.error(
-                                  lang === "vi"
-                                    ? "Kích thước file phải nhỏ hơn 10MB"
-                                    : "File size must be less than 10MB"
+                                toastService.error(
+                                  t("profile.certifications.errors.fileTooLarge") || "File size must be less than 10MB"
                                 );
                                 e.target.value = "";
                                 return;
@@ -2585,16 +2463,14 @@ const ProfilePage = () => {
                         />
                         {companyInfoForm.businessLicense && (
                           <small className={styles.fileInfo}>
-                            {lang === "vi" ? "Đã chọn:" : "Selected:"}{" "}
+                            {t("profile.company.fileSelected") || "Selected:"}{" "}
                             {companyInfoForm.businessLicense.name}
                           </small>
                         )}
                         {userProfile?.businessLicense &&
                           !companyInfoForm.businessLicense && (
                             <small className={styles.fileInfo}>
-                              {lang === "vi"
-                                ? "Đã tải lên trước đó"
-                                : "Previously uploaded"}
+                              {t("profile.company.previouslyUploaded") || "Previously uploaded"}
                             </small>
                           )}
                       </div>
@@ -2636,7 +2512,7 @@ const ProfilePage = () => {
                     </div>
 
                     <div className={styles.statItem}>
-                      <div className={styles.statIcon}>✅</div>
+                      <div className={styles.statIcon}></div>
                       <div className={styles.statInfo}>
                         <h4>{userProfile?.completedJobs || 0}</h4>
                         <p>{t("profile.stats.totalJobs")}</p>
@@ -2644,7 +2520,7 @@ const ProfilePage = () => {
                     </div>
 
                     <div className={styles.statItem}>
-                      <div className={styles.statIcon}>📊</div>
+                      <div className={styles.statIcon}></div>
                       <div className={styles.statInfo}>
                         <h4>{userProfile?.totalReviews || 0}</h4>
                         <p>{t("profile.stats.completionRate")}</p>
@@ -2676,13 +2552,13 @@ const ProfilePage = () => {
                 className={styles.confirmCancelBtn}
                 onClick={hideConfirmModal}
               >
-                {lang === "vi" ? "Hủy" : "Cancel"}
+                {t("profile.cancel") || "Cancel"}
               </button>
               <button
                 className={styles.confirmDeleteBtn}
                 onClick={handleConfirm}
               >
-                {lang === "vi" ? "Xóa" : "Delete"}
+                {t("profile.delete") || "Delete"}
               </button>
             </div>
           </div>

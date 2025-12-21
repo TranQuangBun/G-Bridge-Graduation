@@ -287,7 +287,7 @@ const LoginPage = () => {
           if (result.data?.user?.role === "admin") {
             navigate(ROUTES.ADMIN_DASHBOARD);
           } else {
-            navigate(ROUTES.HOME);
+            navigate(ROUTES.DASHBOARD);
           }
         }, 500);
       } else {
@@ -330,7 +330,18 @@ const LoginPage = () => {
       if (result.success) {
         showSuccess(t.registerSuccess);
         setTimeout(() => {
-          navigate(ROUTES.HOME);
+          const userRole = result.data?.user?.role;
+          if (userRole === "interpreter") {
+            navigate(ROUTES.PROFILE, { 
+              state: { showOnboarding: true } 
+            });
+          } else if (userRole === "client") {
+            navigate(ROUTES.DASHBOARD, { 
+              state: { showOrgPrompt: true } 
+            });
+          } else {
+            navigate(ROUTES.HOME);
+          }
         }, 500);
       } else {
         const errorMsg = result.error || "";

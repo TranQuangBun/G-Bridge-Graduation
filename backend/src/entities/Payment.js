@@ -103,7 +103,8 @@ export const PaymentSchema = new EntitySchema({
       enum: Object.values(PaymentGateway),
     },
     vnpayTransactionNo: {
-      type: "text",
+      type: "varchar",
+      length: 255,
       nullable: true,
     },
     vnpayBankCode: {
@@ -125,15 +126,18 @@ export const PaymentSchema = new EntitySchema({
       nullable: true,
     },
     paypalOrderId: {
-      type: "text",
+      type: "varchar",
+      length: 255,
       nullable: true,
     },
     momoTransId: {
-      type: "text",
+      type: "varchar",
+      length: 255,
       nullable: true,
     },
     momoRequestId: {
-      type: "text",
+      type: "varchar",
+      length: 255,
       nullable: true,
     },
     momoOrderInfo: {

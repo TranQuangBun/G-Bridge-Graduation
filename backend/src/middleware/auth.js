@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import { UserRepository } from "../repositories/UserRepository.js";
 
-export function authRequired(req, res, next) {
+export async function authRequired(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Missing token" });
@@ -8,7 +9,24 @@ export function authRequired(req, res, next) {
   const token = header.slice(7);
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Load user from database to check isActive status
+    const userRepository = new UserRepository();
+    const user = await userRepository.findById(payload.sub);
+    
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(403).json({ 
+        message: "Your account has been deactivated. Please contact support." 
+      });
+    }
+    
     req.user = payload;
+    req.userData = user; // Store full user data for convenience
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

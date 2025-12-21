@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
+import alertService from "../../services/alertService";
 import jobService from "../../services/jobService";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
@@ -19,7 +20,6 @@ const AdminJobModerationPage = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showOrgApprovalModal, setShowOrgApprovalModal] = useState(false);
-  const [approveOrganization, setApproveOrganization] = useState(false);
   const [reviewNotes, setReviewNotes] = useState("");
   const [processing, setProcessing] = useState(null);
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
@@ -97,10 +97,6 @@ const AdminJobModerationPage = () => {
     }
   }, [filter, pagination.page, isAuthenticated, user, fetchJobs, fetchCounts]);
 
-  const confirmApprove = (jobId) => {
-    setActionJobId(jobId);
-    setShowApproveConfirm(true);
-  };
 
   const handleApprove = async (jobId, shouldApproveOrg = false) => {
     const actualJobId = jobId || actionJobId;
@@ -113,7 +109,7 @@ const AdminJobModerationPage = () => {
           await adminService.approveOrganization(selectedJob.organization.id);
         } catch (orgError) {
           console.error("Error approving organization:", orgError);
-          alert("Không thể duyệt tổ chức: " + (orgError.message || "Lỗi không xác định"));
+          await alertService.error(t("admin.jobModeration.approveFailedWithError").replace("{error}", orgError.message || "Unknown error"));
           setProcessing(null);
           return;
         }
@@ -126,11 +122,10 @@ const AdminJobModerationPage = () => {
       setShowOrgApprovalModal(false);
       setSelectedJob(null);
       setReviewNotes("");
-      setApproveOrganization(false);
       setActionJobId(null);
     } catch (error) {
       console.error("Error approving job:", error);
-      alert(error.message || "Failed to approve job");
+      await alertService.error(error.message || "Failed to approve job");
     } finally {
       setProcessing(null);
     }
@@ -171,7 +166,7 @@ const AdminJobModerationPage = () => {
       setActionJobId(null);
     } catch (error) {
       console.error("Error rejecting job:", error);
-      alert(error.message || "Failed to reject job");
+      await alertService.error(error.message || "Failed to reject job");
     } finally {
       setProcessing(null);
     }
@@ -188,7 +183,6 @@ const AdminJobModerationPage = () => {
     setShowOrgApprovalModal(false);
     setSelectedJob(null);
     setReviewNotes("");
-    setApproveOrganization(false);
   };
 
   const formatDate = (dateString) => {
@@ -245,7 +239,7 @@ const AdminJobModerationPage = () => {
 
         <div className={styles.filters}>
           <label className={styles.filterLabel}>
-            {t("adminModeration.filterByStatus") || "Lọc theo trạng thái:"}
+            {t("adminModeration.filterByStatus") || "Filter by status:"}
             <select
               className={styles.filterSelect}
               value={filter}
@@ -254,10 +248,10 @@ const AdminJobModerationPage = () => {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <option value="all">{t("adminModeration.filters.all") || "Tất cả"} ({counts.all})</option>
-              <option value="pending">{t("adminModeration.filters.pending") || "Chờ duyệt"} ({counts.pending})</option>
-              <option value="approved">{t("adminModeration.filters.approved") || "Đã duyệt"} ({counts.approved})</option>
-              <option value="rejected">{t("adminModeration.filters.rejected") || "Từ chối"} ({counts.rejected})</option>
+              <option value="all">{t("adminModeration.filters.all") || "All"} ({counts.all})</option>
+              <option value="pending">{t("adminModeration.filters.pending") || "Pending"} ({counts.pending})</option>
+              <option value="approved">{t("adminModeration.filters.approved") || "Approved"} ({counts.approved})</option>
+              <option value="rejected">{t("adminModeration.filters.rejected") || "Rejected"} ({counts.rejected})</option>
             </select>
           </label>
         </div>
@@ -365,7 +359,7 @@ const AdminJobModerationPage = () => {
                   <h3>{t("adminModeration.jobDetails") || "Job Details"}</h3>
                   <div className={styles.detailGrid}>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.company") || "Tổ chức"}:</strong>
+                      <strong>{t("adminModeration.company") || "Organization"}:</strong>
                       <span>
                         {selectedJob.organization?.name || "Unknown"}
                         {selectedJob.organization?.approvalStatus !== "approved" && (
@@ -408,7 +402,7 @@ const AdminJobModerationPage = () => {
                       <span>{formatDate(selectedJob.expirationDate)}</span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.salary") || "Lương"}:</strong>
+                      <strong>{t("adminModeration.salary") || "Salary"}:</strong>
                       <span>
                         {selectedJob.salaryType === "FIXED" && selectedJob.minSalary
                           ? `$${selectedJob.minSalary}`
@@ -428,11 +422,11 @@ const AdminJobModerationPage = () => {
                       <span>{selectedJob.contactPhone || "N/A"}</span>
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.statusLabel") || "Trạng thái"}:</strong>
+                      <strong>{t("adminModeration.statusLabel") || "Status"}:</strong>
                       {getReviewStatusBadge(selectedJob.reviewStatus)}
                     </div>
                     <div className={styles.detailItem}>
-                      <strong>{t("adminModeration.createdAt") || "Ngày tạo"}:</strong>
+                      <strong>{t("adminModeration.createdAt") || "Created at"}:</strong>
                       <span>{formatDate(selectedJob.createdAt)}</span>
                     </div>
                   </div>
@@ -473,9 +467,9 @@ const AdminJobModerationPage = () => {
                 )}
 
                 <div className={styles.modalSection}>
-                  <h3>{t("adminModeration.description") || "Mô tả"}</h3>
+                  <h3>{t("adminModeration.description") || "Description"}</h3>
                   <p className={styles.descriptionText}>
-                    {selectedJob.descriptions || "Không có mô tả"}
+                    {selectedJob.descriptions || "No description"}
                   </p>
                 </div>
 
@@ -577,12 +571,12 @@ const AdminJobModerationPage = () => {
               </p>
               <div className={styles.warningBox}>
                 <p>
-                  <strong>⚠️ Lưu ý:</strong>
+                  <strong>{t("admin.jobModeration.noteTitle")}</strong>
                 </p>
                 <ul>
-                  <li>Nếu duyệt tổ chức, tổ chức sẽ được kích hoạt và có thể đăng thêm công việc</li>
-                  <li>Chủ sở hữu tổ chức sẽ nhận được thông báo về việc phê duyệt</li>
-                  <li>Bạn có thể duyệt công việc mà không duyệt tổ chức, nhưng công việc sẽ không hiển thị công khai cho đến khi tổ chức được duyệt</li>
+                  <li>{t("admin.jobModeration.note1")}</li>
+                  <li>{t("admin.jobModeration.note2")}</li>
+                  <li>{t("admin.jobModeration.note3")}</li>
                 </ul>
               </div>
               <div className={styles.modalActions}>
@@ -590,7 +584,6 @@ const AdminJobModerationPage = () => {
                   className={styles.cancelButton}
                   onClick={() => {
                     setShowOrgApprovalModal(false);
-                    setApproveOrganization(false);
                   }}
                 >
                   Chỉ duyệt công việc
@@ -598,7 +591,6 @@ const AdminJobModerationPage = () => {
                 <button
                   className={styles.confirmApproveButton}
                   onClick={() => {
-                    setApproveOrganization(true);
                     setShowOrgApprovalModal(false);
                     handleApprove(selectedJob.id, true);
                   }}
@@ -617,7 +609,7 @@ const AdminJobModerationPage = () => {
         {showApproveConfirm && (
           <div className={styles.modalOverlay}>
             <div className={`${styles.modal} ${styles.confirmModal}`}>
-              <h2>📝 Xác nhận duyệt công việc</h2>
+              <h2>Xác nhận duyệt công việc</h2>
               <p>Bạn có chắc chắn muốn duyệt công việc này không?</p>
               <div className={styles.modalFooter}>
                 <button
@@ -641,7 +633,7 @@ const AdminJobModerationPage = () => {
         {showRejectConfirm && (
           <div className={styles.modalOverlay}>
             <div className={`${styles.modal} ${styles.confirmModal}`}>
-              <h2>⚠️ Xác nhận từ chối công việc</h2>
+              <h2>Xác nhận từ chối công việc</h2>
               <p>Bạn có chắc chắn muốn từ chối công việc này không?</p>
               <div className={styles.modalFooter}>
                 <button

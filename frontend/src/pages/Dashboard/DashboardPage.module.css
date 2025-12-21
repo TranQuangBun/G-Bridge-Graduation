@@ -2604,3 +2604,210 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
 }
+
+/* Organization Prompt Modal */
+.orgPromptModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.orgPromptModal {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.orgPromptModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.orgPromptModalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.orgPromptModalClose {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.orgPromptModalClose:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.orgPromptModalContent {
+  padding: 24px;
+}
+
+.orgPromptModalContent p {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.orgPromptModalSubtext {
+  font-size: 0.938rem;
+  color: #64748b;
+}
+
+.orgPromptModalFooter {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid #e5e7eb;
+}
+
+.orgPromptModalButton {
+  padding: 12px 24px;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.938rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orgPromptModalButton:hover {
+  background: #1e40af;
+}
+
+.orgPromptModalButtonSecondary {
+  padding: 12px 24px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.938rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orgPromptModalButtonSecondary:hover {
+  background: #e2e8f0;
+}
+
+/* Organization Banner */
+.orgBanner {
+  margin: 20px 20px 0;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.orgBannerContent {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.orgBannerIcon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.orgBannerText {
+  flex: 1;
+  color: #ffffff;
+}
+
+.orgBannerText h4 {
+  margin: 0 0 4px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.orgBannerText p {
+  margin: 0;
+  font-size: 0.938rem;
+  opacity: 0.9;
+}
+
+.orgBannerButton {
+  padding: 10px 20px;
+  background: #ffffff;
+  color: #1e3a8a;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.938rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.orgBannerButton:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .orgPromptModal {
+    max-width: 95%;
+    margin: 0;
+  }
+
+  .orgPromptModalFooter {
+    flex-direction: column-reverse;
+  }
+
+  .orgPromptModalButton,
+  .orgPromptModalButtonSecondary {
+    width: 100%;
+  }
+
+  .orgBannerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .orgBannerButton {
+    width: 100%;
+  }
+}

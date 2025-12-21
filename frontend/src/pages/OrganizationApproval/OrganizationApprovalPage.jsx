@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
+import alertService from "../../services/alertService";
 import adminService from "../../services/adminService";
 import organizationService from "../../services/organizationService";
 import { ROUTES } from "../../constants";
@@ -9,6 +11,7 @@ import styles from "./OrganizationApprovalPage.module.css";
 
 const OrganizationApprovalPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +86,7 @@ const OrganizationApprovalPage = () => {
       setSelectedOrg(null);
     } catch (error) {
       console.error("Error approving organization:", error);
-      alert(error.message || "Không thể duyệt tổ chức");
+      await alertService.error(error.message || t("admin.organizationApproval.approveFailed"));
     } finally {
       setProcessing(null);
     }
@@ -96,7 +99,7 @@ const OrganizationApprovalPage = () => {
 
   const handleReject = async (id) => {
     if (!rejectionReason.trim()) {
-      alert("Vui lòng nhập lý do từ chối");
+      await alertService.warning(t("admin.organizationApproval.rejectReasonRequired"));
       return;
     }
     setProcessing(id);
@@ -108,7 +111,7 @@ const OrganizationApprovalPage = () => {
       setRejectionReason("");
     } catch (error) {
       console.error("Error rejecting organization:", error);
-      alert(error.message || "Không thể từ chối tổ chức");
+      await alertService.error(error.message || t("admin.organizationApproval.rejectFailed"));
     } finally {
       setProcessing(null);
     }
@@ -227,7 +230,7 @@ const OrganizationApprovalPage = () => {
                             className={styles.viewLicenseBtn}
                             title="Xem giấy phép kinh doanh"
                           >
-                            📄 Xem file
+                            Xem file
                           </a>
                         ) : (
                           <span className={styles.noFile}>—</span>
@@ -283,7 +286,7 @@ const OrganizationApprovalPage = () => {
                   Trước
                 </button>
                 <span>
-                  Trang {pagination.page} / {pagination.totalPages}
+                  {t("admin.organizationApproval.page")} {pagination.page} / {pagination.totalPages} ({t("admin.organizationApproval.total")}: {pagination.total})
                 </span>
                 <button
                   onClick={() =>
@@ -429,7 +432,7 @@ const OrganizationApprovalPage = () => {
               </p>
               <div className={styles.warningBox}>
                 <p>
-                  <strong>⚠️ Lưu ý quan trọng:</strong>
+                  <strong>Lưu ý quan trọng:</strong>
                 </p>
                 <ul>
                   <li>

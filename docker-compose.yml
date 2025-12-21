@@ -23,12 +23,13 @@ services:
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
     healthcheck:
       # Check if MySQL is ready and can accept connections
-      # Simplified healthcheck: just check if MySQL is responding to ping
+      # Note: Init scripts may fail if tables don't exist yet (they're created by TypeORM),
+      # but MySQL will still be healthy and ready for connections
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -prootpassword || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s  # Give MySQL 40s to initialize before starting health checks
+      start_period: 60s  # Give MySQL more time to initialize (including init scripts)
     networks:
       - gbridge-network
 
@@ -90,6 +91,13 @@ services:
       
       # AI Service Configuration
       - AI_SERVICE_URL=http://ai-service:5000
+      
+      # Admin Configuration (REQUIRED for admin account creation)
+      # Set these values to create admin account automatically on startup
+      # IMPORTANT: Change these values in production for security!
+      - ADMIN_EMAIL=admin@gbridge.com
+      - ADMIN_PASSWORD=Admin123!
+      - ADMIN_NAME=System Administrator
     ports:
       - "4000:4000"
     volumes:

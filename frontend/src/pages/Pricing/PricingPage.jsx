@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import styles from "./PricingPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import paymentService from "../../services/paymentService";
-import { toast } from "react-toastify";
+import subscriptionPlanService from "../../services/subscriptionPlanService";
+import toastService from "../../services/toastService";
 
 const planDefinitions = (t) => [
   {
@@ -78,9 +79,99 @@ export default function PricingPage() {
   const [selectedMethod, setSelectedMethod] = useState(null); // 'paypal', 'vnpay', or 'momo'
   const [processing, setProcessing] = useState(false);
   const [, setError] = useState("");
+  const [plansFromDB, setPlansFromDB] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
 
   const YEARLY_DISCOUNT = 10; // percent
-  const basePlans = useMemo(() => planDefinitions(t), [t]);
+
+  // Load plans from database
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setLoadingPlans(true);
+        // subscriptionPlanService.getActivePlans() returns response.data (server JSON response)
+        // Server format: { success: true, data: [...], message: "..." }
+        // Or if paginated: { success: true, data: [...], pagination: {...} }
+        const serverResponse = await subscriptionPlanService.getActivePlans();
+        let plansData = [];
+        
+        if (serverResponse && serverResponse.success && serverResponse.data) {
+          // Check if data is array or object with plans property
+          if (Array.isArray(serverResponse.data)) {
+            plansData = serverResponse.data;
+          } else if (serverResponse.data.plans && Array.isArray(serverResponse.data.plans)) {
+            plansData = serverResponse.data.plans;
+          }
+        }
+        
+        // Sort by sortOrder
+        const sortedPlans = plansData.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setPlansFromDB(sortedPlans);
+      } catch (error) {
+        console.error("Failed to load plans from database:", error);
+        toastService.error(t("pricingPage.pay.errors.loadFailed"));
+        // Fallback to empty array, will use hardcoded plans
+        setPlansFromDB([]);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
+  }, [t]);
+
+  // Map database plans to frontend format
+  const mapPlanFromDB = (dbPlan, t) => {
+    // Map plan name to key
+    const nameToKeyMap = {
+      free: "free",
+      pro: "pro",
+      team: "team",
+      enterprise: "enterprise",
+    };
+    const key = nameToKeyMap[dbPlan.name] || dbPlan.name;
+
+    // Parse features from JSON string or array
+    let features = [];
+    if (typeof dbPlan.features === "string") {
+      try {
+        features = JSON.parse(dbPlan.features);
+      } catch (e) {
+        features = [];
+      }
+    } else if (Array.isArray(dbPlan.features)) {
+      features = dbPlan.features;
+    }
+
+    // Map tags based on plan name
+    const tagMap = {
+      free: t("pricingPage.plan.freeTag"),
+      pro: t("pricingPage.plan.popularTag"),
+      team: t("pricingPage.plan.growthTag"),
+      enterprise: t("pricingPage.plan.customTag"),
+    };
+
+    return {
+      id: dbPlan.id,
+      key,
+      name: dbPlan.displayName || dbPlan.name,
+      tag: tagMap[key] || "",
+      monthly: parseFloat(dbPlan.price) || 0,
+      desc: dbPlan.description || "",
+      features: features,
+      popular: key === "pro",
+      outline: key === "free",
+    };
+  };
+
+  // Use database plans if available, otherwise fallback to hardcoded
+  const basePlans = useMemo(() => {
+    if (plansFromDB.length > 0) {
+      return plansFromDB.map((plan) => mapPlanFromDB(plan, t));
+    }
+    // Fallback to hardcoded plans
+    return planDefinitions(t);
+  }, [plansFromDB, t]);
   const plans = useMemo(
     () =>
       basePlans.map((p) => {
@@ -113,7 +204,7 @@ export default function PricingPage() {
     // Check if user is authenticated
     const token = localStorage.getItem("authToken");
     if (!token) {
-      toast.error("Vui lòng đăng nhập để thanh toán");
+      toastService.error(t("pricingPage.pay.errors.loginRequired"));
       navigate("/login", { state: { from: "/pricing" } });
       return;
     }
@@ -147,15 +238,19 @@ export default function PricingPage() {
     setError("");
 
     try {
-      // Map plan key to actual plan ID
-      const planIdMap = {
-        free: 1,
-        pro: 2,
-        team: 3,
-        enterprise: 4,
-      };
-
-      const planId = planIdMap[currentPlan.key];
+      // Get plan ID from current plan (from database) or fallback to key-based mapping
+      let planId = currentPlan.id;
+      
+      // Fallback: if no ID, use key-based mapping
+      if (!planId) {
+        const planIdMap = {
+          free: 1,
+          pro: 2,
+          team: 3,
+          enterprise: 4,
+        };
+        planId = planIdMap[currentPlan.key];
+      }
 
       if (!planId) {
         throw new Error("Invalid plan selected");
@@ -182,7 +277,7 @@ export default function PricingPage() {
         if (response.success && response.data) {
           // For PayPal, you would typically integrate PayPal SDK here
           // For now, show success message
-          toast.success("PayPal payment created. Redirecting...");
+          toastService.success("PayPal payment created. Redirecting...");
           setTimeout(() => {
             setPurchased((prev) => ({ ...prev, [currentPlan.key]: true }));
             closePayment();
@@ -194,7 +289,7 @@ export default function PricingPage() {
     } catch (error) {
       console.error("Payment error:", error);
       setError(error.message || "Payment processing failed. Please try again.");
-      toast.error(error.message || "Payment failed");
+      toastService.error(error.message || t("pricingPage.pay.errors.paymentFailed"));
     } finally {
       setProcessing(false);
     }
@@ -233,8 +328,13 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <div className={styles.plansGrid}>
-            {plans.map((plan) => {
+          {loadingPlans ? (
+            <div className={styles.loadingContainer}>
+              <p>Đang tải danh sách gói dịch vụ...</p>
+            </div>
+          ) : (
+            <div className={styles.plansGrid}>
+              {plans.map((plan) => {
               const isBought = purchased[plan.key];
               return (
                 <div
@@ -268,7 +368,7 @@ export default function PricingPage() {
                   <ul className={styles.featureList}>
                     {plan.features.map((f) => (
                       <li key={f} className={styles.featureItem}>
-                        <i>✓</i>
+                        <i></i>
                         {f}
                       </li>
                     ))}
@@ -294,7 +394,8 @@ export default function PricingPage() {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           <div className={styles.comparison}>
             <h2 className={styles.comparisonTitle}>

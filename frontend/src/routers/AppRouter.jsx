@@ -14,7 +14,6 @@ import {
   ProfilePage,
   AdminJobModerationPage,
   AdminDashboardPage,
-  AdminRegisterPage,
   CertificateApprovalPage,
   OrganizationApprovalPage,
   SystemNotificationsPage,
@@ -25,6 +24,8 @@ import {
   MessagesPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  NotFoundPage,
+  ErrorPage,
 } from "../pages";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
 import SavedJobs from "../pages/Dashboard/SavedJobs/SavedJobs";
@@ -38,9 +39,12 @@ import { ROUTES } from "../constants";
 // Cấu hình các routes
 const router = createBrowserRouter([
   {
-    path: ROUTES.HOME,
-    element: <HomePage />,
-  },
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: ROUTES.HOME,
+        element: <HomePage />,
+      },
   {
     path: ROUTES.FIND_JOB,
     element: <FindJobPage />,
@@ -150,10 +154,6 @@ const router = createBrowserRouter([
     element: <ResetPasswordPage />,
   },
   {
-    path: ROUTES.ADMIN_REGISTER,
-    element: <AdminRegisterPage />,
-  },
-  {
     path: ROUTES.PRICING,
     element: <PricingPage />,
   },
@@ -240,6 +240,12 @@ const router = createBrowserRouter([
         <MessagesPage />
       </ProtectedRoute>
     ),
+  },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
+    ],
   },
 ]);
 

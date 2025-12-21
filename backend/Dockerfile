@@ -55,12 +55,16 @@ CMD ["npm", "start"]
 FROM dependencies AS development
 WORKDIR /app
 
-# Install nodemon globally, wget for healthcheck, and poppler-utils for PDF conversion
+# Install nodemon globally, wget for healthcheck, netcat for MySQL check, and poppler-utils for PDF conversion
 RUN npm install -g nodemon && \
-    apk add --no-cache wget bash poppler-utils
+    apk add --no-cache wget bash netcat-openbsd poppler-utils
 
 # Copy source code
 COPY . .
+
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Create uploads directory
 RUN mkdir -p uploads/avatars uploads/certifications uploads/resumes uploads/job-documents
@@ -73,4 +77,5 @@ ENV NODE_ENV=development
 # Start with nodemon for hot reload
 # Auto-generate docs before starting in development mode
 # TypeORM will auto-create tables when NODE_ENV=development
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["npm", "run", "dev:with-docs"]

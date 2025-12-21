@@ -173,7 +173,7 @@ const NotificationsPage = () => {
             </div>
           ) : displayedNotifications.length === 0 ? (
             <div className={styles.emptyState}>
-              <span className={styles.emptyIcon}>🎉</span>
+              <span className={styles.emptyIcon}></span>
               <h3>
                 {t("notificationsPage.emptyTitle") || "You're all caught up!"}
               </h3>

@@ -7,7 +7,7 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { FaBell } from "react-icons/fa";
 
 const NotificationDropdown = () => {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);

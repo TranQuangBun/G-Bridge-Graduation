@@ -51,7 +51,7 @@ const ForgotPasswordPage = () => {
     return (
       <div className={styles.container}>
         <div className={styles.card}>
-          <div className={styles.successIcon}>✓</div>
+          <div className={styles.successIcon}></div>
           <h1 className={styles.title}>
             {t("forgotPassword.emailSent.title") || "Check Your Email"}
           </h1>

@@ -18,9 +18,27 @@ async function createAdmin() {
 
     const userRepository = AppDataSource.getRepository(User);
 
+    // Get admin credentials from environment variables (REQUIRED)
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminName = process.env.ADMIN_NAME || "System Administrator";
+
+    // Validate required environment variables
+    if (!adminEmail) {
+      console.error("❌ Error: ADMIN_EMAIL environment variable is required!");
+      console.error("   Please set ADMIN_EMAIL in your .env file or environment variables.");
+      process.exit(1);
+    }
+
+    if (!adminPassword) {
+      console.error("❌ Error: ADMIN_PASSWORD environment variable is required!");
+      console.error("   Please set ADMIN_PASSWORD in your .env file or environment variables.");
+      process.exit(1);
+    }
+
     // Check if admin already exists
     const existingAdmin = await userRepository.findOne({
-      where: { email: "admin@gbridge.com" },
+      where: { email: adminEmail },
     });
 
     if (existingAdmin) {
@@ -30,11 +48,6 @@ async function createAdmin() {
       console.log("\n💡 To reset password, update the user in database or delete and recreate.");
       process.exit(0);
     }
-
-    // Default admin credentials
-    const adminEmail = process.env.ADMIN_EMAIL || "admin@gbridge.com";
-    const adminPassword = process.env.ADMIN_PASSWORD || "Admin123!";
-    const adminName = process.env.ADMIN_NAME || "System Administrator";
 
     // Hash password
     const passwordHash = await bcrypt.hash(adminPassword, 10);
@@ -51,13 +64,22 @@ async function createAdmin() {
 
     await userRepository.save(admin);
 
-    console.log("✅ Admin user created successfully!");
-    console.log("\n📋 Admin Credentials:");
-    console.log(`   Email: ${adminEmail}`);
+    console.log("✅ Admin user created successfully!\n");
+    console.log("=".repeat(70));
+    console.log("🔑 ADMIN LOGIN CREDENTIALS");
+    console.log("=".repeat(70));
+    console.log("\n📋 Use these credentials to login:");
+    console.log(`   Email:    ${adminEmail}`);
     console.log(`   Password: ${adminPassword}`);
-    console.log(`   Role: admin`);
-    console.log("\n⚠️  IMPORTANT: Change the password after first login!");
-    console.log("\n💡 To create admin with custom credentials, set environment variables:");
+    console.log(`   Role:     admin\n`);
+    console.log("=".repeat(70));
+    console.log("💡 HOW TO LOGIN:");
+    console.log("   1. Go to the admin login page in your application");
+    console.log("   2. Enter the email and password from above");
+    console.log("   3. Click 'Login' button");
+    console.log("=".repeat(70));
+    console.log("\n⚠️  IMPORTANT: Change the password after first login for security!\n");
+    console.log("💡 To create admin with custom credentials, set environment variables:");
     console.log("   ADMIN_EMAIL=your-email@example.com");
     console.log("   ADMIN_PASSWORD=YourSecurePassword");
     console.log("   ADMIN_NAME=Your Name");

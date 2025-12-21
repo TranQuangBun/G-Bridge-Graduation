@@ -34,11 +34,11 @@ const AdminHeader = () => {
   };
 
   const menuItems = [
-    { path: ROUTES.ADMIN_DASHBOARD, label: "Dashboard", icon: "📊" },
-    { path: ROUTES.ADMIN_CERTIFICATIONS, label: "Duyệt chứng chỉ", icon: "✓" },
-    { path: ROUTES.ADMIN_ORGANIZATIONS, label: "Duyệt tổ chức", icon: "🏢" },
-    { path: ROUTES.ADMIN_JOB_MODERATION, label: "Duyệt công việc", icon: "💼" },
-    { path: ROUTES.ADMIN_NOTIFICATIONS, label: "Thông báo hệ thống", icon: "📢" },
+    { path: ROUTES.ADMIN_DASHBOARD, label: "Dashboard", icon: "" },
+    { path: ROUTES.ADMIN_CERTIFICATIONS, label: "Duyệt chứng chỉ", icon: "" },
+    { path: ROUTES.ADMIN_ORGANIZATIONS, label: "Duyệt tổ chức", icon: "" },
+    { path: ROUTES.ADMIN_JOB_MODERATION, label: "Duyệt công việc", icon: "" },
+    { path: ROUTES.ADMIN_NOTIFICATIONS, label: "Thông báo hệ thống", icon: "" },
   ];
 
   return (

@@ -23,6 +23,7 @@ import { sendSuccess, sendError } from "../utils/Response.js";
 import { AppError } from "../utils/Errors.js";
 import { logger } from "../utils/Logger.js";
 import { emailService } from "../utils/EmailService.js";
+import { validatePassword } from "../validators/PasswordValidator.js";
 
 export async function register(req, res) {
   try {
@@ -30,10 +31,11 @@ export async function register(req, res) {
     validateRegistration(req.body);
 
     // Prevent admin registration through normal registration
+    // Admin accounts can only be created via environment variables and create-admin script
     if (req.body.role === "admin") {
       return sendError(
         res,
-        "Admin registration is not allowed through this endpoint. Please use /api/auth/register-admin",
+        "Admin registration is not allowed. Admin accounts are managed separately.",
         403
       );
     }
@@ -51,30 +53,6 @@ export async function register(req, res) {
       logger.error("Registration failed", err);
     }
     return sendError(res, "Server error during registration", 500, err);
-  }
-}
-
-export async function registerAdmin(req, res) {
-  try {
-    // Validate input
-    validateRegistration(req.body);
-
-    // Ensure role is admin
-    req.body.role = "admin";
-
-    // Register admin user
-    const result = await registerUser({
-      ...req.body,
-      isVerified: true, // Admin accounts are auto-verified
-    });
-
-    return sendSuccess(res, result, "Admin registration successful", 201);
-  } catch (err) {
-    if (err instanceof AppError) {
-      return sendError(res, err.message, err.statusCode, err);
-    }
-    logger.error("Admin registration failed", err);
-    return sendError(res, "Server error during admin registration", 500, err);
   }
 }
 
@@ -323,8 +301,11 @@ export async function resetPassword(req, res) {
       return sendError(res, "Token and new password are required", 400);
     }
 
-    if (newPassword.length < 6) {
-      return sendError(res, "Password must be at least 6 characters", 400);
+    // Use strong password validation
+    try {
+      validatePassword(newPassword);
+    } catch (error) {
+      return sendError(res, error.message, 400);
     }
 
     // Find user by reset token

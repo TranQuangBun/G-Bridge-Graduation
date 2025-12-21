@@ -237,7 +237,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {interpreter.certifications?.length > 0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}>🏆</span>
+                <span className={styles.icon}></span>
                 {t("interpreterModal.certifications")}
               </h3>
               <div className={styles.certificationsList}>
@@ -394,7 +394,7 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
             }`}
           >
             <h3 className={styles.sectionTitle}>
-              <span className={styles.icon}>📧</span>
+              <span className={styles.icon}></span>
               {t("interpreterModal.contactInformation")}
             </h3>
             <div className={styles.contactInfo}>

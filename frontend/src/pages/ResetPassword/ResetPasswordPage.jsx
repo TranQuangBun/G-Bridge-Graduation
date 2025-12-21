@@ -107,7 +107,7 @@ const ResetPasswordPage = () => {
                 className={styles.togglePassword}
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
+                {showPassword ? "" : ""}
               </button>
             </div>
           </div>

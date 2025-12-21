@@ -120,6 +120,15 @@
   border-radius: 999px;
   box-shadow: 0 6px 18px -4px rgba(6, 182, 212, 0.55);
 }
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+  color: var(--p-text);
+  font-size: 1rem;
+}
+
 .plansGrid {
   display: grid;
   gap: 30px;

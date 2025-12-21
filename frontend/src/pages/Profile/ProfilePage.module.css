@@ -3267,3 +3267,170 @@
     width: 100%;
   }
 }
+
+/* Onboarding Modal */
+.onboardingModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.onboardingModal {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.onboardingModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.onboardingModalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.onboardingModalClose {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.onboardingModalClose:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.onboardingModalContent {
+  padding: 24px;
+}
+
+.onboardingModalContent p {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.onboardingProgressInfo {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.onboardingProgressItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.onboardingProgressLabel {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.onboardingProgressValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.onboardingMissingFields {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.onboardingMissingFieldsTitle {
+  margin: 0 0 12px;
+  font-size: 0.938rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.onboardingMissingFieldsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboardingMissingFieldTag {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.onboardingModalFooter {
+  padding: 16px 24px 24px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #e5e7eb;
+}
+
+.onboardingModalButton {
+  padding: 12px 24px;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.938rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboardingModalButton:hover {
+  background: #1e40af;
+}
+
+@media (max-width: 768px) {
+  .onboardingModal {
+    max-width: 95%;
+    margin: 0;
+  }
+
+  .onboardingProgressInfo {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .onboardingModalButton {
+    width: 100%;
+  }
+}

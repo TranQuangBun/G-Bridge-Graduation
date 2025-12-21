@@ -422,7 +422,7 @@ function MyJobsPage() {
               </div>
             ) : filteredJobs.length === 0 ? (
               <div className={styles.emptyState}>
-                <span className={styles.emptyIcon}>💼</span>
+                <span className={styles.emptyIcon}></span>
                 <h3>No Jobs Posted</h3>
                 <p>
                   You haven't posted any jobs yet. Start by posting your first

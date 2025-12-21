@@ -952,7 +952,6 @@ export default function JobDetailPage() {
                 />
                 {applicationData.pdfFile && (
                   <div className={styles.filePreview}>
-                    📄{" "}
                     {t("findJob.applicationModal.fileSelected") ||
                       "File selected:"}{" "}
                     {applicationData.pdfFile.name}

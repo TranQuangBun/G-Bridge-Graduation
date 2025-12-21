@@ -1,5 +1,6 @@
 import { ValidationError } from "../utils/Errors.js";
 import { isValidEmail, validateRequired, isValidRole } from "./CommonValidators.js";
+import { validatePassword } from "./PasswordValidator.js";
 
 /**
  * Validate registration data
@@ -20,8 +21,9 @@ export const validateRegistration = (data) => {
     throw new ValidationError("Invalid role specified");
   }
 
-  if (data.password && data.password.length < 6) {
-    throw new ValidationError("Password must be at least 6 characters");
+  // Use strong password validation
+  if (data.password) {
+    validatePassword(data.password);
   }
 
   // Additional validation for client role

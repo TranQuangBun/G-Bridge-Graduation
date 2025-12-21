@@ -2,12 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
+import alertService from "../../services/alertService";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import styles from "./CertificateApprovalPage.module.css";
 
 const CertificateApprovalPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [certifications, setCertifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +58,7 @@ const CertificateApprovalPage = () => {
         params.status = statusFilter;
       }
 
-      console.log("Fetching certifications with params:", params);
-
       const response = await adminService.getPendingCertifications(params);
-
-      console.log("Certifications response:", response);
 
       if (response.success) {
         // Backend returns { data: [certifications], pagination: {...} }
@@ -141,15 +140,15 @@ const CertificateApprovalPage = () => {
       setOpenMenuId(null);
     } catch (error) {
       console.error("Error approving certification:", error);
-      alert(error.message || "Không thể duyệt chứng chỉ");
+      await alertService.error(error.message || t("admin.certificateApproval.approveFailed"));
     } finally {
       setProcessing(null);
     }
   };
 
-  const confirmReject = (id) => {
+  const confirmReject = async (id) => {
     if (!rejectionReason.trim()) {
-      alert("Vui lòng nhập lý do từ chối");
+      await alertService.warning(t("admin.certificateApproval.rejectReasonRequired"));
       return;
     }
     setActionCertId(id);
@@ -169,7 +168,7 @@ const CertificateApprovalPage = () => {
       setActionCertId(null);
     } catch (error) {
       console.error("Error rejecting certification:", error);
-      alert(error.message || "Không thể từ chối chứng chỉ");
+      await alertService.error(error.message || t("admin.certificateApproval.rejectFailed"));
     } finally {
       setProcessing(null);
     }
@@ -267,25 +266,14 @@ const CertificateApprovalPage = () => {
   };
 
   const getPdfUrl = (cert) => {
-    console.log("Checking PDF for cert:", cert);
     // Check if credentialUrl is a PDF
     if (cert.credentialUrl && isPdfUrl(cert.credentialUrl)) {
-      console.log("Found PDF in credentialUrl:", cert.credentialUrl);
       return cert.credentialUrl;
     }
     // Check if imageUrl is a PDF (PDFs can be uploaded as images)
     if (cert.imageUrl && isPdfUrl(cert.imageUrl)) {
-      console.log("Found PDF in imageUrl:", cert.imageUrl);
       return cert.imageUrl;
     }
-    // If imageUrl exists but we're not sure if it's PDF, check by trying to load it
-    // For now, let's show both imageUrl and credentialUrl if they exist
-    console.log(
-      "No PDF found. credentialUrl:",
-      cert.credentialUrl,
-      "imageUrl:",
-      cert.imageUrl
-    );
     return null;
   };
 
@@ -407,7 +395,7 @@ const CertificateApprovalPage = () => {
                                 className={`${styles.menuItem} ${styles.menuItemView}`}
                                 onClick={() => handleViewCert(cert)}
                               >
-                                👁️ Xem chứng chỉ
+                                Xem chứng chỉ
                               </button>
                               {(cert.verificationStatus === "pending" ||
                                 cert.verificationStatus === "draft") && (
@@ -417,8 +405,8 @@ const CertificateApprovalPage = () => {
                                   disabled={processing === cert.id}
                                 >
                                   {processing === cert.id
-                                    ? "Đang xử lý..."
-                                    : "✓ Duyệt"}
+                                    ? t("admin.certificateApproval.processing") || "Processing..."
+                                    : t("admin.certificateApproval.approve") || "Approve"}
                                 </button>
                               )}
                               <button
@@ -426,7 +414,7 @@ const CertificateApprovalPage = () => {
                                 onClick={() => handleRejectFromMenu(cert)}
                                 disabled={processing === cert.id}
                               >
-                                ✕ Từ chối
+                                {t("admin.certificateApproval.reject") || "Reject"}
                               </button>
                             </div>
                           )}
@@ -449,7 +437,7 @@ const CertificateApprovalPage = () => {
                   Trước
                 </button>
                 <span>
-                  Trang {pagination.page} / {pagination.totalPages}
+                  {t("admin.certificateApproval.page")} {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
                   onClick={() =>
@@ -559,7 +547,7 @@ const CertificateApprovalPage = () => {
                     }}
                     disabled={processing === detailCert.id}
                   >
-                    {processing === detailCert.id ? "Đang xử lý..." : "Duyệt"}
+                    {processing === detailCert.id ? t("admin.certificateApproval.processing") || "Processing..." : t("admin.certificateApproval.approve") || "Approve"}
                   </button>
                   <button
                     className={styles.rejectButton}
@@ -569,7 +557,7 @@ const CertificateApprovalPage = () => {
                     }}
                     disabled={processing === detailCert.id}
                   >
-                    Từ chối
+                    {t("admin.certificateApproval.reject") || "Reject"}
                   </button>
                 </div>
               )}
@@ -583,11 +571,11 @@ const CertificateApprovalPage = () => {
             onClick={() => setShowModal(false)}
           >
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>Từ chối chứng chỉ</h3>
-              <p>Chứng chỉ: {selectedCert.name}</p>
+              <h3>{t("admin.certificateApproval.rejectTitle") || "Reject Certificate"}</h3>
+              <p>{t("admin.certificateApproval.certificateLabel") || "Certificate"}: {selectedCert.name}</p>
               <textarea
                 className={styles.reasonInput}
-                placeholder="Nhập lý do từ chối..."
+                placeholder={t("admin.certificateApproval.rejectReasonPlaceholder") || "Enter rejection reason..."}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
@@ -601,7 +589,7 @@ const CertificateApprovalPage = () => {
                     setRejectionReason("");
                   }}
                 >
-                  Hủy
+                  {t("common.cancel") || "Cancel"}
                 </button>
                 <button
                   className={styles.confirmRejectButton}
@@ -611,8 +599,8 @@ const CertificateApprovalPage = () => {
                   }
                 >
                   {processing === selectedCert.id
-                    ? "Đang xử lý..."
-                    : "Xác nhận từ chối"}
+                    ? t("admin.certificateApproval.processing") || "Processing..."
+                    : t("admin.certificateApproval.confirmReject") || "Confirm Rejection"}
                 </button>
               </div>
             </div>
@@ -649,14 +637,13 @@ const CertificateApprovalPage = () => {
                 </div>
 
                 {(() => {
-                  console.log("View cert data:", viewCert);
                   const pdfUrl = getPdfUrl(viewCert);
 
                   // Show PDF viewer if PDF is detected
                   if (pdfUrl) {
                     return (
                       <div className={styles.viewSection}>
-                        <h4>Tài liệu chứng chỉ (PDF)</h4>
+                        <h4>{t("admin.certificateApproval.certificateDocumentPdf") || "Certificate Document (PDF)"}</h4>
                         <div className={styles.pdfContainer}>
                           <iframe
                             src={`${pdfUrl}#toolbar=0`}
@@ -675,7 +662,7 @@ const CertificateApprovalPage = () => {
                               className={styles.pdfDownloadButton}
                               download
                             >
-                              📥 Tải xuống PDF
+                              {t("admin.certificateApproval.downloadPdf") || "Download PDF"}
                             </a>
                             <a
                               href={pdfUrl}
@@ -683,7 +670,7 @@ const CertificateApprovalPage = () => {
                               rel="noopener noreferrer"
                               className={styles.pdfOpenButton}
                             >
-                              🔗 Mở trong tab mới
+                              {t("admin.certificateApproval.openInNewTab") || "Open in new tab"}
                             </a>
                           </div>
                         </div>
@@ -695,18 +682,14 @@ const CertificateApprovalPage = () => {
                   if (viewCert.imageUrl) {
                     return (
                       <div className={styles.viewSection}>
-                        <h4>Hình ảnh/Tài liệu chứng chỉ</h4>
+                        <h4>{t("admin.certificateApproval.certificateImageDocument") || "Certificate Image/Document"}</h4>
                         <div className={styles.certImageContainer}>
                           <img
                             src={viewCert.imageUrl}
-                            alt={viewCert.name || "Chứng chỉ"}
+                            alt={viewCert.name || "Certificate"}
                             className={styles.certImage}
                             onError={(e) => {
                               // If image fails to load, try as PDF
-                              console.log(
-                                "Image failed to load, trying as PDF:",
-                                viewCert.imageUrl
-                              );
                               const img = e.target;
                               img.style.display = "none";
                               const parent = img.parentElement;
@@ -728,7 +711,7 @@ const CertificateApprovalPage = () => {
                             rel="noopener noreferrer"
                             className={styles.pdfOpenButton}
                           >
-                            🔗 Mở trong tab mới
+                            {t("admin.certificateApproval.openInNewTab") || "Open in new tab"}
                           </a>
                           <button
                             className={styles.pdfOpenButton}
@@ -754,7 +737,7 @@ const CertificateApprovalPage = () => {
                               }
                             }}
                           >
-                            📄 Thử xem như PDF
+                            {t("admin.certificateApproval.tryViewAsPdf") || "Try viewing as PDF"}
                           </button>
                         </div>
                       </div>
@@ -765,7 +748,7 @@ const CertificateApprovalPage = () => {
                   if (viewCert.credentialUrl) {
                     return (
                       <div className={styles.viewSection}>
-                        <h4>Tài liệu chứng chỉ</h4>
+                        <h4>{t("admin.certificateApproval.certificateDocument") || "Certificate Document"}</h4>
                         <div className={styles.pdfActions}>
                           <a
                             href={viewCert.credentialUrl}
@@ -773,7 +756,7 @@ const CertificateApprovalPage = () => {
                             rel="noopener noreferrer"
                             className={styles.pdfOpenButton}
                           >
-                            🔗 Mở link chứng chỉ
+                            {t("admin.certificateApproval.openCertificateLink") || "Open certificate link"}
                           </a>
                           <button
                             className={styles.pdfOpenButton}
@@ -782,7 +765,7 @@ const CertificateApprovalPage = () => {
                               window.open(viewCert.credentialUrl, "_blank");
                             }}
                           >
-                            📄 Thử xem như PDF
+                            {t("admin.certificateApproval.tryViewAsPdf") || "Try viewing as PDF"}
                           </button>
                         </div>
                       </div>
@@ -792,12 +775,11 @@ const CertificateApprovalPage = () => {
                   // Show message if no file/URL
                   return (
                     <div className={styles.viewSection}>
-                      <h4>Tài liệu chứng chỉ</h4>
+                      <h4>{t("admin.certificateApproval.certificateDocument") || "Certificate Document"}</h4>
                       <div className={styles.noFileMessage}>
-                        <p>⚠️ Chứng chỉ này chưa có tài liệu đính kèm.</p>
+                        <p>{t("admin.certificateApproval.noDocumentAttached") || "This certificate has no attached document."}</p>
                         <p className={styles.noFileSubtext}>
-                          Người dùng chưa upload file hình ảnh hoặc PDF cho
-                          chứng chỉ này.
+                          {t("admin.certificateApproval.noDocumentSubtext") || "The user has not uploaded an image or PDF file for this certificate."}
                         </p>
                       </div>
                     </div>
@@ -893,8 +875,8 @@ const CertificateApprovalPage = () => {
         {showApproveConfirm && (
           <div className={styles.modalOverlay}>
             <div className={styles.confirmModal}>
-              <h2>📝 Xác nhận duyệt chứng chỉ</h2>
-              <p>Bạn có chắc chắn muốn duyệt chứng chỉ này không?</p>
+              <h2>{t("admin.certificateApproval.confirmApproveTitle") || "Confirm Certificate Approval"}</h2>
+              <p>{t("admin.certificateApproval.confirmApproveMessage") || "Are you sure you want to approve this certificate?"}</p>
               <div className={styles.confirmActions}>
                 <button
                   className={styles.cancelButton}
@@ -903,13 +885,13 @@ const CertificateApprovalPage = () => {
                     setActionCertId(null);
                   }}
                 >
-                  Hủy
+                  {t("common.cancel") || "Cancel"}
                 </button>
                 <button
                   className={styles.confirmButton}
                   onClick={handleApprove}
                 >
-                  Xác nhận duyệt
+                  {t("admin.certificateApproval.confirmApprove") || "Confirm Approval"}
                 </button>
               </div>
             </div>
@@ -920,8 +902,8 @@ const CertificateApprovalPage = () => {
         {showRejectConfirm && (
           <div className={styles.modalOverlay}>
             <div className={styles.confirmModal}>
-              <h2>⚠️ Xác nhận từ chối chứng chỉ</h2>
-              <p>Bạn có chắc chắn muốn từ chối chứng chỉ này không?</p>
+              <h2>{t("admin.certificateApproval.confirmRejectTitle") || "Confirm Certificate Rejection"}</h2>
+              <p>{t("admin.certificateApproval.confirmRejectMessage") || "Are you sure you want to reject this certificate?"}</p>
               <div className={styles.confirmActions}>
                 <button
                   className={styles.cancelButton}
@@ -930,10 +912,10 @@ const CertificateApprovalPage = () => {
                     setActionCertId(null);
                   }}
                 >
-                  Hủy
+                  {t("common.cancel") || "Cancel"}
                 </button>
                 <button className={styles.rejectButton} onClick={handleReject}>
-                  Xác nhận từ chối
+                  {t("admin.certificateApproval.confirmReject") || "Confirm Rejection"}
                 </button>
               </div>
             </div>

@@ -8,8 +8,8 @@ import jobService from "../../services/jobService";
 import organizationService from "../../services/organizationService";
 import languageService from "../../services/languageService";
 import aiMatchingService from "../../services/aiMatchingService";
-import { AIMatchModal, MatchReasonsCard } from "../../components/AIMatching";
-import { toast } from "react-toastify";
+import { MatchReasonsCard } from "../../components/AIMatching";
+import toastService from "../../services/toastService";
 import styles from "./PostJobPage.module.css";
 
 const defaultOrganizationForm = {
@@ -148,7 +148,6 @@ const PostJobPage = () => {
   const [languageRequirements, setLanguageRequirements] = useState([]);
   
   // AI Matching states
-  const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [aiMatches, setAiMatches] = useState([]);
   const [selectedMatchDetails, setSelectedMatchDetails] = useState(null);
   const [loadingAISuggestions, setLoadingAISuggestions] = useState(false);
@@ -212,39 +211,13 @@ const PostJobPage = () => {
           Array.isArray(workingModesRes.data) &&
           workingModesRes.data.length > 0
         ) {
-          console.log("Using working modes from API:", workingModesRes.data);
           setWorkingModes(workingModesRes.data);
           setHasApiWorkingModes(true);
         } else {
           // If API call failed, returned empty, or returned error, use defaults for display only
-          console.log("Working modes API response:", workingModesRes);
-          if (!workingModesRes) {
-            console.warn(
-              "Working modes API call failed (no response), using defaults for display"
-            );
-          } else if (!workingModesRes.success) {
-            console.warn(
-              "Working modes API call failed:",
-              workingModesRes.message || "Unknown error"
-            );
-          } else if (
-            Array.isArray(workingModesRes.data) &&
-            workingModesRes.data.length === 0
-          ) {
-            console.warn(
-              "Working modes API returned empty array - database may be empty"
-            );
-          } else {
-            console.warn(
-              "Working modes API returned invalid data format:",
-              workingModesRes
-            );
+          if (!workingModesRes?.success) {
+            console.error("Working modes API call failed:", workingModesRes?.message || "Unknown error");
           }
-          // Use defaults for display only - these IDs won't work when submitting
-          console.log(
-            "Using default working modes for display:",
-            DEFAULT_WORKING_MODES
-          );
           setWorkingModes(DEFAULT_WORKING_MODES);
           setHasApiWorkingModes(false);
         }
@@ -256,29 +229,13 @@ const PostJobPage = () => {
             ? levelsRes.data
             : null;
         if (apiLevels) {
-          console.log("Using levels from API:", apiLevels);
           setLevels(apiLevels);
           setHasApiLevels(true);
         } else {
           // If API call failed, returned empty, or returned error, use defaults for display only
-          console.log("Levels API response:", levelsRes);
           if (!levelsRes?.success) {
-            console.warn("Levels API call failed, using defaults for display");
-          } else if (
-            levelsRes.data &&
-            Array.isArray(levelsRes.data) &&
-            levelsRes.data.length === 0
-          ) {
-            console.warn(
-              "Levels API returned empty array, using defaults for display"
-            );
-          } else {
-            console.warn(
-              "Levels API returned invalid data, using defaults for display"
-            );
+            console.error("Levels API call failed:", levelsRes?.message || "Unknown error");
           }
-          // Use defaults for display only - these IDs won't work when submitting
-          console.log("Using default levels for display:", DEFAULT_LEVELS);
           setLevels(DEFAULT_LEVELS);
           setHasApiLevels(false);
         }
@@ -314,7 +271,7 @@ const PostJobPage = () => {
         setAvailableLanguages(Array.from(allLanguages).sort());
       } catch (error) {
         console.error("Error fetching job posting data:", error);
-        toast.error(error.message || t("postJob.messages.error"));
+        toastService.error(error.message || t("postJob.messages.error"));
       } finally {
         setLookupsLoading(false);
       }
@@ -347,7 +304,7 @@ const PostJobPage = () => {
             job.organization?.ownerUserId === user?.id ||
             user?.role === "admin";
           if (!isOwner) {
-            toast.error("You don't have permission to edit this job");
+            toastService.error(t("postJob.messages.noPermission"));
             navigate(ROUTES.MY_JOBS);
             return;
           }
@@ -391,12 +348,12 @@ const PostJobPage = () => {
             setLanguageRequirements(langReqs);
           }
         } else {
-          toast.error("Job not found");
+          toastService.error(t("postJob.messages.jobNotFound"));
           navigate(ROUTES.MY_JOBS);
         }
       } catch (error) {
         console.error("Error fetching job for edit:", error);
-        toast.error(error.message || "Error loading job data");
+        toastService.error(error.message || t("postJob.messages.loadError"));
         navigate(ROUTES.MY_JOBS);
       } finally {
         setLoadingJobData(false);
@@ -412,6 +369,7 @@ const PostJobPage = () => {
     lookupsLoading,
     user,
     navigate,
+    t,
   ]);
 
   // Update language requirements with proper languageId after languageOptions are loaded
@@ -556,11 +514,11 @@ const PostJobPage = () => {
   const handleCreateOrganization = async (event) => {
     event.preventDefault();
     if (!organizationForm.name) {
-      toast.error(t("postJob.messages.organizationRequired"));
+      toastService.error(t("postJob.messages.organizationRequired"));
       return;
     }
     if (!organizationForm.businessLicense) {
-      toast.error(
+      toastService.error(
         t("postJob.organization.errors.licenseRequired") ||
           "Business Registration License is required"
       );
@@ -597,7 +555,7 @@ const PostJobPage = () => {
         }
 
         if (response?.success && response.data) {
-          toast.success(
+          toastService.success(
             "Cập nhật tổ chức thành công! Đang chờ admin duyệt lại."
           );
           // Update organization in list
@@ -629,7 +587,7 @@ const PostJobPage = () => {
             return; // Stop here, wait for user confirmation
           } else {
             // Only show success if no license to upload
-            toast.success(t("postJob.messages.orgSuccess"));
+            toastService.success(t("postJob.messages.orgSuccess"));
           }
         }
       }
@@ -641,7 +599,7 @@ const PostJobPage = () => {
       setOrganizationForm(defaultOrganizationForm);
       setShowOrganizationForm(false);
     } catch (error) {
-      toast.error(error.message || t("postJob.messages.error"));
+      toastService.error(error.message || t("postJob.messages.error"));
     } finally {
       setSavingOrganization(false);
     }
@@ -661,12 +619,12 @@ const PostJobPage = () => {
         pendingOrgId,
         formData
       );
-      toast.success(
+      toastService.success(
         t("postJob.organization.licenseConfirmation.uploadSuccess") ||
           "Business license uploaded successfully!"
       );
     } catch (error) {
-      toast.error(
+      toastService.error(
         error.message ||
           t("postJob.organization.errors.uploadFailed") ||
           "Failed to upload business license"
@@ -734,7 +692,7 @@ const PostJobPage = () => {
     event.preventDefault();
     const validationMessage = validateJobData();
     if (validationMessage) {
-      toast.error(validationMessage);
+      toastService.error(validationMessage);
       return;
     }
 
@@ -796,11 +754,12 @@ const PostJobPage = () => {
         // Update existing job
         response = await jobService.updateJob(editJobId, payload);
         if (response?.success) {
-          toast.success("Job updated successfully");
-          // Auto-fetch AI suggestions after job update
+          toastService.success(t("postJob.messages.updateSuccess"));
+          // Store job ID for AI suggestions (user can click button to fetch)
           if (response.data?.id) {
             setCreatedJobId(response.data.id);
-            handleFetchAISuggestions();
+            setAiSuggestionsFetched(false); // Reset so user can fetch again
+            setAiMatches([]); // Clear old results
           }
           navigate(ROUTES.MY_JOBS);
         } else {
@@ -810,26 +769,23 @@ const PostJobPage = () => {
         // Create new job
         response = await jobService.createJob(payload);
         if (response?.success) {
-          toast.success(t("postJob.messages.success"));
+          toastService.success(t("postJob.messages.success"));
           
-          // Store job ID for AI suggestions
+          // Store job ID for AI suggestions (user can click button to fetch)
           const jobId = response.data?.id || response.data?.job?.id;
           if (jobId) {
             setCreatedJobId(jobId);
-            // Auto-fetch AI suggestions after a short delay
-            setTimeout(() => {
-              handleFetchAISuggestions();
-            }, 500);
+            setAiSuggestionsFetched(false); // Reset so user can fetch
+            setAiMatches([]); // Clear any old results
           }
           
-          // Don't navigate away, stay on page to see AI suggestions
-          // User can manually navigate if needed
+          // Don't navigate away, stay on page so user can click AI button if they want
         } else {
           throw new Error(response?.message || "Unable to submit job");
         }
       }
     } catch (error) {
-      toast.error(error.message || t("postJob.messages.error"));
+      toastService.error(error.message || t("postJob.messages.error"));
     } finally {
       setSubmittingJob(false);
     }
@@ -858,38 +814,31 @@ const PostJobPage = () => {
     return tomorrow.toISOString().split("T")[0];
   }, []);
 
-  // Fetch AI suggested interpreters
+  // Fetch AI suggested interpreters - user must click button
   const handleFetchAISuggestions = async () => {
     const jobId = createdJobId || editJobId;
     if (!jobId) {
-      return; // Silently return if no job ID
-    }
-
-    if (aiSuggestionsFetched) {
-      return; // Don't fetch again if already fetched
+      toastService.error(t("postJob.messages.saveFirst"));
+      return;
     }
 
     setLoadingAISuggestions(true);
     try {
-      const aiResponse = await aiMatchingService.matchJobToInterpreters(jobId, 5); // Fetch top 5 for sidebar
+      const aiResponse = await aiMatchingService.matchJobToInterpreters(jobId, 10); // Fetch top 10
       if (aiResponse.success && aiResponse.data?.matched_interpreters) {
         setAiMatches(aiResponse.data.matched_interpreters);
         setAiSuggestionsFetched(true);
+        toastService.success(t("postJob.messages.aiFound").replace("{count}", aiResponse.data.matched_interpreters.length));
+      } else {
+        toastService.error(t("postJob.messages.aiNotFound"));
       }
     } catch (error) {
       console.error("Error fetching AI suggestions:", error);
-      // Don't show error toast, just fail silently
+      toastService.error(t("postJob.messages.aiFailed"));
     } finally {
       setLoadingAISuggestions(false);
     }
   };
-
-  // Auto-fetch AI suggestions when job is created
-  useEffect(() => {
-    if (createdJobId && !aiSuggestionsFetched && !loadingAISuggestions) {
-      handleFetchAISuggestions();
-    }
-  }, [createdJobId]);
 
   // Show loading state while fetching job data for edit
   if (isEditMode && loadingJobData) {
@@ -924,7 +873,7 @@ const PostJobPage = () => {
             </p>
           </div>
           <div className={styles.reviewNotice}>
-            <span>⚠️</span>
+            <span></span>
             <p>{t("postJob.reviewNotice")}</p>
           </div>
         </header>
@@ -1131,7 +1080,7 @@ const PostJobPage = () => {
                           const file = e.target.files?.[0];
                           if (file) {
                             if (file.type !== "application/pdf") {
-                              toast.error(
+                              toastService.error(
                                 t(
                                   "postJob.organization.errors.invalidFileType"
                                 ) || "Only PDF files are accepted"
@@ -1140,7 +1089,7 @@ const PostJobPage = () => {
                               return;
                             }
                             if (file.size > 10 * 1024 * 1024) {
-                              toast.error(
+                              toastService.error(
                                 t("postJob.organization.errors.fileTooLarge") ||
                                   "File size must be less than 10MB"
                               );
@@ -1245,7 +1194,7 @@ const PostJobPage = () => {
                         className={styles.helperText}
                         style={{ color: "#ef4444" }}
                       >
-                        ⚠️ Working mode data is not available from server.
+                        Working mode data is not available from server.
                         Please check your connection or contact administrator.
                         The form cannot be submitted until working modes are
                         loaded.
@@ -1525,7 +1474,7 @@ const PostJobPage = () => {
                                   <option value="">
                                     {t(
                                       "postJob.form.placeholders.selectLevel"
-                                    ) || "Chọn cấp độ thành thạo"}
+                                    ) || "Select proficiency level"}
                                   </option>
                                   {(levels && levels.length > 0
                                     ? levels
@@ -1734,31 +1683,36 @@ const PostJobPage = () => {
                 )}
               </div>
 
-              {/* AI Suggested Interpreters Section - Integrated naturally */}
-              {createdJobId && (
+              {/* AI Suggested Interpreters Section - Replaces preview when active */}
+              {createdJobId || editJobId ? (
                 <div className={styles.previewSection}>
                   <div className={styles.aiSectionHeader}>
                     <h4>
                       <span className={styles.aiBadge}>AI</span>{" "}
                       {t("postJob.preview.aiSuggestions") || "Suggested Interpreters"}
                     </h4>
-                    {loadingAISuggestions && (
-                      <span className={styles.aiLoadingText}>Analyzing...</span>
+                    {!aiSuggestionsFetched && !loadingAISuggestions && (
+                      <button
+                        className={styles.aiFetchButton}
+                        onClick={handleFetchAISuggestions}
+                        disabled={loadingAISuggestions}
+                      >
+                        🤖 Get AI Suggestions
+                      </button>
                     )}
                   </div>
                   {loadingAISuggestions ? (
                     <div className={styles.aiLoadingState}>
-                      <p>Finding the best interpreters for this job...</p>
+                      <p>AI is analyzing and finding the best interpreters...</p>
                     </div>
                   ) : aiMatches.length > 0 ? (
                     <div className={styles.aiMatchesList}>
-                      {aiMatches.slice(0, 3).map((match) => (
+                      {aiMatches.map((match) => (
                         <div
                           key={match.interpreter_id || match.id}
                           className={styles.aiMatchCard}
                           onClick={() => {
                             setSelectedMatchDetails(match);
-                            setShowAISuggestions(true);
                           }}
                         >
                           <div className={styles.aiMatchHeader}>
@@ -1784,26 +1738,40 @@ const PostJobPage = () => {
                           </div>
                           {match.suitability_score?.recommendation && (
                             <p className={styles.aiMatchReason}>
-                              {match.suitability_score.recommendation.substring(0, 80)}
-                              ...
+                              {match.suitability_score.recommendation.substring(0, 100)}
+                              {match.suitability_score.recommendation.length > 100 ? "..." : ""}
                             </p>
                           )}
                         </div>
                       ))}
-                      {aiMatches.length > 3 && (
-                        <button
-                          className={styles.viewAllButton}
-                          onClick={() => setShowAISuggestions(true)}
-                        >
-                          View all {aiMatches.length} suggestions →
-                        </button>
-                      )}
                     </div>
                   ) : aiSuggestionsFetched && !loadingAISuggestions ? (
-                    <p className={styles.noSuggestions}>
-                      No AI suggestions available at this time.
-                    </p>
-                  ) : null}
+                    <div className={styles.noSuggestions}>
+                      <p>No AI suggestions available at this time.</p>
+                      <button
+                        className={styles.aiFetchButton}
+                        onClick={handleFetchAISuggestions}
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.aiPrompt}>
+                      <p>Click the button above to get AI-powered interpreter suggestions for this job.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.previewSection}>
+                  <div className={styles.aiSectionHeader}>
+                    <h4>
+                      <span className={styles.aiBadge}>AI</span>{" "}
+                      {t("postJob.preview.aiSuggestions") || "Suggested Interpreters"}
+                    </h4>
+                  </div>
+                  <div className={styles.aiPrompt}>
+                    <p>Save the job first to get AI-powered interpreter suggestions.</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1811,31 +1779,7 @@ const PostJobPage = () => {
         </div>
       </div>
 
-      {/* AI Suggested Interpreters Modal */}
-      <AIMatchModal
-        isOpen={showAISuggestions}
-        onClose={() => {
-          setShowAISuggestions(false);
-          navigate(ROUTES.DASHBOARD);
-        }}
-        title="AI Suggested Interpreters"
-        matches={aiMatches.map((match) => ({
-          interpreter_id: match.interpreter_id,
-          interpreter: match.interpreter || {},
-          suitability_score: match.suitability_score,
-          match_priority: match.match_priority,
-        }))}
-        type="interpreters"
-        onViewDetails={(match) => {
-          setSelectedMatchDetails(match);
-        }}
-        onInvite={(match) => {
-          // TODO: Implement invite functionality
-          toast.info("Invite functionality coming soon");
-        }}
-      />
-
-      {/* Match Details Modal */}
+      {/* Match Details Modal - Only show details, not full list */}
       {selectedMatchDetails && selectedMatchDetails.suitability_score && (
         <div className={styles.matchDetailsOverlay} onClick={() => setSelectedMatchDetails(null)}>
           <div className={styles.matchDetailsModal} onClick={(e) => e.stopPropagation()}>

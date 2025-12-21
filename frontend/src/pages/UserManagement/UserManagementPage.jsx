@@ -2,12 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
+import alertService from "../../services/alertService";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import styles from "./UserManagementPage.module.css";
 
 const UserManagementPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,18 +131,15 @@ const UserManagementPage = () => {
       setSelectedUser(null);
     } catch (error) {
       console.error("Error toggling user status:", error);
-      alert(error.message || "Không thể thay đổi trạng thái người dùng");
+      await alertService.error(error.message || t("admin.userManagement.changeStatusFailed"));
     } finally {
       setProcessing(null);
     }
   };
 
   const handleDelete = async (userId) => {
-    if (
-      !window.confirm(
-        "Bạn có chắc muốn xóa người dùng này? Hành động này không thể hoàn tác."
-      )
-    ) {
+    const confirmed = await alertService.confirm(t("admin.userManagement.deleteConfirm"));
+    if (!confirmed) {
       return;
     }
 
@@ -149,7 +149,7 @@ const UserManagementPage = () => {
       await fetchUsers();
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert(error.message || "Không thể xóa người dùng");
+      await alertService.error(error.message || t("admin.userManagement.deleteFailed"));
     } finally {
       setProcessing(null);
     }
@@ -293,7 +293,6 @@ const UserManagementPage = () => {
                           disabled={processing === user.id}
                           title="Xóa tài khoản"
                         >
-                          🗑️
                         </button>
                       </div>
                     </td>
@@ -316,8 +315,7 @@ const UserManagementPage = () => {
               Trước
             </button>
             <span className={styles.pageInfo}>
-              Trang {pagination.page} / {pagination.totalPages} (Tổng:{" "}
-              {pagination.total})
+              {t("admin.userManagement.page")} {pagination.page} / {pagination.totalPages} ({t("admin.userManagement.total")}: {pagination.total})
             </span>
             <button
               onClick={() =>
@@ -339,7 +337,7 @@ const UserManagementPage = () => {
             onClick={() => navigate(ROUTES.ADMIN_DASHBOARD)}
             className={styles.backBtn}
           >
-            ← Quay lại Dashboard
+            {t("admin.userManagement.backToDashboard")}
           </button>
         </div>
       </div>
