@@ -44,6 +44,7 @@ export async function getJobs(req, res) {
       maxSalary = "",
       status = "open",
       reviewStatus = "",
+      organizationName = "",
       sortBy = "createdDate",
       sortOrder = "DESC",
     } = req.query;
@@ -140,6 +141,14 @@ export async function getJobs(req, res) {
       const condition = hasWhere ? "andWhere" : "where";
       queryBuilder[condition]("job.reviewStatus = :reviewStatus", {
         reviewStatus,
+      });
+      hasWhere = true;
+    }
+
+    if (organizationName) {
+      const condition = hasWhere ? "andWhere" : "where";
+      queryBuilder[condition]("organization.name LIKE :organizationName", {
+        organizationName: `%${organizationName}%`,
       });
       hasWhere = true;
     }
@@ -1544,5 +1553,47 @@ export async function rejectJob(req, res) {
   } catch (error) {
     logError(error, "Rejecting job");
     return sendError(res, "Error rejecting job", 500, error);
+  }
+}
+
+export async function closeJob(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.sub || req.user.id;
+
+    const jobRepository = AppDataSource.getRepository(Job);
+    const job = await jobRepository.findOne({
+      where: { id: parseInt(id) },
+      relations: ["organization"],
+    });
+
+    if (!job) {
+      return sendError(res, "Job not found", 404);
+    }
+
+    // Verify that the user is the owner of the organization
+    if (job.organization.ownerUserId !== parseInt(userId)) {
+      return sendError(res, "You are not authorized to close this job", 403);
+    }
+
+    // Check if job is already closed
+    if (job.statusOpenStop === JobStatus.CLOSED) {
+      return sendError(res, "Job is already closed", 400);
+    }
+
+    // Update job status to closed
+    await jobRepository.update(job.id, {
+      statusOpenStop: JobStatus.CLOSED,
+    });
+
+    const updatedJob = await jobRepository.findOne({
+      where: { id: parseInt(id) },
+      relations: ["organization"],
+    });
+
+    return sendSuccess(res, updatedJob, "Job closed successfully");
+  } catch (error) {
+    logError(error, "Closing job");
+    return sendError(res, "Error closing job", 500, error);
   }
 }

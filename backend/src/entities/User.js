@@ -33,6 +33,8 @@ export class User {
   isPremium;
   premiumExpiresAt;
   lastLoginAt;
+  resetPasswordToken;
+  resetPasswordExpiry;
   createdAt;
   updatedAt;
   interpreterProfile;
@@ -75,8 +77,7 @@ export const UserSchema = new EntitySchema({
       unique: true,
     },
     passwordHash: {
-      type: "varchar",
-      length: 255,
+      type: "text",
     },
     role: {
       type: "enum",
@@ -93,8 +94,7 @@ export const UserSchema = new EntitySchema({
       nullable: true,
     },
     avatar: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     isActive: {
@@ -114,6 +114,14 @@ export const UserSchema = new EntitySchema({
       nullable: true,
     },
     lastLoginAt: {
+      type: "datetime",
+      nullable: true,
+    },
+    resetPasswordToken: {
+      type: "text",
+      nullable: true,
+    },
+    resetPasswordExpiry: {
       type: "datetime",
       nullable: true,
     },

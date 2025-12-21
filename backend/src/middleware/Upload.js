@@ -11,7 +11,13 @@ export function createUploadMiddleware(options = {}) {
     directory = "general",
     filePrefix = "file",
     maxSize = 5 * 1024 * 1024, // 5MB default
-    allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"],
+    allowedMimeTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ],
     allowedExtensions = ["jpeg", "jpg", "png", "gif", "webp"],
   } = options;
 
@@ -46,11 +52,7 @@ export function createUploadMiddleware(options = {}) {
     if (extname && mimetype) {
       return cb(null, true);
     } else {
-      cb(
-        new Error(
-          `Only ${allowedExtensions.join(", ")} files are allowed!`
-        )
-      );
+      cb(new Error(`Only ${allowedExtensions.join(", ")} files are allowed!`));
     }
   };
 
@@ -67,7 +69,13 @@ export const uploadAvatar = createUploadMiddleware({
   directory: "avatars",
   filePrefix: "user",
   maxSize: 5 * 1024 * 1024, // 5MB
-  allowedMimeTypes: ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"],
+  allowedMimeTypes: [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ],
   allowedExtensions: ["jpeg", "jpg", "png", "gif", "webp"],
 });
 
@@ -75,22 +83,27 @@ export const uploadCertification = createUploadMiddleware({
   directory: "certifications",
   filePrefix: "cert",
   maxSize: 10 * 1024 * 1024, // 10MB
-  allowedMimeTypes: [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-    "application/pdf",
-  ],
-  allowedExtensions: ["jpeg", "jpg", "png", "gif", "webp", "pdf"],
+  allowedMimeTypes: ["application/pdf"],
+  allowedExtensions: ["pdf"],
+});
+
+export const uploadBusinessLicense = createUploadMiddleware({
+  directory: "business-licenses",
+  filePrefix: "license",
+  maxSize: 10 * 1024 * 1024, // 10MB
+  allowedMimeTypes: ["application/pdf"],
+  allowedExtensions: ["pdf"],
 });
 
 export const uploadResume = createUploadMiddleware({
   directory: "resumes",
   filePrefix: "resume",
   maxSize: 5 * 1024 * 1024, // 5MB
-  allowedMimeTypes: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  allowedMimeTypes: [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
   allowedExtensions: ["pdf", "doc", "docx"],
 });
 
@@ -109,5 +122,32 @@ export const uploadJobDocument = createUploadMiddleware({
   allowedExtensions: ["jpeg", "jpg", "png", "pdf", "doc", "docx"],
 });
 
-export default uploadAvatar;
+export const uploadMessageFile = createUploadMiddleware({
+  directory: "messages",
+  filePrefix: "msg",
+  maxSize: 10 * 1024 * 1024, // 10MB
+  allowedMimeTypes: [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+  ],
+  allowedExtensions: [
+    "jpeg",
+    "jpg",
+    "png",
+    "gif",
+    "webp",
+    "pdf",
+    "doc",
+    "docx",
+    "txt",
+  ],
+});
 
+export default uploadAvatar;

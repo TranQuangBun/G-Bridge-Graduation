@@ -43,6 +43,24 @@ const organizationService = {
       throw new Error(getErrorMessage(error));
     }
   },
+
+  uploadOrganizationLicense: async (id, formData) => {
+    try {
+      const response = await apiClient.post(
+        `/organizations/${id}/upload-license`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error uploading organization license:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 export default organizationService;

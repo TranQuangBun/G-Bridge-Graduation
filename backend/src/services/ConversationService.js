@@ -18,8 +18,12 @@ export class ConversationService {
   async checkApprovedApplication(userId1, userId2) {
     // Check if there's an approved application between these two users
     // One must be client (employer) and one must be interpreter
-    const user1 = await this.userRepository.findOne({ where: { id: parseInt(userId1) } });
-    const user2 = await this.userRepository.findOne({ where: { id: parseInt(userId2) } });
+    const user1 = await this.userRepository.findOne({
+      where: { id: parseInt(userId1) },
+    });
+    const user2 = await this.userRepository.findOne({
+      where: { id: parseInt(userId2) },
+    });
 
     if (!user1 || !user2) {
       return false;
@@ -44,7 +48,9 @@ export class ConversationService {
       .leftJoinAndSelect("application.job", "job")
       .leftJoinAndSelect("job.organization", "organization")
       .where("application.interpreterId = :interpreterId", { interpreterId })
-      .andWhere("application.status = :status", { status: ApplicationStatusEnum.APPROVED })
+      .andWhere("application.status = :status", {
+        status: ApplicationStatusEnum.APPROVED,
+      })
       .andWhere("organization.ownerUserId = :clientId", { clientId })
       .getOne();
 
@@ -61,7 +67,10 @@ export class ConversationService {
     if (!conversation) {
       // Check if there's an approved application (unless skipApprovalCheck is true)
       if (!skipApprovalCheck) {
-        const hasApprovedApplication = await this.checkApprovedApplication(userId1, userId2);
+        const hasApprovedApplication = await this.checkApprovedApplication(
+          userId1,
+          userId2
+        );
         if (!hasApprovedApplication) {
           throw new Error(
             "Cannot create conversation. You can only chat after the employer has approved your application."
@@ -70,11 +79,16 @@ export class ConversationService {
       }
 
       // Ensure userId1 < userId2 for consistency
-      const [p1, p2] = userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
+      const [p1, p2] =
+        userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
 
       // Verify both users exist
-      const user1 = await this.userRepository.findOne({ where: { id: parseInt(p1) } });
-      const user2 = await this.userRepository.findOne({ where: { id: parseInt(p2) } });
+      const user1 = await this.userRepository.findOne({
+        where: { id: parseInt(p1) },
+      });
+      const user2 = await this.userRepository.findOne({
+        where: { id: parseInt(p2) },
+      });
 
       if (!user1 || !user2) {
         throw new Error("One or both users not found");
@@ -92,7 +106,9 @@ export class ConversationService {
       });
     }
 
-    return await this.conversationRepository.findByIdWithParticipants(conversation.id);
+    return await this.conversationRepository.findByIdWithParticipants(
+      conversation.id
+    );
   }
 
   async getOrCreateConversationFromApplication(applicationId, userId) {
@@ -108,7 +124,9 @@ export class ConversationService {
 
     // Verify application is approved
     if (application.status !== ApplicationStatusEnum.APPROVED) {
-      throw new Error("Application must be approved before starting a conversation");
+      throw new Error(
+        "Application must be approved before starting a conversation"
+      );
     }
 
     // Determine the other participant
@@ -129,7 +147,11 @@ export class ConversationService {
     return await this.getOrCreateConversation(clientId, interpreterId, true);
   }
 
-  async getUserConversations(userId, includeArchived = false, includeDeleted = false) {
+  async getUserConversations(
+    userId,
+    includeArchived = false,
+    includeDeleted = false
+  ) {
     return await this.conversationRepository.findByParticipant(
       userId,
       includeArchived,
@@ -138,9 +160,10 @@ export class ConversationService {
   }
 
   async getConversationById(conversationId, userId) {
-    const conversation = await this.conversationRepository.findByIdWithParticipants(
-      conversationId
-    );
+    const conversation =
+      await this.conversationRepository.findByIdWithParticipants(
+        conversationId
+      );
 
     if (!conversation) {
       throw new Error("Conversation not found");
@@ -151,32 +174,109 @@ export class ConversationService {
       conversation.participant1Id !== parseInt(userId) &&
       conversation.participant2Id !== parseInt(userId)
     ) {
-      throw new Error("Unauthorized: You are not a participant in this conversation");
+      throw new Error(
+        "Unauthorized: You are not a participant in this conversation"
+      );
+    }
+
+    // Find related job application (if exists)
+    // Query: find application where one participant is interpreter and other is client
+    const jobAppRepository = AppDataSource.getRepository(JobApplication);
+
+    // Get the other participant ID
+    const otherUserId =
+      conversation.participant1Id === parseInt(userId)
+        ? conversation.participant2Id
+        : conversation.participant1Id;
+
+    // Try to find job application where current user is interpreter and other is client
+    let application = await jobAppRepository
+      .createQueryBuilder("app")
+      .leftJoinAndSelect("app.job", "job")
+      .leftJoinAndSelect("job.organization", "organization")
+      .where(
+        "app.interpreterId = :interpreterId AND organization.ownerUserId = :clientId",
+        {
+          interpreterId: userId,
+          clientId: otherUserId,
+        }
+      )
+      .andWhere("app.status = :status", { status: "approved" })
+      .orderBy("app.createdAt", "DESC")
+      .getOne();
+
+    // If not found, try reverse (other is interpreter, current user is client)
+    if (!application) {
+      application = await jobAppRepository
+        .createQueryBuilder("app")
+        .leftJoinAndSelect("app.job", "job")
+        .leftJoinAndSelect("job.organization", "organization")
+        .where(
+          "app.interpreterId = :interpreterId AND organization.ownerUserId = :clientId",
+          {
+            interpreterId: otherUserId,
+            clientId: userId,
+          }
+        )
+        .andWhere("app.status = :status", { status: "approved" })
+        .orderBy("app.createdAt", "DESC")
+        .getOne();
+    }
+
+    // Attach application to conversation object
+    if (application) {
+      conversation.application = application;
     }
 
     return conversation;
   }
 
   async archiveConversation(conversationId, userId) {
-    const conversation = await this.conversationRepository.findById(conversationId);
+    console.log(
+      "archiveConversation - conversationId:",
+      conversationId,
+      "userId:",
+      userId
+    );
+    const conversation = await this.conversationRepository.findById(
+      conversationId
+    );
 
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
+    console.log("archiveConversation - before archive:", {
+      participant1Id: conversation.participant1Id,
+      participant2Id: conversation.participant2Id,
+      participant1Archived: conversation.participant1Archived,
+      participant2Archived: conversation.participant2Archived,
+    });
+
     if (conversation.participant1Id === parseInt(userId)) {
       conversation.participant1Archived = true;
+      console.log("archiveConversation - setting participant1Archived = true");
     } else if (conversation.participant2Id === parseInt(userId)) {
       conversation.participant2Archived = true;
+      console.log("archiveConversation - setting participant2Archived = true");
     } else {
       throw new Error("Unauthorized");
     }
 
-    return await this.conversationRepository.repository.save(conversation);
+    const result = await this.conversationRepository.repository.save(
+      conversation
+    );
+    console.log("archiveConversation - after save:", {
+      participant1Archived: result.participant1Archived,
+      participant2Archived: result.participant2Archived,
+    });
+    return result;
   }
 
   async unarchiveConversation(conversationId, userId) {
-    const conversation = await this.conversationRepository.findById(conversationId);
+    const conversation = await this.conversationRepository.findById(
+      conversationId
+    );
 
     if (!conversation) {
       throw new Error("Conversation not found");
@@ -194,7 +294,9 @@ export class ConversationService {
   }
 
   async deleteConversation(conversationId, userId) {
-    const conversation = await this.conversationRepository.findById(conversationId);
+    const conversation = await this.conversationRepository.findById(
+      conversationId
+    );
 
     if (!conversation) {
       throw new Error("Conversation not found");
@@ -216,7 +318,9 @@ export class ConversationService {
   }
 
   async markConversationAsRead(conversationId, userId) {
-    const conversation = await this.conversationRepository.findById(conversationId);
+    const conversation = await this.conversationRepository.findById(
+      conversationId
+    );
 
     if (!conversation) {
       throw new Error("Conversation not found");
@@ -235,4 +339,3 @@ export class ConversationService {
     return await this.conversationRepository.repository.save(conversation);
   }
 }
-

@@ -114,6 +114,8 @@ const LoginPage = () => {
       loginError: "Đăng nhập thất bại. Vui lòng kiểm tra lại.",
       registerSuccess: "Đăng ký thành công!",
       registerError: "Đăng ký thất bại. Vui lòng thử lại.",
+      emailAlreadyExists:
+        "Email này đã được liên kết với một tài khoản. Vui lòng đăng nhập hoặc sử dụng email khác.",
 
       showPassword: "Hiện mật khẩu",
       hidePassword: "Ẩn mật khẩu",
@@ -180,6 +182,8 @@ const LoginPage = () => {
       loginError: "Login failed. Please check your credentials.",
       registerSuccess: "Registration successful!",
       registerError: "Registration failed. Please try again.",
+      emailAlreadyExists:
+        "This email is already associated with an account. Please log in or use another email.",
 
       showPassword: "Show password",
       hidePassword: "Hide password",
@@ -329,11 +333,21 @@ const LoginPage = () => {
           navigate(ROUTES.HOME);
         }, 500);
       } else {
-        showError(result.error || t.registerError);
+        const errorMsg = result.error || "";
+        if (errorMsg.includes("Email already exists")) {
+          showError(t.emailAlreadyExists);
+        } else {
+          showError(errorMsg || t.registerError);
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
-      showError(t.registerError);
+      const errorMsg = error.message || "";
+      if (errorMsg.includes("Email already exists")) {
+        showError(t.emailAlreadyExists);
+      } else {
+        showError(t.registerError);
+      }
     } finally {
       setIsLoading(false);
     }

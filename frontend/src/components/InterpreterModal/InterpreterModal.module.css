@@ -299,11 +299,54 @@
   flex: 1;
 }
 
+.certHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
 .certInfo strong {
-  display: block;
+  display: inline-block;
   color: #2d3748;
   font-size: 1.05rem;
-  margin-bottom: 4px;
+  margin: 0;
+}
+
+.certStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.certStatusBadge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.certStatusBadge.draft {
+  background-color: #e5e7eb;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
+
+.certStatusBadge.rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
+.certStatusBadge.approved {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #34d399;
 }
 
 .certIssuer {
@@ -316,6 +359,29 @@
   color: #718096;
   margin: 0;
   font-size: 0.85rem;
+}
+
+.viewCertBtn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  color: white !important;
+  text-decoration: none;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.viewCertBtn:hover {
+  background: linear-gradient(135deg, #075985 0%, #0369a1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  color: white !important;
+  text-decoration: none;
 }
 
 /* Availability */

@@ -12,7 +12,8 @@ export class JobApplicationService {
     this.jobApplicationRepository = new JobApplicationRepository();
     this.jobRepository = AppDataSource.getRepository(Job);
     this.userRepository = AppDataSource.getRepository(User);
-    this.applicationStatusRepository = AppDataSource.getRepository(ApplicationStatus);
+    this.applicationStatusRepository =
+      AppDataSource.getRepository(ApplicationStatus);
     this.notificationService = new NotificationService();
   }
 
@@ -67,10 +68,11 @@ export class JobApplicationService {
     }
 
     // Check if already applied
-    const existing = await this.jobApplicationRepository.findByJobAndInterpreter(
-      jobId,
-      interpreterId
-    );
+    const existing =
+      await this.jobApplicationRepository.findByJobAndInterpreter(
+        jobId,
+        interpreterId
+      );
     if (existing) {
       throw new Error("Already applied to this job");
     }
@@ -97,7 +99,9 @@ export class JobApplicationService {
     });
 
     if (!pendingStatus) {
-      throw new Error("System error: Pending application status not found in database");
+      throw new Error(
+        "System error: Pending application status not found in database"
+      );
     }
 
     const application = await this.jobApplicationRepository.create({
@@ -188,5 +192,163 @@ export class JobApplicationService {
 
     return applicationsWithProfiles;
   }
-}
 
+  async requestJobCompletion(applicationId, userId) {
+    const application = await this.jobApplicationRepository.findById(
+      parseInt(applicationId)
+    );
+
+    if (!application) {
+      throw new Error("Job application not found");
+    }
+
+    // Only approved applications can be completed
+    if (application.status !== ApplicationStatusEnum.APPROVED) {
+      throw new Error("Job application is not approved yet");
+    }
+
+    // Check if user is either the interpreter or the client
+    const job = await this.jobRepository.findOne({
+      where: { id: application.jobId },
+      relations: ["client"],
+    });
+
+    const isClient = job.clientId === parseInt(userId);
+    const isInterpreter = application.interpreterId === parseInt(userId);
+
+    if (!isClient && !isInterpreter) {
+      throw new Error("Unauthorized");
+    }
+
+    // If already completed, return error
+    if (application.completedAt) {
+      throw new Error("Job already completed");
+    }
+
+    // If already requested by this user, return current state
+    if (application.completionRequestedBy === parseInt(userId)) {
+      return application;
+    }
+
+    // If other party already requested, this becomes confirmation
+    if (
+      application.completionRequestedBy &&
+      application.completionRequestedBy !== parseInt(userId)
+    ) {
+      return await this.confirmJobCompletion(applicationId, userId);
+    }
+
+    // Set completion request
+    application.completionRequestedBy = parseInt(userId);
+    const updated = await this.jobApplicationRepository.repository.save(
+      application
+    );
+
+    // Send notification to the other party
+    const recipientId = isClient ? application.interpreterId : job.clientId;
+    try {
+      await this.notificationService.createNotification({
+        userId: recipientId,
+        type: NotificationType.JOB_COMPLETION_REQUESTED,
+        title: "Yêu cầu hoàn thành công việc",
+        message: `${
+          isClient ? "Khách hàng" : "Phiên dịch viên"
+        } đã yêu cầu hoàn thành công việc cho "${
+          job.title
+        }". Vui lòng xác nhận.`,
+        relatedId: application.id,
+        relatedType: "job_application",
+      });
+    } catch (error) {
+      console.error("Failed to send completion request notification", error);
+    }
+
+    return await this.jobApplicationRepository.findById(updated.id);
+  }
+
+  async confirmJobCompletion(applicationId, userId) {
+    const application = await this.jobApplicationRepository.findById(
+      parseInt(applicationId)
+    );
+
+    if (!application) {
+      throw new Error("Job application not found");
+    }
+
+    // Check if completion has been requested
+    if (!application.completionRequestedBy) {
+      throw new Error("Job completion has not been requested yet");
+    }
+
+    // Check if user is the other party (not the requester)
+    const job = await this.jobRepository.findOne({
+      where: { id: application.jobId },
+      relations: ["client"],
+    });
+
+    const isClient = job.clientId === parseInt(userId);
+    const isInterpreter = application.interpreterId === parseInt(userId);
+
+    if (!isClient && !isInterpreter) {
+      throw new Error("Unauthorized");
+    }
+
+    // User cannot confirm their own request
+    if (application.completionRequestedBy === parseInt(userId)) {
+      throw new Error("Cannot confirm your own completion request");
+    }
+
+    // Mark as completed
+    application.completionConfirmedBy = parseInt(userId);
+    application.completedAt = new Date();
+    const updated = await this.jobApplicationRepository.repository.save(
+      application
+    );
+
+    // Send notification to requester
+    try {
+      await this.notificationService.createNotification({
+        userId: application.completionRequestedBy,
+        type: NotificationType.JOB_COMPLETED,
+        title: "Công việc đã hoàn thành",
+        message: `Công việc "${job.title}" đã được xác nhận hoàn thành. Bạn có thể đánh giá ngay bây giờ.`,
+        relatedId: application.id,
+        relatedType: "job_application",
+      });
+    } catch (error) {
+      console.error(
+        "Failed to send completion confirmation notification",
+        error
+      );
+    }
+
+    return await this.jobApplicationRepository.findById(updated.id);
+  }
+
+  async cancelJobCompletionRequest(applicationId, userId) {
+    const application = await this.jobApplicationRepository.findById(
+      parseInt(applicationId)
+    );
+
+    if (!application) {
+      throw new Error("Job application not found");
+    }
+
+    // Only the requester can cancel
+    if (application.completionRequestedBy !== parseInt(userId)) {
+      throw new Error("Unauthorized");
+    }
+
+    // Cannot cancel if already completed
+    if (application.completedAt) {
+      throw new Error("Job already completed");
+    }
+
+    application.completionRequestedBy = null;
+    const updated = await this.jobApplicationRepository.repository.save(
+      application
+    );
+
+    return await this.jobApplicationRepository.findById(updated.id);
+  }
+}

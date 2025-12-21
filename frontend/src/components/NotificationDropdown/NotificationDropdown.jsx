@@ -64,6 +64,30 @@ const NotificationDropdown = () => {
     return { title, message };
   };
 
+  // Fetch unread count on mount and periodically
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await notificationService.getMyNotifications({
+          limit: 100, // Get enough to count all unread
+        });
+        const data = response?.data?.notifications || [];
+        const count = data.filter((n) => !n.isRead).length;
+        setUnreadCount(count);
+      } catch (err) {
+        console.error("Failed to fetch unread count:", err);
+      }
+    };
+
+    // Fetch immediately on mount
+    fetchUnreadCount();
+
+    // Poll every 30 seconds to keep badge updated
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {

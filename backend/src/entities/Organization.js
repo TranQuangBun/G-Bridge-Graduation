@@ -19,6 +19,8 @@ export class Organization {
   phone;
   address;
   province;
+  businessLicense;
+  licenseVerificationStatus;
   isActive;
   approvalStatus;
   rejectionReason;
@@ -53,8 +55,7 @@ export const OrganizationSchema = new EntitySchema({
       nullable: true,
     },
     logo: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     website: {
@@ -80,6 +81,15 @@ export const OrganizationSchema = new EntitySchema({
       type: "varchar",
       length: 100,
       nullable: true,
+    },
+    businessLicense: {
+      type: "text",
+      nullable: true,
+    },
+    licenseVerificationStatus: {
+      type: "enum",
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     isActive: {
       type: "boolean",

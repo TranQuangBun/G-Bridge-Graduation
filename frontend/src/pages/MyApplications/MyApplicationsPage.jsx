@@ -20,7 +20,11 @@ import {
   FaCopy,
   FaCheck,
   FaBookmark,
+  FaCheckCircle,
+  FaHourglass,
+  FaTimes,
 } from "react-icons/fa";
+import JobCompletionWidget from "../../components/JobCompletionWidget/JobCompletionWidget.jsx";
 
 // Unused mock data - kept for reference
 /* const MOCK_APPLICATIONS = [
@@ -196,6 +200,9 @@ function MyApplicationsPage() {
   const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+  const [processingCompletion, setProcessingCompletion] = useState(null);
+  const [completionModalOpen, setCompletionModalOpen] = useState(false);
+  const [completionModalData, setCompletionModalData] = useState(null);
 
   // Fetch applications from API
   useEffect(() => {
@@ -258,6 +265,12 @@ function MyApplicationsPage() {
               interpreter: app.interpreter || null,
               coverLetter: app.coverLetter || "",
               resumeUrl: app.resumeUrl || "",
+              // Completion fields
+              completionRequestedBy: app.completionRequestedBy || null,
+              completionRequestedAt: app.completionRequestedAt || null,
+              completedAt: app.completedAt || null,
+              jobId: app.jobId || app.job?.id || null,
+              interpreterId: app.interpreterId || null,
             };
           });
           setApplications(transformedApps);
@@ -445,6 +458,197 @@ function MyApplicationsPage() {
   const closeContactModal = () => {
     setContactModalOpen(false);
     setCopiedField(null);
+  };
+
+  // Job Completion Handlers
+  const handleRequestCompletion = (applicationId) => {
+    const application = applications.find((app) => app.id === applicationId);
+    setCompletionModalData({
+      type: "request",
+      applicationId,
+      application,
+    });
+    setCompletionModalOpen(true);
+  };
+
+  const confirmRequestCompletion = async (applicationId) => {
+    setProcessingCompletion(applicationId);
+    try {
+      const response = await jobService.requestJobCompletion(applicationId);
+
+      // Update applications list
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId
+            ? {
+                ...app,
+                completionRequestedBy:
+                  response.data?.completionRequestedBy || user.id,
+                completionRequestedAt:
+                  response.data?.completionRequestedAt ||
+                  new Date().toISOString(),
+              }
+            : app
+        )
+      );
+
+      // Update selected application
+      if (selectedApplication?.id === applicationId) {
+        setSelectedApplication((prev) => ({
+          ...prev,
+          completionRequestedBy:
+            response.data?.completionRequestedBy || user.id,
+          completionRequestedAt:
+            response.data?.completionRequestedAt || new Date().toISOString(),
+        }));
+      }
+
+      alert(
+        t("applications.completion.requestSent") ||
+          "Yêu cầu hoàn thành đã được gửi!"
+      );
+    } catch (error) {
+      console.error("Error requesting completion:", error);
+      alert(
+        error.message ||
+          t("applications.completion.requestError") ||
+          "Không thể gửi yêu cầu"
+      );
+    } finally {
+      setProcessingCompletion(null);
+    }
+  };
+
+  const handleConfirmCompletion = (applicationId) => {
+    const application = applications.find((app) => app.id === applicationId);
+    setCompletionModalData({
+      type: "confirm",
+      applicationId,
+      application,
+    });
+    setCompletionModalOpen(true);
+  };
+
+  const confirmCompleteJob = async (applicationId) => {
+    setProcessingCompletion(applicationId);
+    try {
+      const response = await jobService.confirmJobCompletion(applicationId);
+
+      // Update applications list
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId
+            ? {
+                ...app,
+                completedAt:
+                  response.data?.completedAt || new Date().toISOString(),
+                completionRequestedBy: null,
+              }
+            : app
+        )
+      );
+
+      // Update selected application
+      if (selectedApplication?.id === applicationId) {
+        setSelectedApplication((prev) => ({
+          ...prev,
+          completedAt: response.data?.completedAt || new Date().toISOString(),
+          completionRequestedBy: null,
+        }));
+      }
+
+      alert(
+        t("applications.completion.completed") ||
+          "Công việc đã được đánh dấu hoàn thành!"
+      );
+    } catch (error) {
+      console.error("Error confirming completion:", error);
+      alert(
+        error.message ||
+          t("applications.completion.confirmError") ||
+          "Không thể xác nhận hoàn thành"
+      );
+    } finally {
+      setProcessingCompletion(null);
+    }
+  };
+
+  const handleCancelRequest = (applicationId) => {
+    const application = applications.find((app) => app.id === applicationId);
+    setCompletionModalData({
+      type: "cancel",
+      applicationId,
+      application,
+    });
+    setCompletionModalOpen(true);
+  };
+
+  const confirmCancelRequest = async (applicationId) => {
+    setProcessingCompletion(applicationId);
+    try {
+      const response = await jobService.cancelJobCompletionRequest(
+        applicationId
+      );
+
+      // Update applications list
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId
+            ? {
+                ...app,
+                completionRequestedBy: null,
+                completionRequestedAt: null,
+              }
+            : app
+        )
+      );
+
+      // Update selected application
+      if (selectedApplication?.id === applicationId) {
+        setSelectedApplication((prev) => ({
+          ...prev,
+          completionRequestedBy: null,
+          completionRequestedAt: null,
+        }));
+      }
+
+      alert(t("applications.completion.cancelled") || "Yêu cầu đã được hủy");
+    } catch (error) {
+      console.error("Error cancelling request:", error);
+      alert(
+        error.message ||
+          t("applications.completion.cancelError") ||
+          "Không thể hủy yêu cầu"
+      );
+    } finally {
+      setProcessingCompletion(null);
+    }
+  };
+
+  const handleCompletionModalConfirm = async () => {
+    if (!completionModalData) return;
+
+    setCompletionModalOpen(false);
+    const { type, applicationId } = completionModalData;
+
+    try {
+      if (type === "request") {
+        await confirmRequestCompletion(applicationId);
+      } else if (type === "confirm") {
+        await confirmCompleteJob(applicationId);
+      } else if (type === "cancel") {
+        await confirmCancelRequest(applicationId);
+      }
+    } catch (error) {
+      console.error("Completion action error:", error);
+    } finally {
+      setCompletionModalData(null);
+    }
+  };
+
+  const handleCompletionModalCancel = () => {
+    setCompletionModalOpen(false);
+    setCompletionModalData(null);
   };
 
   const copyToClipboard = async (text, fieldName) => {
@@ -748,6 +952,62 @@ function MyApplicationsPage() {
                           {t("applications.withdraw")}
                         </button>
                       )}
+
+                      {/* Job Completion Button - Show for approved applications */}
+                      {isApplicationApproved(application) && (
+                        <>
+                          {application.completedAt ? (
+                            <div className={styles.completedBadge}>
+                              <FaCheckCircle />{" "}
+                              {t("applications.completion.completed") ||
+                                "Đã hoàn thành"}
+                            </div>
+                          ) : application.completionRequestedBy ? (
+                            application.completionRequestedBy ===
+                            parseInt(user?.id) ? (
+                              <button
+                                className={styles.pendingCompletionBtn}
+                                onClick={() =>
+                                  handleCancelRequest(application.id)
+                                }
+                                disabled={
+                                  processingCompletion === application.id
+                                }
+                              >
+                                <FaHourglass />{" "}
+                                {t("applications.completion.pending") ||
+                                  "Chờ xác nhận"}
+                              </button>
+                            ) : (
+                              <button
+                                className={styles.confirmCompletionBtn}
+                                onClick={() =>
+                                  handleConfirmCompletion(application.id)
+                                }
+                                disabled={
+                                  processingCompletion === application.id
+                                }
+                              >
+                                <FaCheckCircle />{" "}
+                                {t("applications.completion.confirm") ||
+                                  "Xác nhận hoàn thành"}
+                              </button>
+                            )
+                          ) : (
+                            <button
+                              className={styles.requestCompletionBtn}
+                              onClick={() =>
+                                handleRequestCompletion(application.id)
+                              }
+                              disabled={processingCompletion === application.id}
+                            >
+                              <FaCheckCircle />{" "}
+                              {t("applications.completion.request") ||
+                                "Hoàn thành công việc"}
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -1036,6 +1296,32 @@ function MyApplicationsPage() {
                   </>
                 )}
               </div>
+
+              {/* Job Completion Widget - Show for approved applications */}
+              {isApplicationApproved(selectedApplication) && (
+                <div className={styles.completionWidgetContainer}>
+                  <JobCompletionWidget
+                    application={selectedApplication}
+                    currentUserId={user?.id}
+                    onUpdate={(updatedApp) => {
+                      // Update the selected application
+                      setSelectedApplication((prev) => ({
+                        ...prev,
+                        ...updatedApp,
+                      }));
+
+                      // Update the applications list
+                      setApplications((prev) =>
+                        prev.map((app) =>
+                          app.id === updatedApp.id
+                            ? { ...app, ...updatedApp }
+                            : app
+                        )
+                      );
+                    }}
+                  />
+                </div>
+              )}
 
               <div className={styles.modalActions}>
                 {user?.role === "client" ? (
@@ -1429,6 +1715,134 @@ function MyApplicationsPage() {
                   onClick={closeContactModal}
                 >
                   {t("common.close")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Job Completion Confirmation Modal */}
+        {completionModalOpen && completionModalData && (
+          <div
+            className={styles.modalOverlay}
+            onClick={handleCompletionModalCancel}
+          >
+            <div
+              className={styles.completionModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.completionModalHeader}>
+                <div className={styles.completionModalIcon}>
+                  <FaCheckCircle />
+                </div>
+                <h3 className={styles.completionModalTitle}>
+                  {completionModalData.type === "request" &&
+                    (t("applications.completion.modalTitleRequest") ||
+                      "Yêu cầu hoàn thành công việc")}
+                  {completionModalData.type === "confirm" &&
+                    (t("applications.completion.modalTitleConfirm") ||
+                      "Xác nhận hoàn thành")}
+                  {completionModalData.type === "cancel" &&
+                    (t("applications.completion.modalTitleCancel") ||
+                      "Hủy yêu cầu")}
+                </h3>
+              </div>
+
+              <div className={styles.completionModalBody}>
+                {completionModalData.application && (
+                  <div className={styles.completionJobInfo}>
+                    <div className={styles.completionJobHeader}>
+                      <span className={styles.completionJobLogo}>
+                        {typeof completionModalData.application.logo ===
+                        "string" ? (
+                          completionModalData.application.logo
+                        ) : completionModalData.application.logo ? (
+                          <completionModalData.application.logo />
+                        ) : (
+                          <FaBriefcase />
+                        )}
+                      </span>
+                      <div>
+                        <h4 className={styles.completionJobTitle}>
+                          {completionModalData.application.position}
+                        </h4>
+                        <p className={styles.completionJobCompany}>
+                          {completionModalData.application.company}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className={styles.completionModalMessage}>
+                  {completionModalData.type === "request" && (
+                    <>
+                      {t("applications.completion.modalMessageRequest") ||
+                        "Bạn có chắc muốn yêu cầu hoàn thành công việc này? Đối phương sẽ nhận được thông báo để xác nhận."}
+                    </>
+                  )}
+                  {completionModalData.type === "confirm" && (
+                    <>
+                      {t("applications.completion.modalMessageConfirm") ||
+                        "Xác nhận rằng công việc đã được hoàn thành? Cả hai bên sẽ không thể thay đổi sau khi xác nhận."}
+                    </>
+                  )}
+                  {completionModalData.type === "cancel" && (
+                    <>
+                      {t("applications.completion.modalMessageCancel") ||
+                        "Bạn có chắc muốn hủy yêu cầu hoàn thành công việc này?"}
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div className={styles.completionModalActions}>
+                <button
+                  className={styles.completionCancelBtn}
+                  onClick={handleCompletionModalCancel}
+                  disabled={
+                    processingCompletion === completionModalData.applicationId
+                  }
+                >
+                  {t("common.cancel") || "Hủy"}
+                </button>
+                <button
+                  className={styles.completionConfirmBtn}
+                  onClick={handleCompletionModalConfirm}
+                  disabled={
+                    processingCompletion === completionModalData.applicationId
+                  }
+                >
+                  {processingCompletion ===
+                  completionModalData.applicationId ? (
+                    <>
+                      ⏳ {t("applications.modal.processing") || "Đang xử lý..."}
+                    </>
+                  ) : (
+                    <>
+                      {completionModalData.type === "request" && (
+                        <>
+                          <FaCheckCircle />{" "}
+                          {t("applications.completion.sendRequest") ||
+                            "Gửi yêu cầu"}
+                        </>
+                      )}
+                      {completionModalData.type === "confirm" && (
+                        <>
+                          <FaCheckCircle />{" "}
+                          {t("applications.completion.confirmBtn") ||
+                            "Xác nhận"}
+                        </>
+                      )}
+                      {completionModalData.type === "cancel" && (
+                        <>
+                          <FaTimes />{" "}
+                          {t("applications.completion.cancelBtn") ||
+                            "Hủy yêu cầu"}
+                        </>
+                      )}
+                    </>
+                  )}
                 </button>
               </div>
             </div>

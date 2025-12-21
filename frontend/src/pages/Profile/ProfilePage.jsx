@@ -195,6 +195,8 @@ const ProfilePage = () => {
   const [isEditingCompanyInfo, setIsEditingCompanyInfo] = useState(false);
   const [isAddingLanguage, setIsAddingLanguage] = useState(false);
   const [isAddingCertification, setIsAddingCertification] = useState(false);
+  const [editingCertificationIndex, setEditingCertificationIndex] =
+    useState(null);
   const [loading, setLoading] = useState(false);
 
   // Confirmation modal state
@@ -229,6 +231,7 @@ const ProfilePage = () => {
     description: "",
     headquarters: "",
     foundedYear: "",
+    businessLicense: null,
   });
 
   const [languageForm, setLanguageForm] = useState({
@@ -241,9 +244,9 @@ const ProfilePage = () => {
     score: "",
     year: "",
     organization: "",
-  credentialId: "",
-  description: "",
-  expiryYear: "",
+    credentialId: "",
+    description: "",
+    expiryYear: "",
     certificationImage: null,
   });
 
@@ -575,9 +578,24 @@ const ProfilePage = () => {
           : null,
       };
 
+      // First update the basic company info
       await authService.updateClientProfile(dataToUpdate);
+
+      // If there's a new business license file, upload it
+      if (companyInfoForm.businessLicense) {
+        const formData = new FormData();
+        formData.append("businessLicense", companyInfoForm.businessLicense);
+
+        await authService.uploadBusinessLicense(formData);
+      }
+
       await refreshUser();
       setIsEditingCompanyInfo(false);
+      setCompanyInfoForm({
+        ...companyInfoForm,
+        businessLicense: null,
+      });
+
       toast.success(
         lang === "vi"
           ? "Cập nhật thông tin công ty thành công!"
@@ -703,9 +721,9 @@ const ProfilePage = () => {
       organization: suggestion.organization,
       score: "",
       year: "",
-    credentialId: "",
-    description: "",
-    expiryYear: "",
+      credentialId: "",
+      description: "",
+      expiryYear: "",
       certificationImage: null,
     });
     setIsAddingCertification(true);
@@ -725,8 +743,29 @@ const ProfilePage = () => {
     });
   };
 
+  const handleEditCertification = (cert, index) => {
+    setCertificationForm({
+      name: cert.name || "",
+      score: cert.score || "",
+      year: cert.issueDate
+        ? new Date(cert.issueDate).getFullYear().toString()
+        : "",
+      organization: cert.issuingOrganization || "",
+      credentialId: cert.credentialId || "",
+      credentialUrl: cert.credentialUrl || "",
+      description: cert.description || "",
+      expiryYear: cert.expiryDate
+        ? new Date(cert.expiryDate).getFullYear().toString()
+        : "",
+      certificationImage: null,
+    });
+    setEditingCertificationIndex(index);
+    setIsAddingCertification(true);
+  };
+
   const closeCertificationModal = () => {
     setIsAddingCertification(false);
+    setEditingCertificationIndex(null);
     resetCertificationForm();
   };
 
@@ -766,27 +805,50 @@ const ProfilePage = () => {
   };
 
   // Handle add certification
-  const handleAddCertification = async (e) => {
+  const handleAddCertification = async (e, isDraft = false) => {
     e.preventDefault();
     setLoading(true);
+
+    const isEditing = editingCertificationIndex !== null;
+    const editingCert = isEditing
+      ? certifications[editingCertificationIndex]
+      : null;
 
     try {
       const errors = [];
       if (!certificationForm.name?.trim()) {
-        errors.push(t("profile.certifications.errors.nameRequired") || "Vui lòng nhập tên chứng chỉ");
+        errors.push(
+          t("profile.certifications.errors.nameRequired") ||
+            "Vui lòng nhập tên chứng chỉ"
+        );
       }
-      if (!certificationForm.organization?.trim()) {
-        errors.push(t("profile.certifications.errors.organizationRequired") || "Vui lòng nhập tổ chức cấp");
+      if (!isDraft && !certificationForm.organization?.trim()) {
+        errors.push(
+          t("profile.certifications.errors.organizationRequired") ||
+            "Vui lòng nhập tổ chức cấp"
+        );
       }
-      if (certificationForm.year && !/^\d{4}$/.test(String(certificationForm.year))) {
-        errors.push(t("profile.certifications.errors.yearInvalid") || "Năm cấp phải là số gồm 4 chữ số");
+      if (
+        certificationForm.year &&
+        !/^\d{4}$/.test(String(certificationForm.year))
+      ) {
+        errors.push(
+          t("profile.certifications.errors.yearInvalid") ||
+            "Năm cấp phải là số gồm 4 chữ số"
+        );
       }
-      if (certificationForm.expiryYear && !/^\d{4}$/.test(String(certificationForm.expiryYear))) {
+      if (
+        certificationForm.expiryYear &&
+        !/^\d{4}$/.test(String(certificationForm.expiryYear))
+      ) {
         errors.push("Năm hết hạn phải là số gồm 4 chữ số");
       }
-      if (!certificationForm.certificationImage) {
-        errors.push(t("profile.certifications.errors.uploadRequired") || "Vui lòng chọn file chứng chỉ (ảnh/PDF)");
-      } else {
+      if (!isDraft && !certificationForm.certificationImage) {
+        errors.push(
+          t("profile.certifications.errors.uploadRequired") ||
+            "Vui lòng chọn file chứng chỉ (ảnh/PDF)"
+        );
+      } else if (certificationForm.certificationImage) {
         const file = certificationForm.certificationImage;
         const validTypes = [
           "image/jpeg",
@@ -817,15 +879,17 @@ const ProfilePage = () => {
         year: certificationForm.year,
         organization: certificationForm.organization,
         hasImage: !!certificationForm.certificationImage,
-        imageFile: certificationForm.certificationImage ? {
-          name: certificationForm.certificationImage.name,
-          type: certificationForm.certificationImage.type,
-          size: certificationForm.certificationImage.size,
-        } : null,
+        imageFile: certificationForm.certificationImage
+          ? {
+              name: certificationForm.certificationImage.name,
+              type: certificationForm.certificationImage.type,
+              size: certificationForm.certificationImage.size,
+            }
+          : null,
       });
 
-      // Validate image upload is required
-      if (!certificationForm.certificationImage) {
+      // Validate image upload is required (skip for draft)
+      if (!isDraft && !certificationForm.certificationImage) {
         console.error("❌ [FRONTEND] No image file provided");
         toast.error(t("profile.certifications.errors.uploadRequired"));
         setLoading(false);
@@ -845,9 +909,43 @@ const ProfilePage = () => {
         expiryDate: certificationForm.expiryYear
           ? `${certificationForm.expiryYear}-01-01`
           : null,
+        verificationStatus: isDraft ? "draft" : "pending",
       };
 
-      console.log("🔄 [FRONTEND] Step 1: Creating certification with data:", certificationData);
+      // If editing, use update API instead of create
+      if (isEditing && editingCert?.id) {
+        console.log("🔄 [FRONTEND] Updating certification:", editingCert.id);
+        const updateResult = await certificationService.updateCertification(
+          editingCert.id,
+          certificationData
+        );
+
+        // Upload new image if provided
+        if (certificationForm.certificationImage) {
+          await certificationService.uploadCertificationImage(
+            editingCert.id,
+            certificationForm.certificationImage
+          );
+        }
+
+        await refreshUser();
+        setIsAddingCertification(false);
+        setEditingCertificationIndex(null);
+        resetCertificationForm();
+
+        const successMessage = isDraft
+          ? t("profile.certifications.draftSaved") || "Draft saved successfully"
+          : t("profile.certifications.updated") ||
+            "Certification updated successfully";
+        toast.success(successMessage);
+        setLoading(false);
+        return;
+      }
+
+      console.log(
+        "🔄 [FRONTEND] Step 1: Creating certification with data:",
+        certificationData
+      );
 
       // Step 1: Create certification
       const result = await certificationService.addCertification(
@@ -858,53 +956,67 @@ const ProfilePage = () => {
         result,
         fullResult: JSON.stringify(result, null, 2),
         certification: result.data || result.certification || result,
-        certificationId: result.data?.id || result.certification?.id || result.id,
+        certificationId:
+          result.data?.id || result.certification?.id || result.id,
       });
 
       // Step 2: Upload image (this will change status to "pending")
       // Try multiple possible response structures
-      const certId = result.data?.id || 
-                     result.certification?.id || 
-                     result.id ||
-                     (result.data && typeof result.data === 'object' && result.data.id ? result.data.id : null);
-      
+      const certId =
+        result.data?.id ||
+        result.certification?.id ||
+        result.id ||
+        (result.data && typeof result.data === "object" && result.data.id
+          ? result.data.id
+          : null);
+
       console.log("🔍 [FRONTEND] Extracted certification ID:", certId);
-      
-      if (certId) {
-        console.log("🔄 [FRONTEND] Step 2: Uploading image for certification ID:", certId);
+
+      if (certId && certificationForm.certificationImage) {
+        console.log(
+          "🔄 [FRONTEND] Step 2: Uploading image for certification ID:",
+          certId
+        );
         console.log("🔄 [FRONTEND] Image file details:", {
           name: certificationForm.certificationImage.name,
           type: certificationForm.certificationImage.type,
           size: certificationForm.certificationImage.size,
         });
 
-        const uploadResult = await certificationService.uploadCertificationImage(
-          certId,
-          certificationForm.certificationImage
-        );
+        const uploadResult =
+          await certificationService.uploadCertificationImage(
+            certId,
+            certificationForm.certificationImage
+          );
 
         console.log("✅ [FRONTEND] Step 2 completed. Image uploaded:", {
           uploadResult,
           fullUploadResult: JSON.stringify(uploadResult, null, 2),
-          imageUrl: uploadResult.data?.imageUrl || 
-                   uploadResult.data?.certification?.imageUrl || 
-                   uploadResult.imageUrl ||
-                   uploadResult.certification?.imageUrl,
-          certification: uploadResult.data?.certification || uploadResult.certification,
+          imageUrl:
+            uploadResult.data?.imageUrl ||
+            uploadResult.data?.certification?.imageUrl ||
+            uploadResult.imageUrl ||
+            uploadResult.certification?.imageUrl,
+          certification:
+            uploadResult.data?.certification || uploadResult.certification,
         });
       } else {
-        console.error("❌ [FRONTEND] No certification ID returned from create:", {
-          result,
-          resultKeys: Object.keys(result || {}),
-          resultData: result.data,
-          resultCertification: result.certification,
-        });
+        console.error(
+          "❌ [FRONTEND] No certification ID returned from create:",
+          {
+            result,
+            resultKeys: Object.keys(result || {}),
+            resultData: result.data,
+            resultCertification: result.certification,
+          }
+        );
       }
 
       console.log("🔄 [FRONTEND] Refreshing user data...");
       await refreshUser();
-      
+
       setIsAddingCertification(false);
+      setEditingCertificationIndex(null);
       setCertificationForm({
         name: "",
         score: "",
@@ -917,7 +1029,11 @@ const ProfilePage = () => {
         certificationImage: null,
       });
       console.log("✅ [FRONTEND] Certification added successfully");
-      toast.success(t("profile.certifications.success.added"));
+      const successMessage = isDraft
+        ? t("profile.certifications.draftSaved") || "Draft saved successfully"
+        : t("profile.certifications.success.added") ||
+          "Certification submitted for review";
+      toast.success(successMessage);
     } catch (error) {
       console.error("❌ [FRONTEND] Error adding certification:", error);
       console.error("❌ [FRONTEND] Error details:", {
@@ -1560,24 +1676,42 @@ const ProfilePage = () => {
                               {cert.imageUrl && (
                                 <div className={styles.certificationImage}>
                                   <a
-                                    href={`http://localhost:4000${cert.imageUrl}`}
+                                    href={
+                                      cert.imageUrl.startsWith("http")
+                                        ? cert.imageUrl
+                                        : `http://localhost:4000${cert.imageUrl}`
+                                    }
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    className={styles.viewCertBtn}
                                   >
                                     {t(
                                       "profile.certifications.viewCertificate"
-                                    )}
+                                    ) || "View Certificate"}
                                   </a>
                                 </div>
                               )}
                             </div>
-                            <button
-                              className={styles.removeBtn}
-                              onClick={() => handleRemoveCertification(index)}
-                              disabled={loading}
-                            >
-                              ×
-                            </button>
+                            <div className={styles.certActions}>
+                              <button
+                                className={styles.editBtn}
+                                onClick={() =>
+                                  handleEditCertification(cert, index)
+                                }
+                                disabled={loading}
+                                title={t("common.edit") || "Edit"}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                className={styles.removeBtn}
+                                onClick={() => handleRemoveCertification(index)}
+                                disabled={loading}
+                                title={t("common.delete") || "Delete"}
+                              >
+                                ×
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1588,7 +1722,17 @@ const ProfilePage = () => {
                     )}
 
                     {isAddingCertification && (
-                      <form onSubmit={handleAddCertification} className={styles.addForm}>
+                      <form
+                        onSubmit={handleAddCertification}
+                        className={styles.addForm}
+                      >
+                        <h4 className={styles.formTitle}>
+                          {editingCertificationIndex !== null
+                            ? t("profile.certifications.editTitle") ||
+                              "Edit Certification"
+                            : t("profile.certifications.addTitle") ||
+                              "Add New Certification"}
+                        </h4>
                         <div className={styles.formGroup}>
                           <label>{t("profile.certifications.name")} *</label>
                           <input
@@ -1600,14 +1744,18 @@ const ProfilePage = () => {
                                 name: e.target.value,
                               })
                             }
-                            placeholder={t("profile.certifications.namePlaceholder")}
+                            placeholder={t(
+                              "profile.certifications.namePlaceholder"
+                            )}
                             required
                           />
                         </div>
 
                         <div className={styles.formGrid2}>
                           <div className={styles.formGroup}>
-                            <label>{t("profile.certifications.organization")}</label>
+                            <label>
+                              {t("profile.certifications.organization")}
+                            </label>
                             <input
                               type="text"
                               value={certificationForm.organization}
@@ -1617,7 +1765,9 @@ const ProfilePage = () => {
                                   organization: e.target.value,
                                 })
                               }
-                              placeholder={t("profile.certifications.organizationPlaceholder")}
+                              placeholder={t(
+                                "profile.certifications.organizationPlaceholder"
+                              )}
                             />
                           </div>
                         </div>
@@ -1634,7 +1784,9 @@ const ProfilePage = () => {
                                   score: e.target.value,
                                 })
                               }
-                              placeholder={t("profile.certifications.scorePlaceholder")}
+                              placeholder={t(
+                                "profile.certifications.scorePlaceholder"
+                              )}
                             />
                           </div>
 
@@ -1649,7 +1801,9 @@ const ProfilePage = () => {
                                   year: e.target.value,
                                 })
                               }
-                              placeholder={t("profile.certifications.yearPlaceholder")}
+                              placeholder={t(
+                                "profile.certifications.yearPlaceholder"
+                              )}
                             />
                           </div>
 
@@ -1686,7 +1840,9 @@ const ProfilePage = () => {
                           </div>
                         </div>
 
-                        <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+                        <div
+                          className={`${styles.formGroup} ${styles.fullWidth}`}
+                        >
                           <label>Mô tả</label>
                           <textarea
                             rows={3}
@@ -1702,36 +1858,44 @@ const ProfilePage = () => {
                         </div>
 
                         <div className={styles.formGroup}>
-                          <label>{t("profile.certifications.uploadImage")}</label>
+                          <label>
+                            {t("profile.certifications.uploadImage")}
+                          </label>
                           <input
                             type="file"
                             id="certification-image-input"
-                            accept="image/*,.pdf"
+                            accept=".pdf,application/pdf"
                             disabled={loading}
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const validTypes = [
-                                  "image/jpeg",
-                                  "image/jpg",
-                                  "image/png",
-                                  "image/gif",
-                                  "image/webp",
-                                  "application/pdf",
-                                ];
+                                const validTypes = ["application/pdf"];
                                 if (!validTypes.includes(file.type)) {
                                   toast.error(
-                                    t("profile.certifications.errors.invalidFileType") ||
-                                      "Please select an image or PDF file"
+                                    t(
+                                      "profile.certifications.errors.invalidFileType"
+                                    ) || "Please select a PDF file only"
                                   );
                                   e.target.value = "";
                                   return;
                                 }
 
+                                // Check file size (10MB max)
+                                const maxSize = 10 * 1024 * 1024;
+                                if (file.size > maxSize) {
+                                  toast.error(
+                                    t(
+                                      "profile.certifications.errors.fileTooLarge"
+                                    ) || "File size must be less than 10MB"
+                                  );
+                                  e.target.value = "";
+                                  return;
+                                }
                                 if (file.size > 10 * 1024 * 1024) {
                                   toast.error(
-                                    t("profile.certifications.errors.fileSizeLimit") ||
-                                      "File size must be less than 10MB"
+                                    t(
+                                      "profile.certifications.errors.fileSizeLimit"
+                                    ) || "File size must be less than 10MB"
                                   );
                                   e.target.value = "";
                                   return;
@@ -1751,7 +1915,8 @@ const ProfilePage = () => {
                           />
                           {certificationForm.certificationImage && (
                             <small className={styles.fileInfo}>
-                              {t("profile.certifications.fileSelected") || "Selected"}{" "}
+                              {t("profile.certifications.fileSelected") ||
+                                "Selected"}{" "}
                               {certificationForm.certificationImage.name}
                             </small>
                           )}
@@ -1766,13 +1931,25 @@ const ProfilePage = () => {
                             {t("profile.modal.cancel")}
                           </button>
                           <button
+                            type="button"
+                            className={styles.draftBtn}
+                            onClick={(e) => handleAddCertification(e, true)}
+                            disabled={loading}
+                          >
+                            {loading
+                              ? t("profile.certifications.saving")
+                              : t("profile.certifications.saveAsDraft") ||
+                                "Save as Draft"}
+                          </button>
+                          <button
                             type="submit"
                             className={styles.saveBtn}
                             disabled={loading}
                           >
                             {loading
-                              ? t("profile.certifications.adding")
-                              : t("profile.certifications.add")}
+                              ? t("profile.certifications.submitting")
+                              : t("profile.certifications.submitForReview") ||
+                                "Submit for Review"}
                           </button>
                         </div>
                       </form>
@@ -1889,6 +2066,56 @@ const ProfilePage = () => {
                           {userProfile?.foundedYear ||
                             (lang === "vi" ? "Chưa cung cấp" : "Not provided")}
                         </p>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>
+                          {lang === "vi"
+                            ? "Giấy phép kinh doanh"
+                            : "Business License"}
+                        </label>
+                        {userProfile?.businessLicense ? (
+                          <div className={styles.licenseInfo}>
+                            <a
+                              href={
+                                userProfile.businessLicense.startsWith("http")
+                                  ? userProfile.businessLicense
+                                  : `http://localhost:4000${userProfile.businessLicense}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.viewCertBtn}
+                            >
+                              {lang === "vi" ? "Xem giấy phép" : "View License"}
+                            </a>
+                            {userProfile?.licenseVerificationStatus && (
+                              <span
+                                className={`${styles.statusBadge} ${
+                                  styles[userProfile.licenseVerificationStatus]
+                                }`}
+                              >
+                                {userProfile.licenseVerificationStatus ===
+                                  "pending" &&
+                                  `⏳ ${
+                                    lang === "vi" ? "Chờ duyệt" : "Pending"
+                                  }`}
+                                {userProfile.licenseVerificationStatus ===
+                                  "approved" &&
+                                  `✅ ${
+                                    lang === "vi" ? "Đã xác minh" : "Verified"
+                                  }`}
+                                {userProfile.licenseVerificationStatus ===
+                                  "rejected" &&
+                                  `❌ ${
+                                    lang === "vi" ? "Từ chối" : "Rejected"
+                                  }`}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <p>
+                            {lang === "vi" ? "Chưa tải lên" : "Not uploaded"}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -2317,6 +2544,59 @@ const ProfilePage = () => {
                             "profile.professional.portfolioPlaceholder"
                           )}
                         />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>
+                          {lang === "vi"
+                            ? "Giấy phép đăng ký kinh doanh (PDF)"
+                            : "Business Registration License (PDF)"}
+                        </label>
+                        <input
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.type !== "application/pdf") {
+                                toast.error(
+                                  lang === "vi"
+                                    ? "Chỉ chấp nhận file PDF"
+                                    : "Only PDF files are accepted"
+                                );
+                                e.target.value = "";
+                                return;
+                              }
+                              if (file.size > 10 * 1024 * 1024) {
+                                toast.error(
+                                  lang === "vi"
+                                    ? "Kích thước file phải nhỏ hơn 10MB"
+                                    : "File size must be less than 10MB"
+                                );
+                                e.target.value = "";
+                                return;
+                              }
+                              setCompanyInfoForm({
+                                ...companyInfoForm,
+                                businessLicense: file,
+                              });
+                            }
+                          }}
+                        />
+                        {companyInfoForm.businessLicense && (
+                          <small className={styles.fileInfo}>
+                            {lang === "vi" ? "Đã chọn:" : "Selected:"}{" "}
+                            {companyInfoForm.businessLicense.name}
+                          </small>
+                        )}
+                        {userProfile?.businessLicense &&
+                          !companyInfoForm.businessLicense && (
+                            <small className={styles.fileInfo}>
+                              {lang === "vi"
+                                ? "Đã tải lên trước đó"
+                                : "Previously uploaded"}
+                            </small>
+                          )}
                       </div>
 
                       <button

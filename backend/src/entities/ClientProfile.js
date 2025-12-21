@@ -54,6 +54,8 @@ export class ClientProfile {
   foundedYear;
   licenseNumber;
   taxId;
+  businessLicense;
+  licenseVerificationStatus;
   billingAddress;
   paymentMethod;
   preferredLanguages;
@@ -86,8 +88,7 @@ export const ClientProfileSchema = new EntitySchema({
       unique: true,
     },
     companyName: {
-      type: "varchar",
-      length: 255,
+      type: "text",
     },
     companyType: {
       type: "enum",
@@ -99,8 +100,7 @@ export const ClientProfileSchema = new EntitySchema({
       nullable: true,
     },
     website: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     industry: {
@@ -113,13 +113,11 @@ export const ClientProfileSchema = new EntitySchema({
       nullable: true,
     },
     logo: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     headquarters: {
-      type: "varchar",
-      length: 255,
+      type: "text",
       nullable: true,
     },
     foundedYear: {
@@ -135,6 +133,15 @@ export const ClientProfileSchema = new EntitySchema({
       type: "varchar",
       length: 50,
       nullable: true,
+    },
+    businessLicense: {
+      type: "text",
+      nullable: true,
+    },
+    licenseVerificationStatus: {
+      type: "enum",
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     billingAddress: {
       type: "text",

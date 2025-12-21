@@ -20,6 +20,7 @@ const defaultOrganizationForm = {
   province: "",
   address: "",
   description: "",
+  businessLicense: null,
 };
 
 // Common languages list for job posting
@@ -73,6 +74,28 @@ const DEFAULT_LEVELS = [
   { id: 6, name: "Native", nameVi: "Bản ngữ" },
 ];
 
+// Domain names mapping for Vietnamese
+const DOMAIN_NAMES_VI = {
+  Business: "Kinh doanh",
+  Conference: "Hội nghị",
+  Education: "Giáo dục",
+  Legal: "Pháp lý",
+  Media: "Truyền thông",
+  Medical: "Y tế",
+  Technical: "Kỹ thuật",
+  Tourism: "Du lịch",
+};
+
+// Level names mapping for Vietnamese
+const LEVEL_NAMES_VI = {
+  Beginner: "Sơ cấp",
+  Elementary: "Cơ bản",
+  Intermediate: "Trung cấp",
+  "Upper Intermediate": "Trung cấp cao",
+  Advanced: "Cao cấp",
+  Native: "Bản ngữ",
+};
+
 const defaultJobData = {
   organizationId: "",
   workingModeId: "",
@@ -95,7 +118,7 @@ const defaultJobData = {
 };
 
 const PostJobPage = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -131,6 +154,10 @@ const PostJobPage = () => {
   const [loadingAISuggestions, setLoadingAISuggestions] = useState(false);
   const [createdJobId, setCreatedJobId] = useState(null); // Store job ID after creation
   const [aiSuggestionsFetched, setAiSuggestionsFetched] = useState(false); // Track if AI suggestions have been fetched
+  
+  // License confirmation states
+  const [showLicenseConfirmation, setShowLicenseConfirmation] = useState(false);
+  const [pendingOrgId, setPendingOrgId] = useState(null);
 
   const isClientOrAdmin = user?.role === "client" || user?.role === "admin";
 
@@ -532,10 +559,23 @@ const PostJobPage = () => {
       toast.error(t("postJob.messages.organizationRequired"));
       return;
     }
+    if (!organizationForm.businessLicense) {
+      toast.error(
+        t("postJob.organization.errors.licenseRequired") ||
+          "Business Registration License is required"
+      );
+      return;
+    }
     setSavingOrganization(true);
     try {
       const payload = {
-        ...organizationForm,
+        name: organizationForm.name,
+        email: organizationForm.email,
+        phone: organizationForm.phone,
+        website: organizationForm.website,
+        province: organizationForm.province,
+        address: organizationForm.address,
+        description: organizationForm.description,
       };
 
       let response;
@@ -545,6 +585,17 @@ const PostJobPage = () => {
           editingOrganizationId,
           payload
         );
+
+        // Upload business license if provided
+        if (organizationForm.businessLicense) {
+          const formData = new FormData();
+          formData.append("businessLicense", organizationForm.businessLicense);
+          await organizationService.uploadOrganizationLicense(
+            editingOrganizationId,
+            formData
+          );
+        }
+
         if (response?.success && response.data) {
           toast.success(
             "Cập nhật tổ chức thành công! Đang chờ admin duyệt lại."
@@ -560,14 +611,26 @@ const PostJobPage = () => {
       } else {
         // Create new organization
         response = await organizationService.createOrganization(payload);
+
         if (response?.success && response.data) {
-          toast.success(t("postJob.messages.orgSuccess"));
           const newOrg = response.data;
+
           setOrganizations((prev) => [newOrg, ...prev]);
           setJobData((prev) => ({
             ...prev,
             organizationId: String(newOrg.id),
           }));
+
+          // Show confirmation modal BEFORE uploading license
+          if (organizationForm.businessLicense) {
+            setPendingOrgId(newOrg.id);
+            setShowLicenseConfirmation(true);
+            setSavingOrganization(false);
+            return; // Stop here, wait for user confirmation
+          } else {
+            // Only show success if no license to upload
+            toast.success(t("postJob.messages.orgSuccess"));
+          }
         }
       }
 
@@ -582,6 +645,44 @@ const PostJobPage = () => {
     } finally {
       setSavingOrganization(false);
     }
+  };
+
+  const handleConfirmLicense = async () => {
+    if (!pendingOrgId || !organizationForm.businessLicense) {
+      setShowLicenseConfirmation(false);
+      setPendingOrgId(null);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("businessLicense", organizationForm.businessLicense);
+      await organizationService.uploadOrganizationLicense(
+        pendingOrgId,
+        formData
+      );
+      toast.success(
+        t("postJob.organization.licenseConfirmation.uploadSuccess") ||
+          "Business license uploaded successfully!"
+      );
+    } catch (error) {
+      toast.error(
+        error.message ||
+          t("postJob.organization.errors.uploadFailed") ||
+          "Failed to upload business license"
+      );
+    } finally {
+      setShowLicenseConfirmation(false);
+      setPendingOrgId(null);
+      setOrganizationForm(defaultOrganizationForm);
+      setShowOrganizationForm(false);
+    }
+  };
+
+  const handleCancelLicense = () => {
+    setShowLicenseConfirmation(false);
+    setPendingOrgId(null);
+    // Keep form open so user can edit
   };
 
   const validateJobData = () => {
@@ -1014,6 +1115,59 @@ const PostJobPage = () => {
                         rows={3}
                       />
                     </div>
+                    <div className={styles.field}>
+                      <label>
+                        {t("postJob.organization.fields.businessLicense") ||
+                          "Business Registration License (PDF)"}
+                        <span style={{ color: "red", marginLeft: "4px" }}>
+                          *
+                        </span>
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        required
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.type !== "application/pdf") {
+                              toast.error(
+                                t(
+                                  "postJob.organization.errors.invalidFileType"
+                                ) || "Only PDF files are accepted"
+                              );
+                              e.target.value = "";
+                              return;
+                            }
+                            if (file.size > 10 * 1024 * 1024) {
+                              toast.error(
+                                t("postJob.organization.errors.fileTooLarge") ||
+                                  "File size must be less than 10MB"
+                              );
+                              e.target.value = "";
+                              return;
+                            }
+                            setOrganizationForm({
+                              ...organizationForm,
+                              businessLicense: file,
+                            });
+                          }
+                        }}
+                      />
+                      {organizationForm.businessLicense && (
+                        <small
+                          style={{
+                            display: "block",
+                            marginTop: "6px",
+                            color: "#64748b",
+                            fontSize: "0.85rem",
+                          }}
+                        >
+                          {t("common.selected") || "Selected"}:{" "}
+                          {organizationForm.businessLicense.name}
+                        </small>
+                      )}
+                    </div>
                     <div className={styles.orgFormActions}>
                       <button
                         type="button"
@@ -1244,17 +1398,25 @@ const PostJobPage = () => {
                 <div className={styles.field}>
                   <label>{t("postJob.form.labels.domains")}</label>
                   <div className={styles.domainList}>
-                    {domains.map((domain) => (
-                      <label key={domain.id} className={styles.domainOption}>
-                        <input
-                          type="checkbox"
-                          value={domain.id}
-                          checked={jobData.domainIds.includes(domain.id)}
-                          onChange={() => toggleDomainSelection(domain.id)}
-                        />
-                        {domain.name || domain.nameVi}
-                      </label>
-                    ))}
+                    {domains.map((domain) => {
+                      const displayName =
+                        lang === "vi"
+                          ? DOMAIN_NAMES_VI[domain.name] ||
+                            domain.nameVi ||
+                            domain.name
+                          : domain.name || domain.nameVi;
+                      return (
+                        <label key={domain.id} className={styles.domainOption}>
+                          <input
+                            type="checkbox"
+                            value={domain.id}
+                            checked={jobData.domainIds.includes(domain.id)}
+                            onChange={() => toggleDomainSelection(domain.id)}
+                          />
+                          {displayName}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1361,18 +1523,29 @@ const PostJobPage = () => {
                                   required
                                 >
                                   <option value="">
-                                    {t("postJob.form.placeholders.selectLevel")}
+                                    {t(
+                                      "postJob.form.placeholders.selectLevel"
+                                    ) || "Chọn cấp độ thành thạo"}
                                   </option>
                                   {(levels && levels.length > 0
                                     ? levels
                                     : DEFAULT_LEVELS
-                                  ).map((level) => (
-                                    <option key={level.id} value={level.id}>
-                                      {level.name ||
-                                        level.nameVi ||
-                                        `Level ${level.id}`}
-                                    </option>
-                                  ))}
+                                  ).map((level) => {
+                                    const displayName =
+                                      lang === "vi"
+                                        ? LEVEL_NAMES_VI[level.name] ||
+                                          level.nameVi ||
+                                          level.name ||
+                                          `Level ${level.id}`
+                                        : level.name ||
+                                          level.nameVi ||
+                                          `Level ${level.id}`;
+                                    return (
+                                      <option key={level.id} value={level.id}>
+                                        {displayName}
+                                      </option>
+                                    );
+                                  })}
                                 </select>
                               </div>
                               <label className={styles.checkboxLabel}>
@@ -1388,7 +1561,8 @@ const PostJobPage = () => {
                                   }
                                 />
                                 <span>
-                                  {t("postJob.form.labels.sourceLanguage")}
+                                  {t("postJob.form.labels.sourceLanguage") ||
+                                    "Ngôn ngữ nguồn"}
                                 </span>
                               </label>
                             </div>
@@ -1675,6 +1849,31 @@ const PostJobPage = () => {
                 expandable={false}
                 defaultExpanded={true}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* License Confirmation Modal */}
+      {showLicenseConfirmation && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmationModal}>
+            <h3>{t("postJob.organization.licenseConfirmation.title")}</h3>
+            <p>{t("postJob.organization.licenseConfirmation.message")}</p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.cancelButton}
+                onClick={handleCancelLicense}
+              >
+                {t("postJob.organization.licenseConfirmation.cancel") ||
+                  "Cancel"}
+              </button>
+              <button
+                className={styles.confirmButton}
+                onClick={handleConfirmLicense}
+              >
+                {t("postJob.organization.licenseConfirmation.understand")}
+              </button>
             </div>
           </div>
         </div>

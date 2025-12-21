@@ -27,6 +27,8 @@ export const ROUTES = {
   PRICING: "/pricing",
   LOGIN: "/login",
   REGISTER: "/register",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   JOB_DETAIL: "/job/:id",
   MESSAGES: "/messages",
 };
