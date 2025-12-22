@@ -1,7 +1,7 @@
 .jobDetailRoot {
   min-height: 100vh;
   background: #f8fafc;
-  padding: 100px 20px 40px;
+  padding: 40px 20px 40px;
 }
 
 .backBtn {
@@ -34,6 +34,9 @@
   display: flex;
   gap: 30px;
   align-items: flex-start;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .logo {
@@ -198,6 +201,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 16px;
+  width: fit-content;
 }
 
 .editBtn:hover {

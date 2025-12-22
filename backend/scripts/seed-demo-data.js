@@ -10,10 +10,10 @@
  * - Saved Jobs and Saved Interpreters
  * - Certifications
  * 
- * IMPORTANT: This script does NOT seed reference data (working modes, levels, 
- * application statuses, subscription plans, domains). Those should be seeded 
- * by docker/mysql/init/02-seed-data.sql which runs automatically when MySQL 
- * container starts for the first time.
+ * IMPORTANT: This script seeds reference data (working modes, levels, 
+ * application statuses, subscription plans, domains) as fallback if SQL seed 
+ * hasn't run. The primary source should be docker/mysql/init/02-seed-data.sql 
+ * which runs automatically when MySQL container starts for the first time.
  * 
  * Usage: npm run seed:demo
  */
@@ -45,6 +45,8 @@ import {
   JobRequiredLanguage,
   SavedJob,
   SavedInterpreter,
+  SubscriptionPlan,
+  DurationType,
 } from "../src/entities/index.js";
 
 // Load environment variables
@@ -210,6 +212,122 @@ async function seedDemoData() {
     const approvedStatus = createdStatuses.find((s) => s.name === "approved");
     const rejectedStatus = createdStatuses.find((s) => s.name === "rejected");
     console.log(`✓ Loaded ${createdStatuses.length} application statuses\n`);
+
+    // ============================================
+    // 4.5. SEED SUBSCRIPTION PLANS
+    // ============================================
+    console.log("💳 Seeding Subscription Plans...");
+    const subscriptionPlanRepository = AppDataSource.getRepository(SubscriptionPlan);
+    const subscriptionPlans = [
+      {
+        id: 1,
+        name: "free",
+        displayName: "Free",
+        description: "Perfect for getting started with basic features",
+        price: 0.00,
+        currency: "USD",
+        duration: 1,
+        durationType: DurationType.MONTHLY,
+        features: [
+          "Create interpreter profile",
+          "Apply to 1 job per month",
+          "Basic email notifications",
+          "Community access"
+        ],
+        maxInterpreterViews: 5,
+        maxJobPosts: 1,
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        id: 2,
+        name: "pro",
+        displayName: "Pro",
+        description: "Most popular plan for professional interpreters",
+        price: 10.00,
+        currency: "USD",
+        duration: 1,
+        durationType: DurationType.MONTHLY,
+        features: [
+          "Unlimited job applications",
+          "AI-powered job matching",
+          "Advanced search filters",
+          "Priority customer support",
+          "Export capabilities"
+        ],
+        maxInterpreterViews: -1, // -1 means unlimited
+        maxJobPosts: -1,
+        isActive: true,
+        sortOrder: 2,
+      },
+      {
+        id: 3,
+        name: "team",
+        displayName: "Team",
+        description: "Great for growing interpreter teams",
+        price: 15.00,
+        currency: "USD",
+        duration: 1,
+        durationType: DurationType.MONTHLY,
+        features: [
+          "Up to 5 team members",
+          "Analytics dashboard",
+          "Shared interpreter pool",
+          "Bulk job posting",
+          "Team roles & permissions",
+          "Priority in search results"
+        ],
+        maxInterpreterViews: -1,
+        maxJobPosts: -1,
+        isActive: true,
+        sortOrder: 3,
+      },
+      {
+        id: 4,
+        name: "enterprise",
+        displayName: "Enterprise",
+        description: "Custom solution for large organizations",
+        price: 21.00,
+        currency: "USD",
+        duration: 1,
+        durationType: DurationType.MONTHLY,
+        features: [
+          "Unlimited team members",
+          "Dedicated success manager",
+          "Custom integrations",
+          "Advanced security & compliance",
+          "SLA guarantee",
+          "Early access to new features"
+        ],
+        maxInterpreterViews: -1,
+        maxJobPosts: -1,
+        isActive: true,
+        sortOrder: 4,
+      },
+    ];
+
+    let createdPlansCount = 0;
+    let updatedPlansCount = 0;
+    for (const planData of subscriptionPlans) {
+      const existingPlan = await subscriptionPlanRepository.findOne({
+        where: { id: planData.id }
+      });
+
+      if (existingPlan) {
+        // Update existing plan
+        Object.assign(existingPlan, planData);
+        await subscriptionPlanRepository.save(existingPlan);
+        updatedPlansCount++;
+        console.log(`  ✓ Updated plan: ${planData.displayName} (ID: ${planData.id})`);
+      } else {
+        // Create new plan
+        const newPlan = subscriptionPlanRepository.create(planData);
+        await subscriptionPlanRepository.save(newPlan);
+        createdPlansCount++;
+        console.log(`  ✓ Created plan: ${planData.displayName} (ID: ${planData.id})`);
+      }
+    }
+    console.log(`✓ Seeded ${subscriptionPlans.length} subscription plans (${createdPlansCount} created, ${updatedPlansCount} updated)\n`);
 
     // ============================================
     // 5. SEED ADMIN USER
@@ -1419,8 +1537,8 @@ async function seedDemoData() {
     console.log(`   - Notifications: ${notifications.length}`);
     console.log(`   - Saved Jobs: ${savedJobs.length}`);
     console.log(`   - Saved Interpreters: ${savedInterpreters.length}\n`);
-    console.log("ℹ️  Note: Reference data (domains, working modes, levels, application statuses)");
-    console.log("   should be seeded by docker/mysql/init/02-seed-data.sql\n");
+    console.log("ℹ️  Note: Reference data (domains, working modes, levels, application statuses,");
+    console.log("   subscription plans) has been seeded. Primary source is docker/mysql/init/02-seed-data.sql\n");
     
     // ============================================
     // LOGIN CREDENTIALS

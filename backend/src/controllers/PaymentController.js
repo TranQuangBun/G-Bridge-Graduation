@@ -123,6 +123,24 @@ export async function createVNPayPayment(req, res) {
     const amountVND = convertCurrency(amountUSD, plan.currency || "USD", "VND");
     const currency = "VND";
 
+    // VNPay requires minimum amount of 1000 VND (approximately $0.04)
+    // Free plans (amount = 0) cannot be paid via VNPay
+    if (amountVND <= 0) {
+      return sendError(
+        res,
+        "Free plans cannot be paid via payment gateway. Please contact support to activate free plan.",
+        400
+      );
+    }
+
+    if (amountVND < 1000) {
+      return sendError(
+        res,
+        "Minimum payment amount is 1,000 VND. Please select a paid plan.",
+        400
+      );
+    }
+
     // Create payment record (store in VND)
     const payment = await paymentService.createPayment({
       userId,
@@ -652,6 +670,24 @@ export async function createMoMoPayment(req, res) {
     const amountVND = convertCurrency(amountUSD, plan.currency || "USD", "VND");
     const currency = "VND";
 
+    // MoMo requires minimum amount of 1000 VND (approximately $0.04)
+    // Free plans (amount = 0) cannot be paid via MoMo
+    if (amountVND <= 0) {
+      return sendError(
+        res,
+        "Free plans cannot be paid via payment gateway. Please contact support to activate free plan.",
+        400
+      );
+    }
+
+    if (amountVND < 1000) {
+      return sendError(
+        res,
+        "Minimum payment amount is 1,000 VND. Please select a paid plan.",
+        400
+      );
+    }
+
     // Create payment record first to get payment ID
     // Use temporary orderId, will update after creating MoMo order
     const tempOrderId = `MOMO_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -666,7 +702,7 @@ export async function createMoMoPayment(req, res) {
     });
 
     // Create orderId in Laravel format: order_id_timestamp
-    // Format similar to Laravel: $order->order_id . "_" . time()
+    // Format: $order->order_id . "_" . time() (PHP format)
     const orderId = `${payment.id}_${Math.floor(Date.now() / 1000)}`;
     const requestId = orderId; // Use same as orderId for MoMo
 
@@ -674,9 +710,13 @@ export async function createMoMoPayment(req, res) {
     await paymentService.updatePayment(payment.id, { orderId });
 
     // Build MoMo payment request
-    // Format similar to Laravel: "SUDESPHONE #" . $order->order_id
+    // Format: "SUDESPHONE #" . $order->order_id (PHP format)
+    // Use payment.id (not orderId) for orderInfo to match PHP
     const orderInfo = `G-Bridge #${payment.id}`;
     const extraData = ""; // Can be used for additional data
+
+    // Always use payWithATM for ATM/Credit card payment (as per PHP setup)
+    const requestType = "payWithATM";
 
     const requestData = {
       partnerCode: momoConfig.partnerCode,
@@ -686,7 +726,7 @@ export async function createMoMoPayment(req, res) {
       returnUrl: momoConfig.returnUrl,
       notifyUrl: momoConfig.notifyUrl,
       extraData,
-      requestType: "payWithATM", // Use ATM/Credit card payment instead of QR code
+      requestType,
     };
 
     // Create signature
@@ -715,10 +755,15 @@ export async function createMoMoPayment(req, res) {
     console.log("MoMo Config - Partner Code:", momoConfig.partnerCode);
     console.log("MoMo Config - Access Key:", momoConfig.accessKey ? "***SET***" : "NOT SET");
     console.log("MoMo Config - Secret Key:", momoConfig.secretKey ? "***SET***" : "NOT SET");
+    console.log("MoMo Config - API URL:", momoConfig.apiUrl);
+    console.log("MoMo Config - Return URL:", momoConfig.returnUrl);
+    console.log("MoMo Config - Notify URL:", momoConfig.notifyUrl);
     console.log("Order ID:", orderId);
     console.log("Request ID:", requestId);
     console.log("Amount USD:", amountUSD);
     console.log("Amount VND:", amountVND);
+    console.log("Request Type:", requestType);
+    console.log("Order Info:", orderInfo);
     console.log("Request Body:", JSON.stringify(requestBody, null, 2));
 
     // Make API call to MoMo
@@ -732,8 +777,6 @@ export async function createMoMoPayment(req, res) {
       });
 
       const responseData = await response.json();
-
-      console.log("MoMo API Response:", JSON.stringify(responseData, null, 2));
 
       if (responseData.resultCode === 0 && responseData.payUrl) {
         // Update payment with request ID
@@ -750,15 +793,51 @@ export async function createMoMoPayment(req, res) {
         );
       } else {
         // Payment creation failed
+        const errorMessage = responseData.message || "Payment creation failed";
+        const resultCode = responseData.resultCode?.toString() || "ERROR";
+        
+        console.error("MoMo Payment Failed:", {
+          resultCode,
+          message: errorMessage,
+          fullResponse: responseData,
+        });
+
         await paymentService.updatePayment(payment.id, {
           status: PaymentStatus.FAILED,
-          momoMessage: responseData.message || "Payment creation failed",
-          momoResultCode: responseData.resultCode?.toString() || "ERROR",
+          momoMessage: errorMessage,
+          momoResultCode: resultCode,
         });
+
+        // Provide more helpful error message based on result code
+        let userMessage = errorMessage;
+        const resultCodeNum = parseInt(resultCode);
+        
+        // MoMo error codes reference
+        // 1001: Invalid signature
+        // 1002: Transaction rejected by issuers
+        // 1003: Invalid request
+        // 1004: Amount invalid
+        // 1005: Order already exists
+        // 1006: Order not found
+        // 1007: Transaction failed
+        
+        if (resultCodeNum === 1001) {
+          userMessage = "Lỗi xác thực. Vui lòng kiểm tra lại cấu hình MoMo credentials.";
+        } else if (resultCodeNum === 1002 || errorMessage.includes("rejected") || errorMessage.includes("issuers")) {
+          userMessage = "Giao dịch bị từ chối bởi ngân hàng phát hành thẻ. Nguyên nhân có thể: thông tin thẻ không đúng, thẻ bị khóa, hoặc không đủ số dư. Vui lòng kiểm tra lại thông tin thẻ hoặc thử thẻ khác.";
+        } else if (resultCodeNum === 1003) {
+          userMessage = "Yêu cầu không hợp lệ. Vui lòng thử lại sau.";
+        } else if (resultCodeNum === 1004) {
+          userMessage = "Số tiền không hợp lệ. Vui lòng chọn gói khác.";
+        } else if (resultCodeNum === 1005) {
+          userMessage = "Đơn hàng đã tồn tại. Vui lòng thử lại sau.";
+        } else if (resultCodeNum === 1006) {
+          userMessage = "Không tìm thấy đơn hàng. Vui lòng thử lại.";
+        }
 
         return sendError(
           res,
-          responseData.message || "Failed to create MoMo payment",
+          userMessage,
           400
         );
       }

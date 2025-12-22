@@ -160,6 +160,62 @@ export async function filterApplications(req, res) {
 }
 
 /**
+ * Batch score suitability of one interpreter for multiple jobs
+ * POST /api/ai-match/score/batch
+ */
+export async function batchScoreSuitability(req, res) {
+  try {
+    const { jobIds, interpreterId } = req.body;
+
+    if (!jobIds || !Array.isArray(jobIds) || jobIds.length === 0) {
+      return sendError(res, "jobIds array is required", 400);
+    }
+
+    if (!interpreterId) {
+      return sendError(res, "interpreterId is required", 400);
+    }
+
+    // Get interpreter profile
+    const interpreter = await interpreterProfileService.getInterpreterProfileById(
+      interpreterId
+    );
+    if (!interpreter) {
+      return sendError(res, "Interpreter profile not found", 404);
+    }
+
+    // Get all jobs
+    const jobs = [];
+    for (const jobId of jobIds) {
+      const job = await jobService.getJobById(jobId);
+      if (job) {
+        jobs.push(job);
+      }
+    }
+
+    if (jobs.length === 0) {
+      return sendError(res, "No valid jobs found", 404);
+    }
+
+    // Call AI service batch endpoint
+    try {
+      const result = await AIService.batchScoreSuitability(jobs, interpreter);
+      return sendSuccess(res, result, "Batch suitability scored successfully");
+    } catch (aiError) {
+      logError(aiError, "AI Service batch scoring error");
+      throw aiError; // Re-throw to be caught by outer catch
+    }
+  } catch (error) {
+    logError(error, "Batch scoring suitability");
+    if (error.message.includes("not found")) {
+      return sendError(res, error.message, 404);
+    }
+    // Return more detailed error message
+    const errorMessage = error.message || "Error batch scoring suitability";
+    return sendError(res, errorMessage, 500, error);
+  }
+}
+
+/**
  * Health check for AI service
  * GET /api/ai-match/health
  */

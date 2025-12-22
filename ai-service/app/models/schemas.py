@@ -150,6 +150,26 @@ class FilterApplicationsResponse(BaseModel):
     processing_time_ms: float
 
 
+class JobScoreResult(BaseModel):
+    """Score result for a single job"""
+    job_id: int
+    suitability_score: SuitabilityScore
+
+
+class BatchScoreSuitabilityRequest(BaseModel):
+    """Request model for batch scoring multiple jobs with one interpreter"""
+    jobs: List[JobInput] = Field(..., min_items=1, description="List of jobs to score")
+    interpreter: InterpreterProfileInput = Field(..., description="Interpreter profile to score against all jobs")
+
+
+class BatchScoreSuitabilityResponse(BaseModel):
+    """Response model for batch suitability scoring"""
+    interpreter_id: int
+    total_jobs: int
+    job_scores: List[JobScoreResult]
+    processing_time_ms: float
+
+
 # Health Check
 class HealthResponse(BaseModel):
     status: str

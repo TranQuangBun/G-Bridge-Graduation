@@ -328,6 +328,28 @@ const jobService = {
       throw new Error(getErrorMessage(error));
     }
   },
+
+  // Get public statistics for homepage
+  getPublicStats: async () => {
+    try {
+      const response = await apiClient.get("/jobs/stats");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching public stats:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  // Get featured jobs for homepage
+  getFeaturedJobs: async (limit = 9) => {
+    try {
+      const response = await apiClient.get(`/jobs/featured?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching featured jobs:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 export default jobService;

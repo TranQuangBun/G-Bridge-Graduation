@@ -57,19 +57,7 @@ export class AdminService {
       .skip((parseInt(page) - 1) * parseInt(limit))
       .take(parseInt(limit));
 
-    // Debug: Log the query
-    const sql = queryBuilder.getSql();
-    console.log("Certification query:", sql);
-    console.log("Query parameters:", parameters);
-    console.log("Filters:", { page, limit, search, status });
-
     const [certifications, count] = await queryBuilder.getManyAndCount();
-
-    console.log("Found certifications:", count);
-    console.log(
-      "Certification statuses:",
-      certifications.map((c) => ({ id: c.id, status: c.verificationStatus }))
-    );
 
     return {
       certifications,

@@ -3,6 +3,7 @@ import {
   getInterpreterById,
   getAvailableLanguagesForFilter,
   getAvailableSpecializationsForFilter,
+  getTopRatedInterpreters,
 } from "../services/InterpreterService.js";
 import { sendSuccess, sendError } from "../utils/Response.js";
 import { AppError } from "../utils/Errors.js";
@@ -55,5 +56,18 @@ export const getAvailableSpecializations = async (req, res) => {
       return sendError(res, error.message, error.statusCode, error);
     }
     return sendError(res, "Failed to fetch specializations", 500, error);
+  }
+};
+
+export const getTopRatedInterpretersHandler = async (req, res) => {
+  try {
+    const { limit = 3 } = req.query;
+    const interpreters = await getTopRatedInterpreters(parseInt(limit));
+    return sendSuccess(res, interpreters, "Top rated interpreters fetched successfully");
+  } catch (error) {
+    if (error instanceof AppError) {
+      return sendError(res, error.message, error.statusCode, error);
+    }
+    return sendError(res, "Failed to fetch top rated interpreters", 500, error);
   }
 };

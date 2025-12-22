@@ -368,10 +368,18 @@
 .toolbar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding-bottom: 20px;
   margin-bottom: 24px;
   border-bottom: 2px solid #f0f0f0;
+}
+
+.toolbarLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  align-items: flex-start;
 }
 
 .resultsInfo span {
@@ -380,10 +388,62 @@
   font-weight: 600;
 }
 
+.activeFiltersTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filterTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #3b82f6;
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e40af;
+  transition: all 0.2s ease;
+}
+
+.filterTag:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.tagClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tagClose:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+}
+
 .sortControls {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .sortControls label {
@@ -441,6 +501,9 @@
   object-fit: cover;
   border: 4px solid white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .avatarPlaceholder {
@@ -456,6 +519,14 @@
   font-weight: 700;
   border: 4px solid white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.avatarPlaceholderHidden {
+  display: none;
 }
 
 .badge {
@@ -469,6 +540,8 @@
   font-size: 0.75rem;
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+  pointer-events: auto;
 }
 
 .interpreterName {

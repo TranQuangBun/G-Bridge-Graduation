@@ -11,10 +11,6 @@ export async function getConversations(req, res) {
     const userId = req.user?.sub || req.user?.id;
     const { includeArchived = false, includeDeleted = false } = req.query;
 
-    console.log("getConversations - userId:", userId);
-    console.log("getConversations - includeArchived:", includeArchived);
-    console.log("getConversations - includeDeleted:", includeDeleted);
-
     if (!userId) {
       return sendError(res, "User ID is required", 401);
     }
@@ -23,15 +19,6 @@ export async function getConversations(req, res) {
       userId,
       includeArchived === "true",
       includeDeleted === "true"
-    );
-
-    console.log(
-      "getConversations - raw conversations count:",
-      conversations.length
-    );
-    console.log(
-      "getConversations - raw conversations:",
-      JSON.stringify(conversations, null, 2)
     );
 
     // Transform conversations to include other participant info

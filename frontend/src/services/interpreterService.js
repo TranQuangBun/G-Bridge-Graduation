@@ -59,6 +59,17 @@ const interpreterService = {
       throw new Error(getErrorMessage(error));
     }
   },
+
+  // Get top rated interpreters for testimonials
+  getTopRatedInterpreters: async (limit = 3) => {
+    try {
+      const response = await apiClient.get(`/interpreters/top-rated?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching top rated interpreters:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 export default interpreterService;

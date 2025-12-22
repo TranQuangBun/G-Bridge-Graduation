@@ -19,6 +19,8 @@ import {
   FaBriefcase,
   FaEnvelope,
   FaBookmark,
+  FaEdit,
+  FaQuestionCircle,
 } from "react-icons/fa";
 
 // Sidebar menu for Interpreter role
@@ -200,6 +202,7 @@ const ProfilePage = () => {
   const [editingCertificationIndex, setEditingCertificationIndex] =
     useState(null);
   const [loading, setLoading] = useState(false);
+  // Removed isActiveStatus state as it was never updated
 
   // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState({
@@ -473,8 +476,9 @@ const ProfilePage = () => {
   };
 
   // Handle click avatar to trigger file input
-  const handleAvatarClick = () => {
-    document.getElementById("avatar-upload-input").click();
+  const handleAvatarClick = (isEditMode = false) => {
+    const inputId = isEditMode ? "avatar-upload-input-edit" : "avatar-upload-input";
+    document.getElementById(inputId)?.click();
   };
 
   // Handle update basic info
@@ -599,35 +603,59 @@ const ProfilePage = () => {
   const handleToggleActiveStatus = async () => {
     if (user.role !== "interpreter") return;
 
-    const previousStatus = user.isActive !== false;
-    setLoading(true);
-    try {
-      await authService.toggleActiveStatus();
-      await refreshUser();
-      // After refresh, the new status will be the opposite of previous
-      const newStatus = !previousStatus;
-      toastService.success(
-        newStatus
-          ? t("profile.activeStatus.activated") || "Profile activated"
-          : t("profile.activeStatus.deactivated") || "Profile deactivated"
+    const currentStatus = user.isActive !== false;
+    
+    // If trying to deactivate, show confirmation
+    if (currentStatus) {
+      showConfirmModal(
+        t("profile.activeStatus.deactivateTitle") || "Deactivate Profile",
+        t("profile.activeStatus.deactivateMessage") || "Are you sure you want to deactivate your profile? Your profile will not appear in search results.",
+        async () => {
+          setLoading(true);
+          try {
+            await authService.toggleActiveStatus();
+            await refreshUser();
+            toastService.success(
+              t("profile.activeStatus.deactivated") || "Profile deactivated"
+            );
+          } catch (error) {
+            toastService.error(
+              error.message ||
+                t("profile.activeStatus.toggleFailed") || "Failed to toggle active status"
+            );
+          } finally {
+            setLoading(false);
+          }
+        }
       );
-    } catch (error) {
-      toastService.error(
-        error.message ||
-          t("profile.activeStatus.toggleFailed") || "Failed to toggle active status"
-      );
-    } finally {
-      setLoading(false);
+    } else {
+      // Activate directly without confirmation
+      setLoading(true);
+      try {
+        await authService.toggleActiveStatus();
+        await refreshUser();
+        toastService.success(
+          t("profile.activeStatus.activated") || "Profile activated"
+        );
+      } catch (error) {
+        toastService.error(
+          error.message ||
+            t("profile.activeStatus.toggleFailed") || "Failed to toggle active status"
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   // Confirmation modal helpers
-  const showConfirmModal = (title, message, onConfirm) => {
+  const showConfirmModal = (title, message, onConfirm, onCancel = null) => {
     setConfirmModal({
       isOpen: true,
       title,
       message,
       onConfirm,
+      onCancel,
     });
   };
 
@@ -719,25 +747,7 @@ const ProfilePage = () => {
     });
   };
 
-  const handleEditCertification = (cert, index) => {
-    setCertificationForm({
-      name: cert.name || "",
-      score: cert.score || "",
-      year: cert.issueDate
-        ? new Date(cert.issueDate).getFullYear().toString()
-        : "",
-      organization: cert.issuingOrganization || "",
-      credentialId: cert.credentialId || "",
-      credentialUrl: cert.credentialUrl || "",
-      description: cert.description || "",
-      expiryYear: cert.expiryDate
-        ? new Date(cert.expiryDate).getFullYear().toString()
-        : "",
-      certificationImage: null,
-    });
-    setEditingCertificationIndex(index);
-    setIsAddingCertification(true);
-  };
+  // Removed handleEditCertification as it was never used
 
   const closeCertificationModal = () => {
     setIsAddingCertification(false);
@@ -1211,87 +1221,105 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* Basic Information Card */}
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>
-                  {t("profile.basicInfo.title")}
+            {/* Basic Information */}
+            <div className={styles.basicInfoContainer}>
+              <div className={styles.basicInfoHeader}>
+                <h3 className={styles.basicInfoTitle}>
+                  {t("profile.basicInfo.title") || "BASIC INFORMATION"}
                 </h3>
                 <button
                   className={styles.editBtn}
                   onClick={() => setIsEditingBasicInfo(!isEditingBasicInfo)}
+                  title={isEditingBasicInfo ? t("profile.basicInfo.cancel") : t("profile.basicInfo.edit")}
                 >
-                  {isEditingBasicInfo
-                    ? t("profile.basicInfo.cancel")
-                    : t("profile.basicInfo.edit")}
+                  {isEditingBasicInfo ? (
+                    t("profile.basicInfo.cancel")
+                  ) : (
+                    <FaEdit />
+                  )}
                 </button>
               </div>
 
-              <div className={styles.cardContent}>
-                {!isEditingBasicInfo ? (
-                  <>
-                    {/* Avatar Display */}
-                    <div className={styles.avatarSection}>
-                      <input
-                        type="file"
-                        id="avatar-upload-input"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        style={{ display: "none" }}
-                      />
-                      <div
-                        className={styles.avatarContainer}
-                        onClick={handleAvatarClick}
-                        title="Click to change avatar"
-                      >
-                        {user.avatar ? (
-                          <img
-                            src={`http://localhost:4000${user.avatar}`}
-                            alt="Profile Avatar"
-                            className={styles.avatar}
-                          />
-                        ) : (
-                          <div className={styles.avatarPlaceholder}>
-                            {user.fullName?.charAt(0)?.toUpperCase() || "U"}
-                          </div>
-                        )}
-                        <div className={styles.avatarOverlay}>
-                          <span>
-                            <FaCamera />
-                          </span>
-                          <span>{t("profile.basicInfo.changeAvatar")}</span>
-                        </div>
+              {!isEditingBasicInfo ? (
+                <div className={styles.basicInfoContent}>
+                  {/* Avatar Display - Top */}
+                  <div className={styles.basicInfoAvatar}>
+                    <input
+                      type="file"
+                      id="avatar-upload-input"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      style={{ display: "none" }}
+                    />
+                    <div
+                      className={styles.avatarContainer}
+                      onClick={() => handleAvatarClick(false)}
+                      title="Click to change avatar"
+                    >
+                      {user.avatar ? (
+                        <img
+                          src={
+                            user.avatar.startsWith("http")
+                              ? user.avatar
+                              : `http://localhost:4000${user.avatar}`
+                          }
+                          alt="Profile Avatar"
+                          className={styles.avatar}
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
+                      ) : null}
+                      <div className={`${styles.avatarPlaceholder} ${user.avatar ? styles.avatarPlaceholderHidden : ""}`}>
+                        {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                      <div className={styles.avatarOverlay}>
+                        <span>
+                          <FaCamera />
+                        </span>
+                        <span>{t("profile.basicInfo.changeAvatar")}</span>
                       </div>
                     </div>
+                  </div>
 
-                    <div className={styles.infoGrid}>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.basicInfo.fullName")}</label>
-                        <p>
-                          {user.fullName || t("profile.basicInfo.notProvided")}
-                        </p>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.basicInfo.email")}</label>
-                        <p>{user.email}</p>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.basicInfo.phone")}</label>
-                        <p>
-                          {user.phone || t("profile.basicInfo.notProvided")}
-                        </p>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.basicInfo.address")}</label>
-                        <p>
-                          {user.address || t("profile.basicInfo.notProvided")}
-                        </p>
-                      </div>
+                  {/* Info Display - Bottom */}
+                  <div className={styles.basicInfoFields}>
+                    <div className={styles.basicInfoRow}>
+                      {user.fullName && (
+                        <div className={styles.infoItem}>
+                          <label className={styles.basicInfoLabel}>
+                            {t("profile.basicInfo.fullName") || "Full Name"}
+                          </label>
+                          <p>{user.fullName}</p>
+                        </div>
+                      )}
+                      {user.email && (
+                        <div className={styles.infoItem}>
+                          <label className={styles.basicInfoLabel}>
+                            {t("profile.basicInfo.email") || "Email"}
+                          </label>
+                          <p>{user.email}</p>
+                        </div>
+                      )}
+                      {user.phone && (
+                        <div className={styles.infoItem}>
+                          <label className={styles.basicInfoLabel}>
+                            {t("profile.basicInfo.phone") || "Phone"}
+                          </label>
+                          <p>{user.phone}</p>
+                        </div>
+                      )}
                       {/* Active Status Toggle - Only for interpreters */}
                       {user.role === "interpreter" && (
                         <div className={styles.infoItem}>
-                          <label>
-                            {t("profile.activeStatus.label") || "Active Status"}
+                          <label className={styles.basicInfoLabel}>
+                            {t("profile.activeStatus.label") || "ACTIVE STATUS"}
+                            <span
+                              className={styles.infoIcon}
+                              title={t("profile.activeStatus.whenOff") || "When off, your profile will not appear in search results"}
+                            >
+                              <FaQuestionCircle />
+                            </span>
                           </label>
                           <div className={styles.toggleContainer}>
                             <label className={styles.toggleSwitch}>
@@ -1304,93 +1332,299 @@ const ProfilePage = () => {
                               <span className={styles.toggleSlider}></span>
                             </label>
                             <span className={styles.toggleLabel}>
-                              {user.isActive !== false
+                              {(user.isActive !== false)
                                 ? t("profile.activeStatus.active") || "Active"
                                 : t("profile.activeStatus.inactive") || "Inactive"}
                             </span>
                           </div>
-                          <p className={styles.toggleDescription}>
-                            {t("profile.activeStatus.whenOff") || "When off, your profile will not appear in search results"}
-                          </p>
                         </div>
                       )}
                     </div>
-                  </>
+                    {user.address && (
+                      <div className={`${styles.infoItem} ${styles.infoItemFullWidth}`}>
+                        <label className={styles.basicInfoLabel}>
+                          {t("profile.basicInfo.address") || "Address"}
+                        </label>
+                        <p>{user.address}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleUpdateBasicInfo}
+                  className={styles.basicInfoEditForm}
+                >
+                  <div className={styles.basicInfoEditContent}>
+                    {/* Form Fields */}
+                    <div className={styles.basicInfoEditFields}>
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.basicInfo.fullNameRequired")}</label>
+                        <input
+                          type="text"
+                          value={basicInfoForm.fullName}
+                          onChange={(e) =>
+                            setBasicInfoForm({
+                              ...basicInfoForm,
+                              fullName: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.basicInfo.email")}</label>
+                        <div className={styles.disabledFieldWrapper}>
+                          <input
+                            type="email"
+                            value={user.email}
+                            disabled
+                            className={styles.disabledField}
+                            title={t("profile.basicInfo.contactAdmin")}
+                          />
+                          <span className={styles.disabledTooltip}>
+                            {t("profile.basicInfo.contactAdmin")}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.basicInfo.phone")}</label>
+                        <input
+                          type="tel"
+                          value={basicInfoForm.phone}
+                          onChange={(e) =>
+                            setBasicInfoForm({
+                              ...basicInfoForm,
+                              phone: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.basicInfo.address")}</label>
+                        <textarea
+                          value={basicInfoForm.address}
+                          onChange={(e) =>
+                            setBasicInfoForm({
+                              ...basicInfoForm,
+                              address: e.target.value,
+                            })
+                          }
+                          rows={3}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className={styles.saveBtn}
+                        disabled={loading}
+                      >
+                        {loading ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Professional Information */}
+            {user.role === "interpreter" && (
+              <div className={styles.professionalInfoContainer}>
+                <div className={styles.professionalInfoHeader}>
+                  <h3 className={styles.professionalInfoTitle}>
+                    {t("profile.professional.title") || "PROFESSIONAL INFORMATION"}
+                  </h3>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() =>
+                      setIsEditingProfessional(!isEditingProfessional)
+                    }
+                    title={isEditingProfessional ? t("profile.professional.cancel") : t("profile.professional.edit")}
+                  >
+                    {isEditingProfessional ? (
+                      t("profile.professional.cancel")
+                    ) : (
+                      <FaEdit />
+                    )}
+                  </button>
+                </div>
+
+                {!isEditingProfessional ? (
+                  <div className={styles.professionalInfoFields}>
+                    <div className={styles.professionalInfoRow}>
+                      {userProfile?.hourlyRate && (
+                        <div className={styles.infoItem}>
+                          <label className={styles.professionalInfoLabel}>
+                            {t("profile.professional.hourlyRate") || "Hourly Rate"}
+                          </label>
+                          <p>
+                            ${userProfile.hourlyRate} {userProfile.currency || "USD"}
+                          </p>
+                        </div>
+                      )}
+                      {userProfile?.experience && (
+                        <div className={styles.infoItem}>
+                          <label className={styles.professionalInfoLabel}>
+                            {t("profile.professional.experience") || "Years of Experience"}
+                          </label>
+                          <p>{userProfile.experience} {t("profile.professional.years") || "years"}</p>
+                        </div>
+                      )}
+                      {userProfile?.specializations?.length > 0 && (
+                        <div className={styles.infoItem}>
+                          <label className={styles.professionalInfoLabel}>
+                            {t("profile.professional.specializations") || "Specializations"}
+                          </label>
+                          <p>{userProfile.specializations.join(", ")}</p>
+                        </div>
+                      )}
+                    </div>
+                    {userProfile?.portfolio && (
+                      <div className={`${styles.infoItem} ${styles.infoItemFullWidth}`}>
+                        <label className={styles.professionalInfoLabel}>
+                          {t("profile.professional.portfolio") || "Portfolio/Bio"}
+                        </label>
+                        <p>{userProfile.portfolio}</p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <form
-                    onSubmit={handleUpdateBasicInfo}
-                    className={styles.editForm}
+                    onSubmit={handleUpdateProfessional}
+                    className={styles.professionalInfoEditForm}
                   >
-                    <div className={styles.formGroup}>
-                      <label>{t("profile.basicInfo.fullNameRequired")}</label>
-                      <input
-                        type="text"
-                        value={basicInfoForm.fullName}
-                        onChange={(e) =>
-                          setBasicInfoForm({
-                            ...basicInfoForm,
-                            fullName: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                      <label>{t("profile.basicInfo.email")}</label>
-                      <div className={styles.disabledFieldWrapper}>
+                    <div className={styles.professionalInfoEditFields}>
+                      <div className={styles.formGroup}>
+                        <label>
+                          {t("profile.professional.hourlyRate")} (USD)
+                        </label>
                         <input
-                          type="email"
-                          value={user.email}
-                          disabled
-                          className={styles.disabledField}
-                          title={t("profile.basicInfo.contactAdmin")}
+                          type="number"
+                          step="0.01"
+                          value={professionalForm.hourlyRate}
+                          onChange={(e) =>
+                            setProfessionalForm({
+                              ...professionalForm,
+                              hourlyRate: e.target.value,
+                            })
+                          }
+                          placeholder={t(
+                            "profile.professional.hourlyRatePlaceholder"
+                          )}
                         />
-                        <span className={styles.disabledTooltip}>
-                          {t("profile.basicInfo.contactAdmin")}
-                        </span>
                       </div>
-                    </div>
 
-                    <div className={styles.formGroup}>
-                      <label>{t("profile.basicInfo.phone")}</label>
-                      <input
-                        type="tel"
-                        value={basicInfoForm.phone}
-                        onChange={(e) =>
-                          setBasicInfoForm({
-                            ...basicInfoForm,
-                            phone: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.professional.experience")}</label>
+                        <input
+                          type="number"
+                          value={professionalForm.experience}
+                          onChange={(e) =>
+                            setProfessionalForm({
+                              ...professionalForm,
+                              experience: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., 5"
+                        />
+                      </div>
 
-                    <div className={styles.formGroup}>
-                      <label>{t("profile.basicInfo.address")}</label>
-                      <textarea
-                        value={basicInfoForm.address}
-                        onChange={(e) =>
-                          setBasicInfoForm({
-                            ...basicInfoForm,
-                            address: e.target.value,
-                          })
-                        }
-                        rows={3}
-                      />
-                    </div>
+                      <div className={styles.formGroup}>
+                        <label>
+                          {t("profile.professional.specializations")}
+                        </label>
+                        <div className={styles.specializationsInput}>
+                          <input
+                            type="text"
+                            id="specialization-input"
+                            placeholder={t(
+                              "profile.professional.specializationsPlaceholder"
+                            )}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const value = e.target.value;
+                                if (value && value.trim().length > 0) {
+                                  handleAddSpecialization(value);
+                                  e.target.value = "";
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const input = document.getElementById(
+                                "specialization-input"
+                              );
+                              const value = input?.value;
+                              if (value && value.trim().length > 0) {
+                                handleAddSpecialization(value);
+                                input.value = "";
+                              }
+                            }}
+                            className={styles.addSpecializationBtn}
+                          >
+                            {t("profile.add") || "Add"}
+                          </button>
+                          <div className={styles.specializationTags}>
+                            {professionalForm.specializations.map(
+                              (spec, index) => (
+                                <span
+                                  key={index}
+                                  className={styles.specializationTag}
+                                >
+                                  {spec}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRemoveSpecialization(index)
+                                    }
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                    <button
-                      type="submit"
-                      className={styles.saveBtn}
-                      disabled={loading}
-                    >
-                      {loading ? "Saving..." : "Save Changes"}
-                    </button>
+                      <div className={styles.formGroup}>
+                        <label>{t("profile.professional.portfolio")}</label>
+                        <textarea
+                          value={professionalForm.portfolio}
+                          onChange={(e) =>
+                            setProfessionalForm({
+                              ...professionalForm,
+                              portfolio: e.target.value,
+                            })
+                          }
+                          rows={5}
+                          placeholder={t(
+                            "profile.professional.portfolioPlaceholder"
+                          )}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className={styles.saveBtn}
+                        disabled={loading}
+                      >
+                        {loading
+                          ? t("profile.professional.saving")
+                          : t("profile.professional.save")}
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>
-            </div>
+            )}
 
             {/* Languages & Certifications - Two Column Layout */}
             {user.role === "interpreter" && (
@@ -1638,15 +1872,6 @@ const ProfilePage = () => {
                               )}
                             </div>
                             <div className={styles.certActions}>
-                              <button
-                                className={styles.editBtn}
-                                onClick={() =>
-                                  handleEditCertification(cert, index)
-                                }
-                                disabled={loading}
-                                title={t("common.edit") || "Edit"}
-                              >
-                              </button>
                               <button
                                 className={styles.removeBtn}
                                 onClick={() => handleRemoveCertification(index)}
@@ -1915,10 +2140,13 @@ const ProfilePage = () => {
                     onClick={() =>
                       setIsEditingCompanyInfo(!isEditingCompanyInfo)
                     }
+                    title={isEditingCompanyInfo ? (t("profile.cancel") || "Cancel") : (t("profile.edit") || "Edit")}
                   >
-                    {isEditingCompanyInfo
-                      ? t("profile.cancel") || "Cancel"
-                      : t("profile.edit") || "Edit"}
+                    {isEditingCompanyInfo ? (
+                      t("profile.cancel") || "Cancel"
+                    ) : (
+                      <FaEdit />
+                    )}
                   </button>
                 </div>
 
@@ -2252,244 +2480,6 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* Professional Information Card */}
-            {user.role === "interpreter" && (
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <h3 className={styles.cardTitle}>
-                    {t("profile.professional.title")}
-                  </h3>
-                  <button
-                    className={styles.editBtn}
-                    onClick={() =>
-                      setIsEditingProfessional(!isEditingProfessional)
-                    }
-                  >
-                    {isEditingProfessional
-                      ? t("profile.professional.cancel")
-                      : t("profile.professional.edit")}
-                  </button>
-                </div>
-
-                <div className={styles.cardContent}>
-                  {!isEditingProfessional ? (
-                    <div className={styles.infoGrid}>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.professional.hourlyRate")}</label>
-                        <p>
-                          {userProfile?.hourlyRate
-                            ? `$${userProfile.hourlyRate} ${
-                                userProfile.currency || "USD"
-                              }`
-                            : t("profile.professional.notProvided")}
-                        </p>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.professional.experience")}</label>
-                        <p>
-                          {userProfile?.experience ||
-                            t("profile.professional.notProvided")}
-                        </p>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <label>
-                          {t("profile.professional.specializations")}
-                        </label>
-                        <p>
-                          {userProfile?.specializations?.length
-                            ? userProfile.specializations.join(", ")
-                            : t("profile.professional.notProvided")}
-                        </p>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <label>{t("profile.professional.portfolio")}</label>
-                        <p>
-                          {userProfile?.portfolio ||
-                            t("profile.professional.notProvided")}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <form
-                      onSubmit={handleUpdateProfessional}
-                      className={styles.editForm}
-                    >
-                      <div className={styles.formRow}>
-                        <div className={styles.formGroup}>
-                          <label>
-                            {t("profile.professional.hourlyRate")} (USD)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={professionalForm.hourlyRate}
-                            onChange={(e) =>
-                              setProfessionalForm({
-                                ...professionalForm,
-                                hourlyRate: e.target.value,
-                              })
-                            }
-                            placeholder={t(
-                              "profile.professional.hourlyRatePlaceholder"
-                            )}
-                          />
-                        </div>
-
-                        <div className={styles.formGroup}>
-                          <label>{t("profile.professional.experience")}</label>
-                          <input
-                            type="number"
-                            value={professionalForm.experience}
-                            onChange={(e) =>
-                              setProfessionalForm({
-                                ...professionalForm,
-                                experience: e.target.value,
-                              })
-                            }
-                            placeholder="e.g., 5"
-                          />
-                        </div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>
-                          {t("profile.professional.specializations")}
-                        </label>
-                        <div className={styles.specializationsInput}>
-                          <input
-                            type="text"
-                            id="specialization-input"
-                            placeholder={t(
-                              "profile.professional.specializationsPlaceholder"
-                            )}
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                const value = e.target.value;
-                                if (value && value.trim().length > 0) {
-                                  handleAddSpecialization(value);
-                                  e.target.value = "";
-                                }
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              const input = document.getElementById(
-                                "specialization-input"
-                              );
-                              const value = input?.value;
-                              if (value && value.trim().length > 0) {
-                                handleAddSpecialization(value);
-                                input.value = "";
-                              }
-                            }}
-                            className={styles.addSpecializationBtn}
-                          >
-                            {t("profile.add") || "Add"}
-                          </button>
-                          <div className={styles.specializationTags}>
-                            {professionalForm.specializations.map(
-                              (spec, index) => (
-                                <span
-                                  key={index}
-                                  className={styles.specializationTag}
-                                >
-                                  {spec}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleRemoveSpecialization(index)
-                                    }
-                                  >
-                                    ×
-                                  </button>
-                                </span>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>{t("profile.professional.portfolio")}</label>
-                        <textarea
-                          value={professionalForm.portfolio}
-                          onChange={(e) =>
-                            setProfessionalForm({
-                              ...professionalForm,
-                              portfolio: e.target.value,
-                            })
-                          }
-                          rows={5}
-                          placeholder={t(
-                            "profile.professional.portfolioPlaceholder"
-                          )}
-                        />
-                      </div>
-
-                      <div className={styles.formGroup}>
-                        <label>
-                          {t("profile.company.businessLicenseLabel") || "Business Registration License (PDF)"}
-                        </label>
-                        <input
-                          type="file"
-                          accept=".pdf,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (file.type !== "application/pdf") {
-                                toastService.error(
-                                  t("profile.certifications.errors.invalidFileType") || "Only PDF files are accepted"
-                                );
-                                e.target.value = "";
-                                return;
-                              }
-                              if (file.size > 10 * 1024 * 1024) {
-                                toastService.error(
-                                  t("profile.certifications.errors.fileTooLarge") || "File size must be less than 10MB"
-                                );
-                                e.target.value = "";
-                                return;
-                              }
-                              setCompanyInfoForm({
-                                ...companyInfoForm,
-                                businessLicense: file,
-                              });
-                            }
-                          }}
-                        />
-                        {companyInfoForm.businessLicense && (
-                          <small className={styles.fileInfo}>
-                            {t("profile.company.fileSelected") || "Selected:"}{" "}
-                            {companyInfoForm.businessLicense.name}
-                          </small>
-                        )}
-                        {userProfile?.businessLicense &&
-                          !companyInfoForm.businessLicense && (
-                            <small className={styles.fileInfo}>
-                              {t("profile.company.previouslyUploaded") || "Previously uploaded"}
-                            </small>
-                          )}
-                      </div>
-
-                      <button
-                        type="submit"
-                        className={styles.saveBtn}
-                        disabled={loading}
-                      >
-                        {loading
-                          ? t("profile.professional.saving")
-                          : t("profile.professional.save")}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Stats Card */}
             {user.role === "interpreter" && (
               <div className={styles.card}>
@@ -2548,18 +2538,30 @@ const ProfilePage = () => {
               <p>{confirmModal.message}</p>
             </div>
             <div className={styles.confirmModalFooter}>
-              <button
-                className={styles.confirmCancelBtn}
-                onClick={hideConfirmModal}
-              >
-                {t("profile.cancel") || "Cancel"}
-              </button>
-              <button
-                className={styles.confirmDeleteBtn}
-                onClick={handleConfirm}
-              >
-                {t("profile.delete") || "Delete"}
-              </button>
+              {confirmModal.onCancel ? (
+                <>
+                  <button
+                    className={styles.confirmCancelBtn}
+                    onClick={hideConfirmModal}
+                  >
+                    {t("profile.cancel") || "Cancel"}
+                  </button>
+                  <button
+                    className={styles.confirmDeleteBtn}
+                    onClick={handleConfirm}
+                  >
+                    {t("profile.delete") || "Delete"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  className={styles.confirmCancelBtn}
+                  onClick={hideConfirmModal}
+                  style={{ width: "100%" }}
+                >
+                  {t("common.close") || "Close"}
+                </button>
+              )}
             </div>
           </div>
         </div>

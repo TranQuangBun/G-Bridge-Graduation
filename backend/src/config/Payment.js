@@ -51,25 +51,16 @@ export const vnpayHelpers = {
     // Note: sortedData already has encoded keys and values from sortObject
     const signData = querystring.stringify(sortedData);
 
-    console.log("VNPay Sign Data:", signData);
-    console.log("VNPay Sign Data Length:", signData.length);
-    console.log("VNPay Secret Key:", secretKey);
-    console.log("VNPay Secret Key Length:", secretKey.length);
-
     // Step 4: Create HMAC SHA512 hash using Buffer (exactly as VNPay sample)
     // VNPay uses: hmac.update(new Buffer(signData, 'utf-8')).digest("hex")
     const hmac = crypto.createHmac("sha512", secretKey);
     const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-    console.log("VNPay Secure Hash:", signed);
-    console.log("VNPay Secure Hash Length:", signed.length);
 
     return signed;
   },
 
   createSecureHashFromQueryString(queryString, secretKey) {
     // Hash directly from URL-encoded query string
-    console.log("VNPay Query String (URL-encoded):", queryString);
     console.log("VNPay Secret Key:", secretKey);
 
     const hmac = crypto.createHmac("sha512", secretKey);

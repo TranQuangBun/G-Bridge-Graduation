@@ -105,21 +105,7 @@ export async function updateUserProfile(req, res) {
 
 export async function updateInterpreterProfile(req, res) {
   try {
-    console.log("updateInterpreterProfile - Request body:", {
-      body: req.body,
-      specializations: req.body.specializations,
-      specializationsType: typeof req.body.specializations,
-      isArray: Array.isArray(req.body.specializations),
-    });
-
     const profile = await updateInterpreterProfileData(req.user.sub, req.body);
-
-    console.log("updateInterpreterProfile - Response profile:", {
-      profileId: profile.id,
-      specializations: profile.specializations,
-      specializationsType: typeof profile.specializations,
-      isArray: Array.isArray(profile.specializations),
-    });
 
     return sendSuccess(
       res,

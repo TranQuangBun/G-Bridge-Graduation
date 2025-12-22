@@ -6,16 +6,6 @@ import { ROUTES } from "../../constants";
 import interpreterService from "../../services/interpreterService";
 import { toast } from "react-toastify";
 import styles from "./InterpreterModal.module.css";
-import {
-  FaStar,
-  FaBriefcase,
-  FaDollarSign,
-  FaMapMarkerAlt,
-  FaBullseye,
-  FaEdit,
-  FaGlobe,
-  FaLock,
-} from "react-icons/fa";
 
 const InterpreterModal = ({ interpreterId, onClose }) => {
   const { user } = useAuth();
@@ -111,20 +101,31 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
         {/* Header Section */}
         <div className={styles.modalHeader}>
           <div className={styles.avatarSection}>
-            {interpreter.avatar ? (
+            {(interpreter.user?.avatar || interpreter.avatar) ? (
               <img
-                src={`http://localhost:4000${interpreter.avatar}`}
+                src={
+                  (interpreter.user?.avatar || interpreter.avatar).startsWith("http")
+                    ? (interpreter.user?.avatar || interpreter.avatar)
+                    : `http://localhost:4000${interpreter.user?.avatar || interpreter.avatar}`
+                }
                 alt={interpreter.fullName}
                 className={styles.avatar}
+                onError={(e) => {
+                  e.target.style.display = "none";
+                  e.target.nextElementSibling?.classList.remove(styles.avatarPlaceholderHidden);
+                }}
               />
-            ) : (
-              <div className={styles.avatarPlaceholder}>
-                {interpreter.fullName?.charAt(0)?.toUpperCase()}
-              </div>
-            )}
+            ) : null}
+            <div
+              className={`${styles.avatarPlaceholder} ${
+                (interpreter.user?.avatar || interpreter.avatar) ? styles.avatarPlaceholderHidden : ""
+              }`}
+            >
+              {interpreter.fullName?.charAt(0)?.toUpperCase() || "I"}
+            </div>
             {interpreter.interpreterProfile?.rating >= 4.5 && (
               <div className={styles.topRatedBadge}>
-                <FaStar /> {t("interpreterModal.topRated")}
+                {t("interpreterModal.topRated")}
               </div>
             )}
           </div>
@@ -133,7 +134,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
             <h2 className={styles.interpreterName}>{interpreter.fullName}</h2>
             <div className={styles.ratingRow}>
               <span className={styles.rating}>
-                <FaStar />{" "}
                 {Number(interpreter.interpreterProfile?.rating || 0).toFixed(1)}
               </span>
               <span className={styles.reviews}>
@@ -143,19 +143,18 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
             </div>
             <div className={styles.quickInfo}>
               <span className={styles.infoItem}>
-                <FaBriefcase />{" "}
                 {interpreter.interpreterProfile?.experience || 0}{" "}
                 {t("interpreterModal.years")}
               </span>
               <span className={styles.infoItem}>
-                <FaDollarSign /> $
+                $
                 {Number(
                   interpreter.interpreterProfile?.hourlyRate || 0
                 ).toFixed(2)}
                 /hr
               </span>
               <span className={styles.infoItem}>
-                <FaMapMarkerAlt /> {interpreter.address || "Not specified"}
+                {interpreter.address || "Not specified"}
               </span>
             </div>
           </div>
@@ -164,9 +163,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
         {/* Premium Access Warning */}
         {!hasPremiumAccess && (
           <div className={styles.premiumWarning}>
-            <div className={styles.warningIcon}>
-              <FaLock />
-            </div>
             <div className={styles.warningText}>
               <strong>{t("interpreterModal.premiumRequired")}</strong>
               <p>{t("interpreterModal.premiumMessage")}</p>
@@ -186,9 +182,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {interpreter.interpreterProfile?.bio && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}>
-                  <FaEdit />
-                </span>
                 {t("interpreterModal.about")}
               </h3>
               <p className={styles.bio}>{interpreter.interpreterProfile.bio}</p>
@@ -198,9 +191,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {/* Languages Section */}
           <div className={styles.section}>
             <h3 className={styles.sectionTitle}>
-              <span className={styles.icon}>
-                <FaGlobe />
-              </span>
               {t("interpreterModal.languages")}
             </h3>
             <div className={styles.tagsList}>
@@ -216,9 +206,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {interpreter.interpreterProfile?.specializations?.length > 0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}>
-                  <FaBullseye />
-                </span>
                 {t("interpreterModal.specializations")}
               </h3>
               <div className={styles.tagsList}>
@@ -237,13 +224,11 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
           {interpreter.certifications?.length > 0 && (
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>
-                <span className={styles.icon}></span>
                 {t("interpreterModal.certifications")}
               </h3>
               <div className={styles.certificationsList}>
                 {interpreter.certifications.map((cert) => (
                   <div key={cert.id} className={styles.certificationItem}>
-                    <div className={styles.certIcon}>📜</div>
                     <div className={styles.certInfo}>
                       <div className={styles.certHeader}>
                         <strong>{cert.name}</strong>
@@ -299,7 +284,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
               0 && (
               <div className={styles.section}>
                 <h3 className={styles.sectionTitle}>
-                  <span className={styles.icon}>📅</span>
                   {t("interpreterModal.availability")}
                 </h3>
                 <div className={styles.availabilityGrid}>
@@ -423,9 +407,6 @@ const InterpreterModal = ({ interpreterId, onClose }) => {
             </div>
             {!hasPremiumAccess && (
               <div className={styles.blurOverlay}>
-                <div className={styles.lockIcon}>
-                  <FaLock />
-                </div>
                 <p>{t("interpreterModal.upgradeToViewContact")}</p>
               </div>
             )}

@@ -18,6 +18,8 @@ import {
   rejectJob,
   getMyJobs,
   closeJob,
+  getPublicStats,
+  getFeaturedJobs,
 } from "../controllers/JobController.js";
 import { uploadResume } from "../middleware/Upload.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
@@ -76,6 +78,54 @@ router.get("/lookup/domains", getDomains);
  *         description: Levels retrieved successfully
  */
 router.get("/lookup/levels", getLevels);
+
+/**
+ * @swagger
+ * /api/jobs/stats:
+ *   get:
+ *     summary: Get public statistics (public)
+ *     tags: [Jobs]
+ *     responses:
+ *       200:
+ *         description: Public stats retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalJobs:
+ *                       type: integer
+ *                     totalInterpreters:
+ *                       type: integer
+ *                     totalOrganizations:
+ *                       type: integer
+ *                     successRate:
+ *                       type: integer
+ */
+router.get("/stats", getPublicStats);
+
+/**
+ * @swagger
+ * /api/jobs/featured:
+ *   get:
+ *     summary: Get featured jobs for homepage (public)
+ *     tags: [Jobs]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 9
+ *     responses:
+ *       200:
+ *         description: Featured jobs retrieved successfully
+ */
+router.get("/featured", getFeaturedJobs);
 
 /**
  * @swagger

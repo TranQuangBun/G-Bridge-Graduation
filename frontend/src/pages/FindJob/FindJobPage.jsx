@@ -25,6 +25,8 @@ import {
   FaInfoCircle,
   FaBookmark,
   FaRegBookmark,
+  FaSpinner,
+  FaList,
 } from "react-icons/fa";
 
 const unique = (arr) => Array.from(new Set(arr));
@@ -35,8 +37,14 @@ export default function FindJobPage() {
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
-  const [level, setLevel] = useState("");
   const [salaryRange, setSalaryRange] = useState([null, null]);
+  // Temporary state for basic filters (only applied when user clicks Apply)
+  const [tempBasicFilters, setTempBasicFilters] = useState({
+    keyword: "",
+    location: "",
+    category: "",
+    salaryRange: [null, null],
+  });
   const [sortBy, setSortBy] = useState("createdAt");
   const [page, setPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -57,21 +65,19 @@ export default function FindJobPage() {
   // Advanced filter state
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
-    salaryRange: "",
-    languages: "",
-    jobType: "",
-    certificate: "",
-    experience: "",
-    workLocation: "",
-  });
-
-  // Advanced Filters Modal state
-  const [showAdvancedFiltersModal, setShowAdvancedFiltersModal] =
-    useState(false);
-  const [tempAdvancedFilters, setTempAdvancedFilters] = useState({
-    reviewStatus: "",
-    companyName: "",
     workingMode: "",
+    languages: "",
+    level: "",
+    companyName: "",
+    certificate: "",
+  });
+  // Temporary state for advanced filters modal (only applied when user clicks Apply)
+  const [tempAdvancedFilters, setTempAdvancedFilters] = useState({
+    workingMode: "",
+    languages: "",
+    level: "",
+    companyName: "",
+    certificate: "",
   });
 
   const pageSize = 9; // 3 x 3 layout
@@ -86,6 +92,8 @@ export default function FindJobPage() {
   const [domains, setDomains] = useState([]);
   const [levels, setLevels] = useState([]);
   const [workingModes, setWorkingModes] = useState([]);
+  const [allLocations, setAllLocations] = useState([]); // All available locations (not filtered)
+  const [availableLanguages, setAvailableLanguages] = useState([]); // Available languages for filter
 
   // Auth state
   const { user, isAuthenticated } = useAuth();
@@ -96,6 +104,24 @@ export default function FindJobPage() {
   const [showAIResults, setShowAIResults] = useState(false);
   const [aiJobs, setAiJobs] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
+
+  // Reset AI state on mount to ensure AI is not called automatically
+  useEffect(() => {
+    setShowAIResults(false);
+    setAiJobs([]);
+    setLoadingAI(false);
+  }, []);
+
+  // Initialize tempBasicFilters with current filter values on mount
+  useEffect(() => {
+    setTempBasicFilters({
+      keyword: keyword,
+      location: location,
+      category: category,
+      salaryRange: salaryRange,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Applied jobs state - track which jobs are already applied
   const [appliedJobIds, setAppliedJobIds] = useState(new Set());
@@ -121,15 +147,24 @@ export default function FindJobPage() {
   useEffect(() => {
     const fetchLookupData = async () => {
       try {
-        const [domainsRes, levelsRes, workingModesRes] = await Promise.all([
+        const [domainsRes, levelsRes, workingModesRes, languagesRes] = await Promise.all([
           jobService.getDomains(),
           jobService.getLevels(),
           jobService.getWorkingModes(),
+          interpreterService.getAvailableLanguages().catch(() => ({ success: false, data: [] })),
         ]);
         if (domainsRes?.success) setDomains(domainsRes.data || []);
         if (levelsRes?.success) setLevels(levelsRes.data || []);
         if (workingModesRes?.success)
           setWorkingModes(workingModesRes.data || []);
+        if (languagesRes?.success) {
+          // Extract unique language names
+          const languages = languagesRes.data || [];
+          const uniqueLanguages = Array.from(
+            new Map(languages.map((lang) => [lang.name?.toLowerCase(), lang])).values()
+          ).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+          setAvailableLanguages(uniqueLanguages);
+        }
       } catch (error) {
         console.error("Error fetching lookup data:", error);
       }
@@ -263,64 +298,88 @@ export default function FindJobPage() {
         status: "open",
         reviewStatus: "approved", // Only show approved jobs
         sortBy: sortBy || "createdAt",
-        sortOrder: sortBy === "title" ? "ASC" : "DESC",
+        sortOrder: sortBy === "title" ? "ASC" : "DESC", // DESC for maxSalary (highest first)
       };
 
+      // Basic Filters
       if (keyword) apiFilters.search = keyword;
       if (location) apiFilters.province = location;
       if (category) {
         // Category is already an ID from the dropdown
         apiFilters.domainId = parseInt(category);
       }
-      if (level) {
-        // Level is already an ID from the dropdown
-        apiFilters.levelId = parseInt(level);
-      }
-      if (salaryRange) {
-        // Handle both array format [min, max] and string format "min-max"
-        let min, max;
-        if (Array.isArray(salaryRange)) {
-          [min, max] = salaryRange;
-        } else if (typeof salaryRange === "string") {
-          [min, max] = salaryRange.split("-").map((s) => s.replace(/\D/g, ""));
-        }
-        if (min) apiFilters.minSalary = parseInt(min);
-        if (max) apiFilters.maxSalary = parseInt(max);
+      // Salary range filter
+      if (salaryRange && (salaryRange[0] || salaryRange[1])) {
+        // Handle array format [min, max]
+        if (salaryRange[0]) apiFilters.minSalary = parseInt(salaryRange[0]);
+        if (salaryRange[1]) apiFilters.maxSalary = parseInt(salaryRange[1]);
       }
 
       // Advanced Filters
-      // Note: reviewStatus defaults to "approved" above, only override if explicitly set in advanced filters
-      if (
-        advancedFilters.reviewStatus &&
-        advancedFilters.reviewStatus !== "approved"
-      ) {
-        apiFilters.reviewStatus = advancedFilters.reviewStatus;
+      if (advancedFilters.workingMode) {
+        apiFilters.workingModeId = parseInt(advancedFilters.workingMode);
+      }
+      if (advancedFilters.level) {
+        apiFilters.levelId = parseInt(advancedFilters.level);
       }
       if (advancedFilters.companyName) {
         apiFilters.organizationName = advancedFilters.companyName;
       }
-      if (advancedFilters.workingMode) {
-        apiFilters.workingModeId = parseInt(advancedFilters.workingMode);
-      }
+      
+      // Note: languages filter is not supported by backend API, will filter on frontend
+      // certificate filter is not supported by backend API
+      
+      // If filtering by language, fetch all jobs (no pagination) then paginate on frontend
+      const needsFrontendPagination = advancedFilters.languages && advancedFilters.languages !== "";
+      const fetchLimit = needsFrontendPagination ? 1000 : pageSize; // Fetch more if filtering on frontend
+      const fetchPage = needsFrontendPagination ? 1 : page; // Always fetch page 1 if filtering on frontend
+      
+      const fetchFilters = { ...apiFilters, page: fetchPage, limit: fetchLimit };
 
-      const response = await jobService.getJobs(apiFilters);
+      const response = await jobService.getJobs(fetchFilters);
 
       // Check if response is successful and has data
       if (response && (response.success || response.data)) {
         // Handle different response formats
-        const jobsData =
+        let jobsData =
           response.data?.jobs ||
           response.data?.data?.jobs ||
           response.data ||
           [];
-        const totalPages =
-          response.data?.totalPages ||
-          response.data?.pagination?.totalPages ||
-          1;
-        const totalCount =
-          response.data?.total ||
-          response.data?.pagination?.total ||
-          jobsData.length;
+
+        // Filter by language on frontend (match both source and target language)
+        if (advancedFilters.languages && advancedFilters.languages !== "") {
+          const selectedLanguage = advancedFilters.languages.toLowerCase().trim();
+          jobsData = jobsData.filter((job) => {
+            if (!job.requiredLanguages || job.requiredLanguages.length === 0) {
+              return false;
+            }
+            // Check if any required language matches (both source and target)
+            return job.requiredLanguages.some((reqLang) => {
+              const langName = (reqLang.language?.name || "").toLowerCase().trim();
+              return langName === selectedLanguage;
+            });
+          });
+        }
+
+        // Calculate pagination
+        let totalPages, totalCount;
+        if (needsFrontendPagination) {
+          // Frontend pagination: calculate based on filtered results
+          totalCount = jobsData.length;
+          totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        } else {
+          // Backend pagination: use API response
+          totalPages =
+            response.data?.totalPages ||
+            response.data?.pagination?.totalPages ||
+            1;
+          totalCount =
+            response.data?.total ||
+            response.data?.pagination?.total ||
+            jobsData.length;
+        }
+        
         // Transform API data to match UI format
         const transformedJobs = (Array.isArray(jobsData) ? jobsData : []).map(
           (job) => ({
@@ -369,8 +428,16 @@ export default function FindJobPage() {
           })
         );
 
-        if (transformedJobs.length > 0) {
-          setJobs(transformedJobs);
+        // Apply frontend pagination if needed
+        let finalJobs = transformedJobs;
+        if (needsFrontendPagination) {
+          const startIndex = (page - 1) * pageSize;
+          const endIndex = startIndex + pageSize;
+          finalJobs = transformedJobs.slice(startIndex, endIndex);
+        }
+
+        if (finalJobs.length > 0 || transformedJobs.length === 0) {
+          setJobs(finalJobs);
           setTotalPages(totalPages);
           setTotal(totalCount);
         } else {
@@ -428,7 +495,6 @@ export default function FindJobPage() {
     keyword,
     location,
     category,
-    level,
     salaryRange,
     sortBy,
     advancedFilters,
@@ -444,13 +510,58 @@ export default function FindJobPage() {
     fetchJobs();
   }, [fetchJobs]);
 
+  // Fetch all locations once on mount (without filters)
+  useEffect(() => {
+    const fetchAllLocations = async () => {
+      try {
+        // Fetch jobs without any location filter to get all available locations
+        const response = await jobService.getJobs({
+          status: "open",
+          reviewStatus: "approved",
+          limit: 1000, // Get a large number to ensure we get all locations
+        });
+        
+        if (response && (response.success || response.data)) {
+          const allJobs = response.data?.jobs || response.data || [];
+          const locations = unique(allJobs.map((j) => j.location || j.province).filter(Boolean));
+          setAllLocations(locations);
+        }
+      } catch (error) {
+        console.error("Error fetching all locations:", error);
+        // If fetch fails, set empty array - locations will be populated from jobs later via locationsList useMemo
+        setAllLocations([]);
+      }
+    };
+    
+    fetchAllLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Use allLocations for the dropdown, but also include current location if it's not in the list
   const locationsList = useMemo(() => {
-    return unique(jobs.map((j) => j.location).filter(Boolean));
-  }, [jobs]);
+    const currentJobLocations = unique(jobs.map((j) => j.location || j.province).filter(Boolean));
+    const combined = [...new Set([...allLocations, ...currentJobLocations])];
+    return combined.sort();
+  }, [allLocations, jobs]);
 
   // Display jobs: Always use API data
   const displayJobs = jobs;
-  const pageSafe = Math.min(page, totalPages || 1);
+  
+  // Reset page to 1 when filters change (except page itself)
+  useEffect(() => {
+    setPage(1);
+  }, [keyword, location, category, salaryRange, sortBy, advancedFilters]);
+  
+  // Ensure page is within valid range
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    } else if (page < 1) {
+      setPage(1);
+    }
+  }, [page, totalPages]);
+  
+  const pageSafe = Math.min(Math.max(1, page), totalPages || 1);
   const slice = displayJobs;
 
   function closeJobModal() {
@@ -463,43 +574,24 @@ export default function FindJobPage() {
     setKeyword("");
     setLocation("");
     setCategory("");
-    setLevel("");
     setSalaryRange([null, null]);
+    setTempBasicFilters({
+      keyword: "",
+      location: "",
+      category: "",
+      salaryRange: [null, null],
+    });
     setSortBy("createdAt");
     setPage(1);
   };
 
-  // Advanced Filters Modal handlers
-  const handleOpenAdvancedFiltersModal = () => {
-    setTempAdvancedFilters({
-      reviewStatus: advancedFilters.reviewStatus || "",
-      companyName: advancedFilters.companyName || "",
-      workingMode: advancedFilters.workingMode || "",
-    });
-    setShowAdvancedFiltersModal(true);
-  };
-
-  const handleTempAdvancedFilterChange = (key, value) => {
-    setTempAdvancedFilters({ ...tempAdvancedFilters, [key]: value });
-  };
-
-  const handleApplyAdvancedFilters = () => {
-    setAdvancedFilters({
-      ...advancedFilters,
-      reviewStatus: tempAdvancedFilters.reviewStatus,
-      companyName: tempAdvancedFilters.companyName,
-      workingMode: tempAdvancedFilters.workingMode,
-    });
-    setShowAdvancedFiltersModal(false);
-    setPage(1);
-  };
-
-  const handleClearAdvancedFilters = () => {
-    setTempAdvancedFilters({
-      reviewStatus: "",
-      companyName: "",
-      workingMode: "",
-    });
+  // Handle apply basic filters
+  const handleApplyBasicFilters = () => {
+    setKeyword(tempBasicFilters.keyword);
+    setLocation(tempBasicFilters.location);
+    setCategory(tempBasicFilters.category);
+    setSalaryRange(tempBasicFilters.salaryRange);
+    setPage(1); // Reset to first page when applying filters
   };
 
   // Handle save/unsave job
@@ -681,6 +773,7 @@ export default function FindJobPage() {
               </button>
             </div>
 
+            {/* Basic Filters */}
             {/* Search */}
             <div className={styles.filterSection}>
               <label>{t("findJob.filters.search") || "Search"}</label>
@@ -689,8 +782,13 @@ export default function FindJobPage() {
                 placeholder={
                   t("findJob.filters.searchPlaceholder") || "Search jobs..."
                 }
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                value={tempBasicFilters.keyword}
+                onChange={(e) =>
+                  setTempBasicFilters({
+                    ...tempBasicFilters,
+                    keyword: e.target.value,
+                  })
+                }
                 className={styles.searchInput}
               />
             </div>
@@ -699,8 +797,13 @@ export default function FindJobPage() {
             <div className={styles.filterSection}>
               <label>{t("findJob.filters.location") || "Location"}</label>
               <select
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                value={tempBasicFilters.location}
+                onChange={(e) =>
+                  setTempBasicFilters({
+                    ...tempBasicFilters,
+                    location: e.target.value,
+                  })
+                }
                 className={styles.selectInput}
               >
                 <option value="">
@@ -718,8 +821,13 @@ export default function FindJobPage() {
             <div className={styles.filterSection}>
               <label>{t("findJob.filters.category") || "Category"}</label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                value={tempBasicFilters.category}
+                onChange={(e) =>
+                  setTempBasicFilters({
+                    ...tempBasicFilters,
+                    category: e.target.value,
+                  })
+                }
                 className={styles.selectInput}
               >
                 <option value="">
@@ -728,25 +836,6 @@ export default function FindJobPage() {
                 {domains.map((domain) => (
                   <option key={domain.id} value={domain.id}>
                     {domain.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Level Filter */}
-            <div className={styles.filterSection}>
-              <label>{t("findJob.filters.level") || "Level"}</label>
-              <select
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className={styles.selectInput}
-              >
-                <option value="">
-                  {t("findJob.filters.allLevels") || "All Levels"}
-                </option>
-                {levels.map((lvl) => (
-                  <option key={lvl.id} value={lvl.id}>
-                    {lvl.name}
                   </option>
                 ))}
               </select>
@@ -761,12 +850,15 @@ export default function FindJobPage() {
                 <input
                   type="number"
                   placeholder="Min"
-                  value={salaryRange[0] || ""}
+                  value={tempBasicFilters.salaryRange[0] || ""}
                   onChange={(e) =>
-                    setSalaryRange([
-                      e.target.value ? parseInt(e.target.value) : null,
-                      salaryRange[1],
-                    ])
+                    setTempBasicFilters({
+                      ...tempBasicFilters,
+                      salaryRange: [
+                        e.target.value ? parseInt(e.target.value) : null,
+                        tempBasicFilters.salaryRange[1],
+                      ],
+                    })
                   }
                   className={styles.rangeInput}
                 />
@@ -774,12 +866,15 @@ export default function FindJobPage() {
                 <input
                   type="number"
                   placeholder="Max"
-                  value={salaryRange[1] || ""}
+                  value={tempBasicFilters.salaryRange[1] || ""}
                   onChange={(e) =>
-                    setSalaryRange([
-                      salaryRange[0],
-                      e.target.value ? parseInt(e.target.value) : null,
-                    ])
+                    setTempBasicFilters({
+                      ...tempBasicFilters,
+                      salaryRange: [
+                        tempBasicFilters.salaryRange[0],
+                        e.target.value ? parseInt(e.target.value) : null,
+                      ],
+                    })
                   }
                   className={styles.rangeInput}
                 />
@@ -789,30 +884,129 @@ export default function FindJobPage() {
             {/* Advanced Filters Button */}
             <button
               className={styles.advancedFiltersBtn}
-              onClick={handleOpenAdvancedFiltersModal}
+              onClick={() => setShowAdvancedFilter(true)}
             >
               {t("findJob.filters.advancedFilters") || "Advanced Filters"}
             </button>
 
-            <button className={styles.applyBtn} onClick={() => setPage(1)}>
+            {/* Apply Basic Filters Button */}
+            <button
+              className={styles.applyBasicFiltersBtn}
+              onClick={handleApplyBasicFilters}
+            >
               {t("findJob.filters.apply") || "Apply Filters"}
             </button>
+
           </aside>
 
           {/* Main Content */}
           <main className={styles.mainContent}>
             {/* Toolbar */}
             <div className={styles.toolbar}>
-              <div className={styles.resultsInfo}>
-                <span>
-                  {showAIResults 
-                    ? `${aiJobs.length} ${t("findJob.aiRecommended") || "AI recommended jobs"}`
-                    : `${total} ${t("findJob.resultsFound") || "jobs found"}`
-                  }
-                </span>
-              </div>
+              <div className={styles.toolbarTop}>
+                <div className={styles.toolbarLeft}>
+                  <div className={styles.resultsInfoRow}>
+                    {/* Only show results info for client role, hide for interpreter */}
+                    {user?.role === "client" && (
+                      <div className={styles.resultsInfo}>
+                        <span>
+                          {showAIResults 
+                            ? `${aiJobs.length} ${t("findJob.aiRecommended") || "AI recommended jobs"}`
+                            : `${total} ${t("findJob.resultsFound") || "jobs found"}`
+                          }
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Sort Controls */}
+                    {!showAIResults && (
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className={styles.sortSelect}
+                      >
+                      <option value="createdAt">
+                        {t("findJob.sort.newest") || "Newest"}
+                      </option>
+                      <option value="title">
+                        {t("findJob.sort.title") || "Title"}
+                      </option>
+                      <option value="maxSalary">
+                        {t("findJob.sort.salary") || "Highest Salary"}
+                      </option>
+                      </select>
+                    )}
+                  </div>
+                  
+                  {/* Active Filters Tags */}
+                  {((advancedFilters.workingMode && advancedFilters.workingMode !== "") ||
+                    (advancedFilters.languages && advancedFilters.languages !== "") || 
+                    (advancedFilters.level && advancedFilters.level !== "") ||
+                    (advancedFilters.certificate && advancedFilters.certificate !== "") ||
+                    (advancedFilters.companyName && advancedFilters.companyName.trim() !== "")) && (
+                    <div className={styles.activeFiltersTags}>
+                      {advancedFilters.workingMode && workingModes.find(m => m.id === parseInt(advancedFilters.workingMode)) && (
+                        <span className={styles.filterTag}>
+                          {t("findJob.filters.workingMode") || "Working Mode"}: {lang === "vi" 
+                            ? workingModes.find(m => m.id === parseInt(advancedFilters.workingMode))?.nameVi 
+                            : workingModes.find(m => m.id === parseInt(advancedFilters.workingMode))?.name}
+                          <button
+                            onClick={() => setAdvancedFilters(prev => ({ ...prev, workingMode: "" }))}
+                            className={styles.tagClose}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {advancedFilters.languages && (
+                        <span className={styles.filterTag}>
+                          {t("findJob.advancedLanguages") || "Languages"}: {advancedFilters.languages}
+                          <button
+                            onClick={() => setAdvancedFilters(prev => ({ ...prev, languages: "" }))}
+                            className={styles.tagClose}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {advancedFilters.level && levels.find(l => l.id === parseInt(advancedFilters.level)) && (
+                        <span className={styles.filterTag}>
+                          {t("findJob.filters.level") || "Level"}: {levels.find(l => l.id === parseInt(advancedFilters.level))?.name}
+                          <button
+                            onClick={() => setAdvancedFilters(prev => ({ ...prev, level: "" }))}
+                            className={styles.tagClose}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {advancedFilters.certificate && (
+                        <span className={styles.filterTag}>
+                          {t("findJob.advancedCertificate") || "Certificate"}: {advancedFilters.certificate}
+                          <button
+                            onClick={() => setAdvancedFilters(prev => ({ ...prev, certificate: "" }))}
+                            className={styles.tagClose}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {advancedFilters.companyName && (
+                        <span className={styles.filterTag}>
+                          {t("findJob.filters.companyName") || "Company"}: {advancedFilters.companyName}
+                          <button
+                            onClick={() => setAdvancedFilters(prev => ({ ...prev, companyName: "" }))}
+                            className={styles.tagClose}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-              <div className={styles.toolbarActions}>
+                <div className={styles.toolbarActions}>
                 {isAuthenticated && user?.role === "interpreter" && (
                   <button
                     className={`${styles.aiButton} ${showAIResults ? styles.active : ""}`}
@@ -839,23 +1033,85 @@ export default function FindJobPage() {
                         }
                         
                         const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || user.id;
-                        const matches = [];
-                        for (const job of jobs.slice(0, 20)) {
-                          try {
-                            const scoreRes = await aiMatchingService.scoreSuitability(job.id, profileId);
-                            if (scoreRes.success && scoreRes.data?.suitability_score) {
-                              matches.push({
-                                ...job,
-                                suitability_score: scoreRes.data.suitability_score,
-                              });
-                            }
-                          } catch (err) {
-                            console.error(`Error scoring job ${job.id}:`, err);
-                          }
-                        }
+                        const jobsToScore = jobs.slice(0, 20);
+                        const jobIds = jobsToScore.map((job) => job.id);
                         
-                        matches.sort((a, b) => b.suitability_score.overall_score - a.suitability_score.overall_score);
-                        setAiJobs(matches.slice(0, 10));
+                        try {
+                          // Use batch scoring instead of individual calls
+                          const batchRes = await aiMatchingService.batchScoreSuitability(
+                            jobIds,
+                            profileId
+                          );
+                          
+                          // Handle both response formats: {success, data} or direct data
+                          const responseData = batchRes.data || batchRes;
+                          const jobScores = responseData.job_scores || [];
+                          
+                          if (jobScores.length > 0) {
+                            // Map scores back to jobs
+                            const scoreMap = new Map();
+                            jobScores.forEach((item) => {
+                              scoreMap.set(item.job_id, item.suitability_score);
+                            });
+                            
+                            const matches = jobsToScore
+                              .map((job) => {
+                                const score = scoreMap.get(job.id);
+                                if (!score) return null;
+                                
+                                // Transform to match normal job format
+                                return {
+                                  id: job.id,
+                                  title: job.title,
+                                  company: job.organization?.name || job.company || "Company",
+                                  location: job.province || job.address || job.location || "Location TBD",
+                                  category: job.domains?.[0]?.name || job.domains?.[0]?.nameVi || job.category || "General",
+                                  level: job.requiredLanguages?.[0]?.level?.name || job.level || "Mid",
+                                  type: job.workingMode?.name || job.type || "Full-time",
+                                  salary: job.minSalary && job.maxSalary
+                                    ? `$${job.minSalary}-${job.maxSalary}`
+                                    : job.minSalary
+                                    ? `$${job.minSalary}+`
+                                    : job.salary || "Negotiable",
+                                  tags: [
+                                    ...(job.requiredLanguages?.map((rl) => rl.language?.name || "") || []),
+                                    ...(job.domains?.map((d) => d.name || d.nameVi || "") || []),
+                                    ...(job.tags || []),
+                                  ].filter(Boolean),
+                                  desc: job.description || job.desc || "",
+                                  fullDesc: job.description || job.fullDesc || "",
+                                  requirements: job.requiredLanguages?.map(
+                                    (rl) => `${rl.language?.name} - ${rl.level?.name}`
+                                  ) || job.requirements || [],
+                                  benefits: job.benefits || [],
+                                  contact: {
+                                    email: job.organization?.email || job.contact?.email || "",
+                                    phone: job.organization?.phone || job.contact?.phone || "",
+                                    address: job.address || job.province || job.contact?.address || "",
+                                  },
+                                  reviewStatus: job.reviewStatus || "pending",
+                                  reviewNotes: job.reviewNotes || "",
+                                  suitability_score: score, // Keep AI score for ranking tag
+                                };
+                              })
+                              .filter((job) => job !== null) // Only include jobs with scores
+                              .sort(
+                                (a, b) =>
+                                  b.suitability_score.overall_score -
+                                  a.suitability_score.overall_score
+                              );
+                            
+                            setAiJobs(matches.slice(0, 10));
+                          } else {
+                            console.warn("No job scores returned from AI service");
+                            setAiJobs([]);
+                          }
+                        } catch (err) {
+                          console.error("Error batch scoring jobs:", err);
+                          console.error("Error details:", err.response?.data || err.message);
+                          // Fallback to empty array on error
+                          setAiJobs([]);
+                        }
                       } catch (error) {
                         console.error("Error fetching AI suggestions:", error);
                         toastService.error(t("findJob.saveJob.aiRecommendationsFailed"));
@@ -866,30 +1122,26 @@ export default function FindJobPage() {
                     }}
                     disabled={loadingAI}
                   >
-                    {loadingAI ? "Loading..." : showAIResults ? "Show All Jobs" : "🤖 AI Recommendations"}
+                    {loadingAI ? (
+                      <FaSpinner className={styles.spinningIcon} />
+                    ) : showAIResults ? (
+                      <FaList />
+                    ) : (
+                      <svg 
+                        stroke="currentColor" 
+                        fill="currentColor" 
+                        strokeWidth="0" 
+                        viewBox="0 0 512 512" 
+                        height="24px" 
+                        width="24px" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
+                      </svg>
+                    )}
                   </button>
                 )}
-
-                {!showAIResults && (
-                  <div className={styles.sortControls}>
-                    <label>{t("findJob.sortBy") || "Sort by"}</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className={styles.sortSelect}
-                    >
-                      <option value="createdAt">
-                        {t("findJob.sort.newest") || "Newest"}
-                      </option>
-                      <option value="minSalary">
-                        {t("findJob.sort.salary") || "Highest Salary"}
-                      </option>
-                      <option value="title">
-                        {t("findJob.sort.title") || "Job Title"}
-                      </option>
-                    </select>
-                  </div>
-                )}
+              </div>
               </div>
             </div>
 
@@ -898,7 +1150,8 @@ export default function FindJobPage() {
               <div className={styles.jobsGrid}>
                 {loadingAI ? (
                   <div className={styles.empty}>
-                    {t("findJob.loading") || "AI is analyzing jobs..."}
+                    <div className={styles.loadingSpinner}></div>
+                    <p>{t("findJob.loading") || "AI is analyzing jobs..."}</p>
                   </div>
                 ) : aiJobs.length === 0 ? (
                   <div className={styles.empty}>
@@ -907,42 +1160,102 @@ export default function FindJobPage() {
                 ) : (
                   aiJobs.map((job) => (
                     <div key={job.id} className={styles.jobCard}>
+                      {job.suitability_score && (
+                        <div className={styles.aiCornerTag}>
+                          <svg 
+                            stroke="currentColor" 
+                            fill="currentColor" 
+                            strokeWidth="0" 
+                            viewBox="0 0 512 512" 
+                            height="1em" 
+                            width="1em" 
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={styles.aiIcon}
+                          >
+                            <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
+                          </svg>
+                          {Math.round(job.suitability_score.overall_score)}%
+                        </div>
+                      )}
                       <div className={styles.jobTop}>
-                        <div className={styles.logo}>{job.company?.[0] || "J"}</div>
+                        <div className={styles.logo}>{job.company[0]}</div>
                         <div className={styles.jobInfo}>
                           <div className={styles.jobTitleRow}>
-                            <h3 className={styles.jobTitle}>
-                              {job.title}
-                              <span className={styles.aiBadge}>AI</span>
-                            </h3>
+                            <h3 className={styles.jobTitle}>{job.title}</h3>
                           </div>
-                          <p className={styles.company}>{job.company || job.organization?.name}</p>
+                          <p className={styles.company}>{job.company}</p>
                           <div className={styles.meta}>
                             <span>
-                              <FaMapMarkerAlt /> {job.location || job.province || job.address}
+                              <FaMapMarkerAlt /> {job.location}
                             </span>
                             <span>
-                              <FaDollarSign /> {job.salary || "Negotiable"}
+                              <FaBullseye /> {job.category}
                             </span>
-                            {job.suitability_score && (
-                              <span className={styles.aiScore}>
-                                Score: {Math.round(job.suitability_score.overall_score)}%
-                              </span>
-                            )}
+                            <span>
+                              <FaBriefcase /> {job.type}
+                            </span>
+                            <span>
+                              <FaStar /> {job.level}
+                            </span>
+                            <span>
+                              <FaDollarSign /> {job.salary}
+                            </span>
                           </div>
-                          {job.suitability_score?.recommendation && (
-                            <p className={styles.aiRecommendation}>
-                              {job.suitability_score.recommendation.substring(0, 150)}...
-                            </p>
-                          )}
                         </div>
                       </div>
-                      <div className={styles.jobActions}>
+                      <p className={styles.desc}>{job.desc}</p>
+                      <div className={styles.tags}>
+                        {job.tags.map((tg) => (
+                          <span key={tg}>{tg}</span>
+                        ))}
+                      </div>
+                      <div className={styles.cardActions}>
                         <button
-                          className={styles.viewBtn}
-                          onClick={() => navigate(ROUTES.JOB_DETAIL.replace(":id", job.id))}
+                          className={styles.detailBtn}
+                          onClick={() =>
+                            navigate(ROUTES.JOB_DETAIL.replace(":id", job.id))
+                          }
                         >
-                          {t("findJob.viewDetails") || "View Details"}
+                          {t("common.viewDetails") || "View Details"}
+                        </button>
+                        <button
+                          className={`${styles.applyBtn} ${
+                            appliedJobIds.has(job.id) ? styles.appliedBtn : ""
+                          }`}
+                          onClick={(e) => {
+                            if (!appliedJobIds.has(job.id)) {
+                              e.stopPropagation();
+                              setSelectedJob(job);
+                              setIsApplicationModalOpen(true);
+                            }
+                          }}
+                          disabled={appliedJobIds.has(job.id)}
+                          title={
+                            appliedJobIds.has(job.id)
+                              ? t("findJob.alreadyApplied") || "Already Applied"
+                              : t("common.apply") || "Apply"
+                          }
+                        >
+                          {appliedJobIds.has(job.id) ? (
+                            <>{t("findJob.alreadyApplied") || "Already Applied"}</>
+                          ) : (
+                            <>{t("common.apply")}</>
+                          )}
+                        </button>
+                        <button
+                          className={`${styles.saveJobBtn} ${
+                            savedJobIds.has(job.id) ? styles.saveJobBtnSaved : ""
+                          }`}
+                          onClick={(e) => handleToggleSaveJob(job.id, e)}
+                          title={
+                            savedJobIds.has(job.id) ? "Unsave job" : "Save job"
+                          }
+                        >
+                          {savedJobIds.has(job.id) ? (
+                            <FaBookmark />
+                          ) : (
+                            <FaRegBookmark />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -954,7 +1267,8 @@ export default function FindJobPage() {
               <div className={styles.jobsGrid}>
               {loading && (
                 <div className={styles.empty}>
-                  {t("findJob.loading") || "Loading jobs..."}
+                  <div className={styles.loadingSpinner}></div>
+                  <p>{t("findJob.loading") || "Loading jobs..."}</p>
                 </div>
               )}
               {!loading && slice.length === 0 && (
@@ -1080,7 +1394,10 @@ export default function FindJobPage() {
                 return (
                   <button
                     key={p}
-                    onClick={() => setPage(p)}
+                    onClick={() => {
+                      setPage(p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className={`${styles.pageBtn} ${
                       p === pageSafe ? styles.active : ""
                     }`}
@@ -1093,154 +1410,6 @@ export default function FindJobPage() {
             )}
           </main>
         </div>
-
-        {/* Advanced Filters Modal */}
-        {showAdvancedFiltersModal && (
-          <div
-            className={styles.modalOverlay}
-            onClick={() => setShowAdvancedFiltersModal(false)}
-          >
-            <div
-              className={styles.advancedFiltersModal}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={styles.modalHeader}>
-                <h2>
-                  {t("findJob.filters.advancedTitle") || "Advanced Filters"}
-                </h2>
-                <button
-                  className={styles.closeBtn}
-                  onClick={() => setShowAdvancedFiltersModal(false)}
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className={styles.modalBody}>
-                {/* Job Review Status Filter */}
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>
-                    {t("findJob.filters.reviewStatus") || "Job Status"}
-                    <span
-                      className={styles.tooltipIcon}
-                      title={
-                        t("findJob.filters.reviewStatusTooltip") ||
-                        "Filter by job approval status"
-                      }
-                    >
-                      <FaInfoCircle />
-                    </span>
-                  </label>
-                  <select
-                    value={tempAdvancedFilters.reviewStatus}
-                    onChange={(e) =>
-                      handleTempAdvancedFilterChange(
-                        "reviewStatus",
-                        e.target.value
-                      )
-                    }
-                    className={styles.selectInput}
-                  >
-                    <option value="">
-                      {t("findJob.filters.allStatuses") || "All Statuses"}
-                    </option>
-                    <option value="pending">
-                      {t("findJob.filters.pending") || "Pending"}
-                    </option>
-                    <option value="approved">
-                      {t("findJob.filters.approved") || "Approved"}
-                    </option>
-                    <option value="rejected">
-                      {t("findJob.filters.rejected") || "Rejected"}
-                    </option>
-                  </select>
-                </div>
-
-                {/* Company Name Search */}
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>
-                    {t("findJob.filters.companyName") || "Company Name"}
-                    <span
-                      className={styles.tooltipIcon}
-                      title={
-                        t("findJob.filters.companyNameTooltip") ||
-                        "Search by company name"
-                      }
-                    >
-                      <FaInfoCircle />
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={tempAdvancedFilters.companyName}
-                    onChange={(e) =>
-                      handleTempAdvancedFilterChange(
-                        "companyName",
-                        e.target.value
-                      )
-                    }
-                    placeholder={
-                      t("findJob.filters.companyNamePlaceholder") ||
-                      "Enter company name"
-                    }
-                    className={styles.textInput}
-                  />
-                </div>
-
-                {/* Working Mode Filter */}
-                <div className={styles.filterGroup}>
-                  <label className={styles.filterLabel}>
-                    {t("findJob.filters.workingMode") || "Working Mode"}
-                    <span
-                      className={styles.tooltipIcon}
-                      title={
-                        t("findJob.filters.workingModeTooltip") ||
-                        "Filter by employment type"
-                      }
-                    >
-                      <FaInfoCircle />
-                    </span>
-                  </label>
-                  <select
-                    value={tempAdvancedFilters.workingMode}
-                    onChange={(e) =>
-                      handleTempAdvancedFilterChange(
-                        "workingMode",
-                        e.target.value
-                      )
-                    }
-                    className={styles.selectInput}
-                  >
-                    <option value="">
-                      {t("findJob.filters.allWorkingModes") ||
-                        "All Working Modes"}
-                    </option>
-                    {workingModes.map((mode) => (
-                      <option key={mode.id} value={mode.id}>
-                        {lang === "vi" ? mode.nameVi : mode.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.modalFooter}>
-                <button
-                  className={styles.clearModalBtn}
-                  onClick={handleClearAdvancedFilters}
-                >
-                  {t("findJob.filters.clear") || "Clear"}
-                </button>
-                <button
-                  className={styles.applyModalBtn}
-                  onClick={handleApplyAdvancedFilters}
-                >
-                  {t("findJob.filters.apply") || "Apply"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Job Details Modal */}
         {isModalOpen && selectedJob && (
@@ -1553,13 +1722,25 @@ export default function FindJobPage() {
 
         {/* Advanced Filter Modal */}
         {showAdvancedFilter && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.advancedFilterModal}>
+          <div 
+            className={styles.modalOverlay}
+            onClick={() => {
+              // Close modal without applying changes when clicking overlay
+              setShowAdvancedFilter(false);
+            }}
+          >
+            <div 
+              className={styles.advancedFilterModal}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className={styles.advancedFilterHeader}>
                 <h2>{t("findJob.advancedFilter")}</h2>
                 <button
                   className={styles.closeBtn}
-                  onClick={() => setShowAdvancedFilter(false)}
+                  onClick={() => {
+                    // Close modal without applying changes when clicking X
+                    setShowAdvancedFilter(false);
+                  }}
                 >
                   ×
                 </button>
@@ -1567,143 +1748,113 @@ export default function FindJobPage() {
 
               <div className={styles.advancedFilterBody}>
                 <div className={styles.advancedFilterGrid}>
-                  {/* Salary Range */}
+                  {/* Working Mode */}
                   <div className={styles.field}>
-                    <label>{t("findJob.advancedSalaryRange")}</label>
+                    <label>{t("findJob.filters.workingMode") || "Working Mode"}</label>
                     <select
-                      value={advancedFilters.salaryRange}
+                      value={tempAdvancedFilters.workingMode || ""}
                       onChange={(e) =>
-                        setAdvancedFilters((prev) => ({
+                        setTempAdvancedFilters((prev) => ({
                           ...prev,
-                          salaryRange: e.target.value,
+                          workingMode: e.target.value,
                         }))
                       }
+                      className={styles.selectInput}
                     >
-                      <option value="">{t("findJob.allSalaryRanges")}</option>
-                      <option value="0-1000">
-                        {t("findJob.salaryUnder1000")}
+                      <option value="">
+                        {t("findJob.filters.allWorkingModes") || "All Working Modes"}
                       </option>
-                      <option value="1000-2000">
-                        {t("findJob.salary1000to2000")}
-                      </option>
-                      <option value="2000-3000">
-                        {t("findJob.salary2000to3000")}
-                      </option>
-                      <option value="3000-4000">
-                        {t("findJob.salary3000to4000")}
-                      </option>
-                      <option value="4000-5000">
-                        {t("findJob.salary4000to5000")}
-                      </option>
-                      <option value="5000+">
-                        {t("findJob.salary5000plus")}
-                      </option>
+                      {workingModes.map((mode) => (
+                        <option key={mode.id} value={mode.id}>
+                          {lang === "vi" ? mode.nameVi : mode.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   {/* Languages */}
                   <div className={styles.field}>
-                    <label>{t("findJob.advancedLanguages")}</label>
+                    <label>{t("findJob.advancedLanguages") || "Languages"}</label>
                     <select
-                      value={advancedFilters.languages}
+                      value={tempAdvancedFilters.languages}
                       onChange={(e) =>
-                        setAdvancedFilters((prev) => ({
+                        setTempAdvancedFilters((prev) => ({
                           ...prev,
                           languages: e.target.value,
                         }))
                       }
+                      className={styles.selectInput}
                     >
-                      <option value="">{t("findJob.allLanguages")}</option>
-                      <option value="EN-VI">English - Vietnamese</option>
-                      <option value="JA-VI">Japanese - Vietnamese</option>
-                      <option value="KO-VI">Korean - Vietnamese</option>
-                      <option value="ZH-VI">Chinese - Vietnamese</option>
-                      <option value="FR-VI">French - Vietnamese</option>
-                      <option value="DE-VI">German - Vietnamese</option>
-                      <option value="ES-VI">Spanish - Vietnamese</option>
+                      <option value="">{t("findJob.allLanguages") || "All Languages"}</option>
+                      {availableLanguages.map((lang) => (
+                        <option key={lang.id || lang.name} value={lang.name}>
+                          {lang.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                  {/* Job Type */}
+                  {/* Level */}
                   <div className={styles.field}>
-                    <label>{t("findJob.advancedJobType")}</label>
+                    <label>{t("findJob.filters.level") || "Level"}</label>
                     <select
-                      value={advancedFilters.jobType}
+                      value={tempAdvancedFilters.level || ""}
                       onChange={(e) =>
-                        setAdvancedFilters((prev) => ({
+                        setTempAdvancedFilters((prev) => ({
                           ...prev,
-                          jobType: e.target.value,
+                          level: e.target.value,
                         }))
                       }
+                      className={styles.selectInput}
                     >
-                      <option value="">{t("findJob.allJobTypes")}</option>
-                      <option value="Full-time">{t("findJob.fullTime")}</option>
-                      <option value="Part-time">{t("findJob.partTime")}</option>
-                      <option value="Contract">{t("findJob.contract")}</option>
-                      <option value="Freelance">
-                        {t("findJob.freelance")}
+                      <option value="">
+                        {t("findJob.filters.allLevels") || "All Levels"}
                       </option>
+                      {levels.map((lvl) => (
+                        <option key={lvl.id} value={lvl.id}>
+                          {lvl.name}
+                        </option>
+                      ))}
                     </select>
+                  </div>
+
+                  {/* Company Name */}
+                  <div className={styles.field}>
+                    <label>{t("findJob.filters.companyName") || "Company Name"}</label>
+                    <input
+                      type="text"
+                      value={tempAdvancedFilters.companyName || ""}
+                      onChange={(e) =>
+                        setTempAdvancedFilters((prev) => ({
+                          ...prev,
+                          companyName: e.target.value,
+                        }))
+                      }
+                      placeholder={t("findJob.filters.companyNamePlaceholder") || "Enter company name"}
+                      className={styles.textInput}
+                    />
                   </div>
 
                   {/* Certificate */}
                   <div className={styles.field}>
-                    <label>{t("findJob.advancedCertificate")}</label>
+                    <label>{t("findJob.advancedCertificate") || "Certificate"}</label>
                     <select
-                      value={advancedFilters.certificate}
+                      value={tempAdvancedFilters.certificate}
                       onChange={(e) =>
-                        setAdvancedFilters((prev) => ({
+                        setTempAdvancedFilters((prev) => ({
                           ...prev,
                           certificate: e.target.value,
                         }))
                       }
+                      className={styles.selectInput}
                     >
-                      <option value="">{t("findJob.allCertificates")}</option>
-                      <option value="TOEIC">{t("findJob.toeic")}</option>
-                      <option value="IELTS">{t("findJob.ielts")}</option>
-                      <option value="TOPIK">{t("findJob.topik")}</option>
-                      <option value="JLPT">{t("findJob.jlpt")}</option>
-                      <option value="HSK">{t("findJob.hsk")}</option>
-                      <option value="DELF">{t("findJob.delf")}</option>
-                    </select>
-                  </div>
-
-                  {/* Experience */}
-                  <div className={styles.field}>
-                    <label>{t("findJob.advancedExperience")}</label>
-                    <select
-                      value={advancedFilters.experience}
-                      onChange={(e) =>
-                        setAdvancedFilters((prev) => ({
-                          ...prev,
-                          experience: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">{t("findJob.allExperience")}</option>
-                      <option value="0-1">{t("findJob.experience01")}</option>
-                      <option value="1-3">{t("findJob.experience13")}</option>
-                      <option value="3-5">{t("findJob.experience35")}</option>
-                      <option value="5+">{t("findJob.experience5plus")}</option>
-                    </select>
-                  </div>
-
-                  {/* Work Location */}
-                  <div className={styles.field}>
-                    <label>{t("findJob.advancedWorkLocation")}</label>
-                    <select
-                      value={advancedFilters.workLocation}
-                      onChange={(e) =>
-                        setAdvancedFilters((prev) => ({
-                          ...prev,
-                          workLocation: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">{t("findJob.allWorkLocations")}</option>
-                      <option value="On-site">{t("findJob.onSite")}</option>
-                      <option value="Remote">{t("findJob.remote")}</option>
-                      <option value="Hybrid">{t("findJob.hybrid")}</option>
+                      <option value="">{t("findJob.allCertificates") || "All Certificates"}</option>
+                      <option value="TOEIC">{t("findJob.toeic") || "TOEIC"}</option>
+                      <option value="IELTS">{t("findJob.ielts") || "IELTS"}</option>
+                      <option value="TOPIK">{t("findJob.topik") || "TOPIK"}</option>
+                      <option value="JLPT">{t("findJob.jlpt") || "JLPT"}</option>
+                      <option value="HSK">{t("findJob.hsk") || "HSK"}</option>
+                      <option value="DELF">{t("findJob.delf") || "DELF"}</option>
                     </select>
                   </div>
                 </div>
@@ -1712,29 +1863,14 @@ export default function FindJobPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setAdvancedFilters({
-                        salaryRange: "",
-                        languages: "",
-                        jobType: "",
-                        certificate: "",
-                        experience: "",
-                        workLocation: "",
-                      });
-                    }}
-                    className={styles.clearAdvancedBtn}
-                  >
-                    {t("findJob.clearAdvanced")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPage(1);
+                      // Apply temp filters to actual filters
+                      setAdvancedFilters({ ...tempAdvancedFilters });
                       setShowAdvancedFilter(false);
-                      // Apply filters will be implemented
+                      setPage(1);
                     }}
                     className={styles.applyAdvancedBtn}
                   >
-                    {t("findJob.applyFilters")}
+                    {t("findJob.applyFilters") || "Apply Filters"}
                   </button>
                 </div>
               </div>

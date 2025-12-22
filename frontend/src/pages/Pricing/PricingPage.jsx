@@ -209,6 +209,15 @@ export default function PricingPage() {
       return;
     }
 
+    // Free plan cannot be paid via payment gateway
+    const plan = plans.find((p) => p.key === planKey);
+    if (plan && (plan.displayPrice === 0 || plan.monthly === 0)) {
+      toastService.error(
+        "Free plan cannot be purchased via payment gateway. Please contact support to activate free plan."
+      );
+      return;
+    }
+
     setOpenPlan(planKey);
     setShowMethodModal(true);
     setSelectedMethod(null);

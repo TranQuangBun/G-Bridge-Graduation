@@ -47,7 +47,11 @@ const router = createBrowserRouter([
       },
   {
     path: ROUTES.FIND_JOB,
-    element: <FindJobPage />,
+    element: (
+      <ProtectedRoute>
+        <FindJobPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: ROUTES.FIND_INTERPRETER,
