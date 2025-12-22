@@ -8,7 +8,7 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://ai-service:5000";
 class AIService {
   constructor() {
     this.baseUrl = AI_SERVICE_URL;
-    this.timeout = 60000; // 60 seconds timeout for AI requests
+    this.timeout = 120000; // 120 seconds timeout for AI requests (batch scoring can take ~100s)
   }
 
   /**
@@ -102,6 +102,47 @@ class AIService {
   }
 
   /**
+   * Batch score suitability of one interpreter for multiple jobs
+   * @param {Array} jobsData - Array of job data
+   * @param {Object} interpreterData - Interpreter profile data
+   * @returns {Promise<Object>} Batch suitability scores
+   */
+  async batchScoreSuitability(jobsData, interpreterData) {
+    try {
+      if (!Array.isArray(jobsData) || jobsData.length === 0) {
+        throw new Error("jobsData must be a non-empty array");
+      }
+      if (!interpreterData) {
+        throw new Error("interpreterData is required");
+      }
+
+      const requestBody = {
+        jobs: jobsData.map((job) => {
+          try {
+            return this._transformJobData(job);
+          } catch (error) {
+            throw new Error(`Failed to transform job ${job?.id}: ${error.message}`);
+          }
+        }),
+        interpreter: (() => {
+          try {
+            return this._transformInterpreterData(interpreterData);
+          } catch (error) {
+            throw new Error(`Failed to transform interpreter data: ${error.message}`);
+          }
+        })(),
+      };
+
+      return await this._request("/api/v1/score/batch", {
+        method: "POST",
+        body: JSON.stringify(requestBody),
+      });
+    } catch (error) {
+      throw new Error(`AI Service batch scoring failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Filter and rank job applications
    * @param {Object} jobData - Job data
    * @param {Array} applicationsData - Array of job applications with interpreter profiles
@@ -185,18 +226,37 @@ class AIService {
           certified: lang.certified || false,
         };
       }),
-      specializations: (interpreter.specializations || []).map((spec) => {
-        if (typeof spec === "string") {
-          return {
-            specialization: spec,
-            experience_years: null,
-          };
+      specializations: (() => {
+        try {
+          let specs = interpreter.specializations || [];
+          // Handle JSON string format
+          if (typeof specs === "string") {
+            try {
+              specs = JSON.parse(specs);
+            } catch {
+              specs = specs.trim() ? [specs] : [];
+            }
+          }
+          // Ensure it's an array
+          if (!Array.isArray(specs)) {
+            specs = [];
+          }
+          return specs.map((spec) => {
+            if (typeof spec === "string") {
+              return {
+                specialization: spec,
+                experience_years: null,
+              };
+            }
+            return {
+              specialization: spec.specialization || spec.name || spec,
+              experience_years: spec.experienceYears || spec.experience_years || null,
+            };
+          });
+        } catch (error) {
+          return [];
         }
-        return {
-          specialization: spec.specialization || spec.name || spec,
-          experience_years: spec.experienceYears || spec.experience_years || null,
-        };
-      }),
+      })(),
       experience_years: interpreter.experience || interpreter.experienceYears || null,
       hourly_rate: interpreter.hourlyRate
         ? parseFloat(interpreter.hourlyRate)

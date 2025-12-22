@@ -81,6 +81,8 @@ services:
       # và lấy MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY từ dashboard
       # Tạo file docker-compose.override.yml để cấu hình credentials (file này được gitignore)
       # Giá trị mặc định dưới đây là sandbox credentials
+      # Note: MOMO_NOTIFY_URL dùng localhost cho development (MoMo không thể gọi được)
+      # Payment verification sẽ được xử lý qua MOMO_RETURN_URL callback
       - MOMO_PARTNER_CODE=MOMOBKUN20180529
       - MOMO_ACCESS_KEY=klm05TvNBzhg7h7j
       - MOMO_SECRET_KEY=at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa
@@ -180,7 +182,7 @@ services:
     restart: unless-stopped
     environment:
       # OpenAI Configuration
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
       
       # Service Configuration

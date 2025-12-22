@@ -10,6 +10,7 @@ const API_BASE_URL =
 // Create axios instance với config mặc định
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 150000, // 150 seconds timeout (batch AI scoring can take ~100s)
   headers: {
     "Content-Type": "application/json",
   },

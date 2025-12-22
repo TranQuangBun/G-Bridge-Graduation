@@ -182,7 +182,19 @@ const FindInterpreterPage = () => {
       fetchInterpreters();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.page, filters.sortBy, filters.sortOrder, user]);
+  }, [
+    filters.page,
+    filters.sortBy,
+    filters.sortOrder,
+    filters.location,
+    filters.languages,
+    filters.specializations,
+    filters.minRate,
+    filters.maxRate,
+    filters.minExperience,
+    filters.rating,
+    user,
+  ]);
   
   const fetchInterpreters = async () => {
     setLoading(true);
@@ -708,14 +720,59 @@ const FindInterpreterPage = () => {
           <main className={styles.mainContent}>
             {/* Toolbar */}
             <div className={styles.toolbar}>
-              <div className={styles.resultsInfo}>
-                <span>
-                  {pagination.total} {t("findInterpreter.resultsFound")}
-                </span>
+              <div className={styles.toolbarLeft}>
+                {/* Only show results info for non-client roles, hide for client */}
+                {user?.role !== "client" && (
+                  <div className={styles.resultsInfo}>
+                    <span>
+                      {pagination.total} {t("findInterpreter.resultsFound")}
+                    </span>
+                  </div>
+                )}
+
+                {/* Active Filters Tags */}
+                {((filters.location && filters.location.trim() !== "") ||
+                  (filters.languages && filters.languages.length > 0) ||
+                  (filters.specializations && filters.specializations.length > 0)) && (
+                  <div className={styles.activeFiltersTags}>
+                    {filters.location && filters.location.trim() !== "" && (
+                      <span className={styles.filterTag}>
+                        {t("findInterpreter.filters.location") || "Location"}: {filters.location}
+                        <button
+                          onClick={() => setFilters(prev => ({ ...prev, location: "" }))}
+                          className={styles.tagClose}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    )}
+                    {filters.languages && filters.languages.length > 0 && (
+                      <span className={styles.filterTag}>
+                        {t("findInterpreter.filters.languages") || "Languages"}: {filters.languages.join(", ")}
+                        <button
+                          onClick={() => setFilters(prev => ({ ...prev, languages: [] }))}
+                          className={styles.tagClose}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    )}
+                    {filters.specializations && filters.specializations.length > 0 && (
+                      <span className={styles.filterTag}>
+                        {t("findInterpreter.filters.specializations") || "Specializations"}: {filters.specializations.join(", ")}
+                        <button
+                          onClick={() => setFilters(prev => ({ ...prev, specializations: [] }))}
+                          className={styles.tagClose}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className={styles.sortControls}>
-                <label>{t("findInterpreter.sortBy")}</label>
                 <select
                   value={filters.sortBy}
                   onChange={(e) =>
@@ -751,17 +808,28 @@ const FindInterpreterPage = () => {
                       <div key={match.id} className={styles.interpreterCard}>
                         <div className={styles.cardHeader}>
                           <div className={styles.avatarContainer}>
-                            {interpreter?.avatar ? (
+                            {(interpreter?.user?.avatar || interpreter?.avatar) ? (
                               <img
-                                src={`http://localhost:4000${interpreter.avatar}`}
-                                alt={interpreter.fullName}
+                                src={
+                                  (interpreter?.user?.avatar || interpreter?.avatar).startsWith("http")
+                                    ? (interpreter?.user?.avatar || interpreter?.avatar)
+                                    : `http://localhost:4000${interpreter?.user?.avatar || interpreter?.avatar}`
+                                }
+                                alt={interpreter?.fullName || interpreter?.user?.name}
                                 className={styles.avatar}
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  e.target.nextElementSibling?.classList.remove(styles.avatarPlaceholderHidden);
+                                }}
                               />
-                            ) : (
-                              <div className={styles.avatarPlaceholder}>
-                                {interpreter?.fullName?.charAt(0)?.toUpperCase() || "I"}
-                              </div>
-                            )}
+                            ) : null}
+                            <div
+                              className={`${styles.avatarPlaceholder} ${
+                                (interpreter?.user?.avatar || interpreter?.avatar) ? styles.avatarPlaceholderHidden : ""
+                              }`}
+                            >
+                              {interpreter?.fullName?.charAt(0)?.toUpperCase() || interpreter?.user?.name?.charAt(0)?.toUpperCase() || "I"}
+                            </div>
                             <div className={styles.aiBadge}>AI #{match.match_priority}</div>
                           </div>
                           <h3 className={styles.interpreterName}>
@@ -827,17 +895,28 @@ const FindInterpreterPage = () => {
                     {/* Avatar */}
                     <div className={styles.cardHeader}>
                       <div className={styles.avatarContainer}>
-                        {interpreter.avatar ? (
+                        {(interpreter.user?.avatar || interpreter.avatar) ? (
                           <img
-                            src={`http://localhost:4000${interpreter.avatar}`}
+                            src={
+                              (interpreter.user?.avatar || interpreter.avatar).startsWith("http")
+                                ? (interpreter.user?.avatar || interpreter.avatar)
+                                : `http://localhost:4000${interpreter.user?.avatar || interpreter.avatar}`
+                            }
                             alt={interpreter.fullName}
                             className={styles.avatar}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextElementSibling?.classList.remove(styles.avatarPlaceholderHidden);
+                            }}
                           />
-                        ) : (
-                          <div className={styles.avatarPlaceholder}>
-                            {interpreter.fullName?.charAt(0)?.toUpperCase()}
-                          </div>
-                        )}
+                        ) : null}
+                        <div
+                          className={`${styles.avatarPlaceholder} ${
+                            (interpreter.user?.avatar || interpreter.avatar) ? styles.avatarPlaceholderHidden : ""
+                          }`}
+                        >
+                          {interpreter.fullName?.charAt(0)?.toUpperCase() || "I"}
+                        </div>
                         {interpreter.profile?.rating >= 4.5 && (
                           <div className={styles.badge}>
                             <FaStar /> Top Rated

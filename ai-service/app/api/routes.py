@@ -7,6 +7,8 @@ from app.models.schemas import (
     ScoreSuitabilityResponse,
     FilterApplicationsRequest,
     FilterApplicationsResponse,
+    BatchScoreSuitabilityRequest,
+    BatchScoreSuitabilityResponse,
     HealthResponse,
 )
 
@@ -60,4 +62,21 @@ async def filter_applications(request: FilterApplicationsRequest):
         return await matching_service.filter_applications(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/score/batch", response_model=BatchScoreSuitabilityResponse)
+async def batch_score_suitability(request: BatchScoreSuitabilityRequest):
+    """
+    Score the suitability of one interpreter for multiple jobs in a single request.
+    This is more efficient than calling score/suitability multiple times.
+    Returns scores for all jobs sorted by suitability (descending).
+    """
+    try:
+        return await matching_service.batch_score_suitability(request)
+    except Exception as e:
+        import traceback
+        error_detail = str(e)
+        print(f"Error in batch_score_suitability: {error_detail}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_detail)
 

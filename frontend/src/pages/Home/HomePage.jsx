@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MainLayout } from "../../layouts";
 import { ROUTES } from "../../constants";
 import "./HomePage.css";
 import { useLanguage } from "../../translet/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   useScrollAnimation,
   useStaggeredAnimation,
@@ -11,15 +12,24 @@ import {
   useMotionPreferences,
 } from "../../hooks/useScrollAnimation";
 import jobService from "../../services/jobService.js";
-import minhAnhAvatar from "../../assets/images/avatar/minhanh.png";
-import namAvatar from "../../assets/images/avatar/nam.png";
-import huongAvatar from "../../assets/images/avatar/huonng.png";
-import { FaGlobe, FaBolt, FaBriefcase, FaBriefcase as FaBriefcaseIcon, FaLanguage, FaPlus, FaBookmark, FaMapMarkerAlt, FaDollarSign, FaClock } from "react-icons/fa";
+import interpreterService from "../../services/interpreterService.js";
+import { FaGlobe, FaBolt, FaBriefcase, FaBriefcase as FaBriefcaseIcon, FaLanguage, FaPlus, FaBookmark, FaMapMarkerAlt, FaDollarSign, FaClock, FaTachometerAlt } from "react-icons/fa";
 
 const HomePage = () => {
   const { lang, t } = useLanguage();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [jobsData, setJobsData] = useState([]);
+  const [interpretersData, setInterpretersData] = useState([]);
+  const [testimonialsData, setTestimonialsData] = useState([]);
+  const [statsData, setStatsData] = useState({
+    totalJobs: 50000,
+    totalInterpreters: 25000,
+    totalOrganizations: 5000,
+    successRate: 98,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   // Anim refs
   const heroRef = useScrollAnimation("animate-on-scroll");
@@ -29,48 +39,134 @@ const HomePage = () => {
   const testimonialsRef = useScrollAnimation("slide-in-right");
   useMotionPreferences();
 
-  // Counters
-  const counter1 = useCounter(50000, 2000);
-  const counter2 = useCounter(25000, 2000);
-  const counter3 = useCounter(5000, 2000);
-  const counter4 = useCounter(98, 2000);
+  // Counters - use real data from API
+  const counter1 = useCounter(statsData.totalJobs, 2000);
+  const counter2 = useCounter(statsData.totalInterpreters, 2000);
+  const counter3 = useCounter(statsData.totalOrganizations, 2000);
+  const counter4 = useCounter(statsData.successRate, 2000);
 
-  // Fetch jobs from API
+  // Fetch public stats from API
   useEffect(() => {
-    const fetchJobs = async () => {
+    const fetchStats = async () => {
       try {
-        const response = await jobService.getJobs({ limit: 9, page: 1, status: "open" });
-        if (response.success && response.data?.jobs) {
-          // Transform API data to match UI format
-          const transformedJobs = response.data.jobs.map((job) => ({
-            id: job.id,
-            title: job.title,
-            company: job.organization?.name || "Company",
-            companyLogo: job.organization?.logo || "/default-logo.png",
-            location: job.province || job.address || "Location TBD",
-            salary: job.minSalary && job.maxSalary
-              ? `$${job.minSalary}-${job.maxSalary}`
-              : job.minSalary
-              ? `$${job.minSalary}+`
-              : "Negotiable",
-            type: job.workingMode?.name || "Full-time",
-            urgent: job.statusOpenStop === "open" && new Date(job.expirationDate) > new Date(),
-            skills: [
-              ...(job.requiredLanguages?.map((rl) => rl.language?.name || "") || []),
-              ...(job.domains?.map((d) => d.name || "") || []),
-            ].filter(Boolean),
-          }));
-          setJobsData(transformedJobs);
-        } else {
-          setJobsData([]);
+        setStatsLoading(true);
+        const response = await jobService.getPublicStats();
+        if (response.success && response.data) {
+          setStatsData({
+            totalJobs: response.data.totalJobs || 0,
+            totalInterpreters: response.data.totalInterpreters || 0,
+            totalOrganizations: response.data.totalOrganizations || 0,
+            successRate: response.data.successRate || 0,
+          });
         }
       } catch (error) {
-        console.error("Error fetching jobs:", error);
-        setJobsData([]);
+        console.error("Error fetching public stats:", error);
+        // Keep default values on error
+      } finally {
+        setStatsLoading(false);
       }
     };
 
-    fetchJobs();
+    fetchStats();
+  }, []);
+
+  // Fetch featured jobs or interpreters based on user role
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // If user is client, fetch interpreters; otherwise fetch jobs
+        if (user?.role === "client") {
+          const response = await interpreterService.getTopRatedInterpreters(9);
+          if (response.success && response.data) {
+            // Transform interpreter data to match UI format
+            const transformedInterpreters = response.data.map((interpreter) => ({
+              id: interpreter.id,
+              name: interpreter.fullName || "Interpreter",
+              avatar: interpreter.avatar || null,
+              location: interpreter.address || interpreter.province || "Location TBD",
+              rate: interpreter.hourlyRate
+                ? `$${interpreter.hourlyRate}/${interpreter.currency || "USD"}`
+                : "Negotiable",
+              experience: interpreter.experience ? `${interpreter.experience} years` : "N/A",
+              rating: interpreter.rating || 0,
+              languages: interpreter.languages?.map((l) => l.language?.name || l.name || "").filter(Boolean) || [],
+              specializations: interpreter.specializations?.map((s) => s.name || s).filter(Boolean) || [],
+            }));
+            setInterpretersData(transformedInterpreters);
+          } else {
+            setInterpretersData([]);
+          }
+        } else {
+          // Fetch jobs for interpreters or non-logged-in users
+          const response = await jobService.getFeaturedJobs(9);
+          if (response.success && response.data) {
+            // Transform API data to match UI format
+            const transformedJobs = response.data.map((job) => ({
+              id: job.id,
+              title: job.title,
+              company: job.organization?.name || "Company",
+              companyLogo: job.organization?.logo || "/default-logo.png",
+              location: job.province || job.address || "Location TBD",
+              salary: job.minSalary && job.maxSalary
+                ? `$${job.minSalary}-${job.maxSalary}`
+                : job.minSalary
+                ? `$${job.minSalary}+`
+                : "Negotiable",
+              type: job.workingMode?.name || "Full-time",
+              urgent: job.statusOpenStop === "open" && new Date(job.expirationDate) > new Date(),
+              skills: [
+                ...(job.requiredLanguages?.map((rl) => rl.language?.name || "") || []),
+                ...(job.domains?.map((d) => d.domain?.name || d.name || "") || []),
+              ].filter(Boolean),
+            }));
+            setJobsData(transformedJobs);
+          } else {
+            setJobsData([]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching featured data:", error);
+        if (user?.role === "client") {
+          setInterpretersData([]);
+        } else {
+          setJobsData([]);
+        }
+      }
+    };
+
+    fetchData();
+  }, [user?.role]);
+
+  // Fetch testimonials from API
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const response = await interpreterService.getTopRatedInterpreters(3);
+        if (response.success && response.data && response.data.length > 0) {
+          // Transform interpreter data to testimonial format
+          const transformedTestimonials = response.data
+            .filter(interpreter => interpreter.portfolio && interpreter.portfolio.trim()) // Only include interpreters with portfolio
+            .map((interpreter) => ({
+              id: interpreter.id,
+              name: interpreter.fullName || "Interpreter",
+              role: interpreter.role || "Interpreter",
+              rating: Math.round(interpreter.rating || 5),
+              content: interpreter.portfolio,
+              avatar: interpreter.avatar || null,
+            }));
+          setTestimonialsData(transformedTestimonials);
+        } else {
+          // No data, set empty array
+          setTestimonialsData([]);
+        }
+      } catch (error) {
+        console.error("Error fetching testimonials:", error);
+        // On error, set empty array
+        setTestimonialsData([]);
+      }
+    };
+
+    fetchTestimonials();
   }, []);
 
   // Animated hero text interval
@@ -105,9 +201,13 @@ const HomePage = () => {
     return () => window.removeEventListener("resize", handle);
   }, [jobsData.length]);
 
+  // Determine which data to use based on user role
+  const displayData = user?.role === "client" ? interpretersData : jobsData;
+  const isClient = user?.role === "client";
+
   const totalGroups = useMemo(
-    () => Math.ceil(jobsData.length / visibleCount),
-    [visibleCount, jobsData.length]
+    () => Math.ceil(displayData.length / visibleCount),
+    [visibleCount, displayData.length]
   );
 
   useEffect(() => {
@@ -119,11 +219,38 @@ const HomePage = () => {
     return () => clearInterval(id);
   }, [isJobPaused, totalGroups]);
 
-  useEffect(() => setGroupIndex(0), [lang, visibleCount]);
+  useEffect(() => setGroupIndex(0), [lang, visibleCount, user?.role]);
 
-  const stats = t("home.stats", []);
+  // Format stats with real data from API
+  const formatNumber = (num) => {
+    if (num >= 1000) {
+      // Format as "50,000" style
+      return num.toLocaleString("en-US");
+    }
+    return num.toString();
+  };
+
+  const stats = [
+    {
+      number: statsLoading ? "..." : `${formatNumber((statsData.totalJobs || 0) * 1000)}+`,
+      label: t("home.stats", [])[0]?.label || "Jobs",
+    },
+    {
+      number: statsLoading ? "..." : `${formatNumber((statsData.totalInterpreters || 0) * 1000)}+`,
+      label: t("home.stats", [])[1]?.label || "Candidates",
+    },
+    {
+      number: statsLoading ? "..." : `${formatNumber((statsData.totalOrganizations || 0) * 1000)}+`,
+      label: t("home.stats", [])[2]?.label || "Companies",
+    },
+    {
+      number: statsLoading ? "..." : `${statsData.successRate || 0}%`,
+      label: t("home.stats", [])[3]?.label || "Success Rate",
+    },
+  ];
   const featuresData = t("home.features", []);
-  const testimonials = t("home.testimonials.reviews", []);
+  // Use real testimonials from API only, no fallback
+  const testimonials = testimonialsData;
   
   // Map icon keys to FontAwesome icons
   const iconMap = {
@@ -175,29 +302,49 @@ const HomePage = () => {
               </div>
               <p className="hero-description">{t("home.heroDescription")}</p>
               <div className="hero-actions">
-                <Link
-                  to="/find-job"
-                  className="action-button primary ripple-effect"
-                >
-                  <FaBriefcaseIcon />
-                  <span>{lang === "vi" ? "Tìm việc làm" : "Find Jobs"}</span>
-                </Link>
-                <Link
-                  to="/find-interpreter"
-                  className="action-button secondary ripple-effect"
-                >
-                  <FaLanguage />
-                  <span>
-                    {lang === "vi" ? "Tìm phiên dịch" : "Find Interpreter"}
-                  </span>
-                </Link>
+                {user?.role === "client" ? (
+                  <>
+                    <Link
+                      to={ROUTES.FIND_INTERPRETER}
+                      className="action-button primary ripple-effect"
+                    >
+                      <FaLanguage />
+                      <span>{t("common.findInterpreter") || "Find Interpreter"}</span>
+                    </Link>
+                    <Link
+                      to={ROUTES.POST_JOB}
+                      className="action-button secondary ripple-effect"
+                    >
+                      <FaPlus />
+                      <span>{t("common.postJob") || "Post Job"}</span>
+                    </Link>
+                  </>
+                ) : user?.role === "interpreter" ? (
                   <Link
-                    to={ROUTES.POST_JOB}
-                  className="action-button outlined ripple-effect"
-                >
-                  <FaPlus />
-                  <span>{lang === "vi" ? "Đăng tuyển dụng" : "Post Job"}</span>
-                </Link>
+                    to={ROUTES.FIND_JOB}
+                    className="action-button primary ripple-effect"
+                  >
+                    <FaBriefcaseIcon />
+                    <span>{t("common.findJob") || "Find Jobs"}</span>
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to={ROUTES.FIND_JOB}
+                      className="action-button primary ripple-effect"
+                    >
+                      <FaBriefcaseIcon />
+                      <span>{t("common.findJob") || "Find Jobs"}</span>
+                    </Link>
+                    <Link
+                      to={ROUTES.FIND_INTERPRETER}
+                      className="action-button secondary ripple-effect"
+                    >
+                      <FaLanguage />
+                      <span>{t("common.findInterpreter") || "Find Interpreter"}</span>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
             <div className="hero-stats" ref={statsRef}>
@@ -254,10 +401,14 @@ const HomePage = () => {
           <div className="featured-jobs-container">
             <div className="section-header">
               <h2 className="section-title animated-gradient-text">
-                {t("home.featuredJobs.title")}
+                {isClient 
+                  ? t("home.featuredInterpreters.title") || "Featured Interpreters"
+                  : t("home.featuredJobs.title") || "Featured Interpreter Jobs"}
               </h2>
               <p className="section-subtitle">
-                {t("home.featuredJobs.subtitle")}
+                {isClient
+                  ? t("home.featuredInterpreters.subtitle") || "Top-rated professional interpreters ready to help"
+                  : t("home.featuredJobs.subtitle") || "Great opportunities for professional interpreters"}
               </p>
             </div>
             <div
@@ -269,60 +420,172 @@ const HomePage = () => {
                 className="jobs-track"
                 style={{ transform: `translateX(-${groupIndex * 100}%)` }}
               >
-                {jobsData.map((job, idx) => (
-                  <div
-                    className="job-slide"
-                    key={job.id}
-                    aria-hidden={Math.floor(idx / visibleCount) !== groupIndex}
-                  >
-                    <div className="job-card hover-lift magnetic-hover breathing-effect">
-                      {job.urgent && <div className="urgent-badge">URGENT</div>}
-                      <div className="job-header">
-                        <h3 className="job-title">{job.title}</h3>
-                        <div className="job-actions">
-                          <button
-                            className="action-btn save-btn"
-                            title={t("common.save")}
-                            aria-label={t("common.save")}
+                {displayData.map((item, idx) => {
+                  if (isClient) {
+                    // Render interpreter card for client
+                    const interpreter = item;
+                    return (
+                      <div
+                        className="job-slide"
+                        key={interpreter.id}
+                        aria-hidden={Math.floor(idx / visibleCount) !== groupIndex}
+                      >
+                        <div className="job-card hover-lift magnetic-hover breathing-effect">
+                          <div className="job-header">
+                            <h3 className="job-title">{interpreter.name}</h3>
+                            <div className="job-actions">
+                              <button
+                                className="action-btn save-btn"
+                                title={t("common.save")}
+                                aria-label={t("common.save")}
+                              >
+                                <FaBookmark />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="job-company">
+                            <div className="company-logo">
+                              {interpreter.avatar ? (
+                                <img 
+                                  src={interpreter.avatar.startsWith("http") 
+                                    ? interpreter.avatar 
+                                    : `http://localhost:4000${interpreter.avatar}`} 
+                                  alt={interpreter.name}
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                    const placeholder = e.target.nextElementSibling;
+                                    if (placeholder) {
+                                      placeholder.style.display = "flex";
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className="company-logo-placeholder" 
+                                style={{ 
+                                  display: interpreter.avatar ? "none" : "flex" 
+                                }}
+                              >
+                                {interpreter.name?.charAt(0)?.toUpperCase() || "I"}
+                              </div>
+                            </div>
+                            <span>{interpreter.name}</span>
+                          </div>
+                          <div className="job-details">
+                            <div className="job-detail">
+                              <FaMapMarkerAlt />
+                              <span>{interpreter.location}</span>
+                            </div>
+                            <div className="job-detail">
+                              <FaDollarSign />
+                              <span>{interpreter.rate}</span>
+                            </div>
+                            <div className="job-detail">
+                              <FaClock />
+                              <span>{interpreter.experience}</span>
+                            </div>
+                          </div>
+                          <div className="job-skills">
+                            {[...(interpreter.languages || []), ...(interpreter.specializations || [])].slice(0, 3).map((skill, i2) => (
+                              <span key={i2} className="skill-tag">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                          <button 
+                            className="apply-btn ripple-effect"
+                            onClick={() => navigate(`${ROUTES.FIND_INTERPRETER}?id=${interpreter.id}`)}
                           >
-                            <FaBookmark />
+                            <span>{t("common.viewDetails")}</span>
+                            <i className="fas fa-arrow-right"></i>
                           </button>
                         </div>
                       </div>
-                      <div className="job-company">
-                        <div className="company-logo">
-                          <img src={job.companyLogo} alt={job.company} />
+                    );
+                  } else {
+                    // Render job card for interpreter or non-logged-in users
+                    const job = item;
+                    return (
+                      <div
+                        className="job-slide"
+                        key={job.id}
+                        aria-hidden={Math.floor(idx / visibleCount) !== groupIndex}
+                      >
+                        <div className="job-card hover-lift magnetic-hover breathing-effect">
+                          {job.urgent && <div className="urgent-badge">URGENT</div>}
+                          <div className="job-header">
+                            <h3 className="job-title">{job.title}</h3>
+                            <div className="job-actions">
+                              <button
+                                className="action-btn save-btn"
+                                title={t("common.save")}
+                                aria-label={t("common.save")}
+                              >
+                                <FaBookmark />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="job-company">
+                            <div className="company-logo">
+                              {job.companyLogo && job.companyLogo !== "/default-logo.png" ? (
+                                <img 
+                                  src={job.companyLogo.startsWith("http") 
+                                    ? job.companyLogo 
+                                    : `http://localhost:4000${job.companyLogo}`} 
+                                  alt={job.company}
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                    const placeholder = e.target.nextElementSibling;
+                                    if (placeholder) {
+                                      placeholder.style.display = "flex";
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className="company-logo-placeholder" 
+                                style={{ 
+                                  display: (job.companyLogo && job.companyLogo !== "/default-logo.png") ? "none" : "flex" 
+                                }}
+                              >
+                                {job.company?.charAt(0)?.toUpperCase() || "C"}
+                              </div>
+                            </div>
+                            <span>{job.company}</span>
+                          </div>
+                          <div className="job-details">
+                            <div className="job-detail">
+                              <FaMapMarkerAlt />
+                              <span>{job.location}</span>
+                            </div>
+                            <div className="job-detail">
+                              <FaDollarSign />
+                              <span>{job.salary}</span>
+                            </div>
+                            <div className="job-detail">
+                              <FaClock />
+                              <span>{job.type}</span>
+                            </div>
+                          </div>
+                          <div className="job-skills">
+                            {job.skills.map((skill, i2) => (
+                              <span key={i2} className="skill-tag">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                          <button 
+                            className="apply-btn ripple-effect"
+                            onClick={() => navigate(ROUTES.JOB_DETAIL.replace(":id", job.id))}
+                          >
+                            <span>{t("common.apply")}</span>
+                            <i className="fas fa-arrow-right"></i>
+                          </button>
                         </div>
-                        <span>{job.company}</span>
                       </div>
-                      <div className="job-details">
-                        <div className="job-detail">
-                          <FaMapMarkerAlt />
-                          <span>{job.location}</span>
-                        </div>
-                        <div className="job-detail">
-                          <FaDollarSign />
-                          <span>{job.salary}</span>
-                        </div>
-                        <div className="job-detail">
-                          <FaClock />
-                          <span>{job.type}</span>
-                        </div>
-                      </div>
-                      <div className="job-skills">
-                        {job.skills.map((skill, i2) => (
-                          <span key={i2} className="skill-tag">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                      <button className="apply-btn ripple-effect">
-                        <span>{t("common.apply")}</span>
-                        <i className="fas fa-arrow-right"></i>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  }
+                })}
               </div>
               <div
                 className="jobs-dots"
@@ -340,50 +603,36 @@ const HomePage = () => {
                   />
                 ))}
               </div>
-              <button
-                type="button"
-                className="jobs-nav prev"
-                onClick={() =>
-                  setGroupIndex((g) => (g - 1 + totalGroups) % totalGroups)
-                }
-                aria-label="Previous job"
-              >
-                <i className="fas fa-chevron-left" />
-              </button>
-              <button
-                type="button"
-                className="jobs-nav next"
-                onClick={() => setGroupIndex((g) => (g + 1) % totalGroups)}
-                aria-label="Next job"
-              >
-                <i className="fas fa-chevron-right" />
-              </button>
             </div>
             <div className="view-all-container">
-              <Link to="/jobs" className="view-all-btn">
+              <Link 
+                to={isClient ? ROUTES.FIND_INTERPRETER : ROUTES.FIND_JOB} 
+                className="view-all-btn"
+              >
                 {t("common.viewAll")} <i className="fas fa-arrow-right"></i>
               </Link>
             </div>
           </div>
         </section>
-        <section className="testimonials-section" ref={testimonialsRef}>
-          <div className="testimonials-container">
-            <div className="section-header">
-              <h2 className="section-title animated-gradient-text">
-                {t("home.testimonials.title")}
-              </h2>
-              <p className="section-subtitle">
-                {t("home.testimonials.subtitle")}
-              </p>
-            </div>
-            <div className="testimonials-grid">
-              {testimonials.map((rev) => {
-                const avatar =
-                  rev.id === 1
-                    ? minhAnhAvatar
-                    : rev.id === 2
-                    ? namAvatar
-                    : huongAvatar;
+        {testimonials.length > 0 && (
+          <section className="testimonials-section" ref={testimonialsRef}>
+            <div className="testimonials-container">
+              <div className="section-header">
+                <h2 className="section-title animated-gradient-text">
+                  {t("home.testimonials.title")}
+                </h2>
+                <p className="section-subtitle">
+                  {t("home.testimonials.subtitle")}
+                </p>
+              </div>
+              <div className="testimonials-grid">
+                {testimonials.map((rev) => {
+                // Handle avatar: use from API if available, otherwise use placeholder
+                const avatarUrl = rev.avatar 
+                  ? (rev.avatar.startsWith("http") 
+                      ? rev.avatar 
+                      : `http://localhost:4000${rev.avatar}`)
+                  : null;
                 return (
                   <div
                     key={rev.id}
@@ -407,7 +656,15 @@ const HomePage = () => {
                     </div>
                     <div className="testimonial-author">
                       <div className="author-avatar">
-                        <img src={avatar} alt={rev.name} />
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt={rev.name} onError={(e) => {
+                            e.target.style.display = "none";
+                            e.target.nextElementSibling.style.display = "flex";
+                          }} />
+                        ) : null}
+                        <div className="avatar-placeholder" style={{ display: avatarUrl ? "none" : "flex" }}>
+                          {rev.name?.charAt(0)?.toUpperCase() || "I"}
+                        </div>
                       </div>
                       <div className="author-info">
                         <h4 className="author-name">{rev.name}</h4>
@@ -416,23 +673,58 @@ const HomePage = () => {
                     </div>
                   </div>
                 );
-              })}
+                })}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
         <section className="cta-section">
           <div className="cta-container">
             <div className="cta-content">
-              <h2 className="cta-title">{t("home.cta.title")}</h2>
-              <p className="cta-description">{t("home.cta.description")}</p>
-              <div className="cta-buttons">
-                <Link to={ROUTES.REGISTER} className="cta-button primary">
-                  {t("home.cta.registerNow")}
-                </Link>
-                <Link to={ROUTES.LOGIN} className="cta-button secondary">
-                  {t("home.cta.login")}
-                </Link>
-              </div>
+              {user ? (
+                <>
+                  <h2 className="cta-title">
+                    {t("home.cta.loggedIn.title") || `Welcome back, ${user.fullName || user.email}!`}
+                  </h2>
+                  <p className="cta-description">
+                    {t("home.cta.loggedIn.description") || "Continue exploring opportunities and grow your career"}
+                  </p>
+                  <div className="cta-buttons">
+                    {user.role === "client" ? (
+                      <>
+                        <Link to={ROUTES.FIND_INTERPRETER} className="cta-button primary">
+                          <FaLanguage /> {t("common.findInterpreter") || "Find Interpreter"}
+                        </Link>
+                        <Link to={ROUTES.POST_JOB} className="cta-button secondary">
+                          <FaPlus /> {t("common.postJob") || "Post Job"}
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link to={ROUTES.FIND_JOB} className="cta-button primary">
+                          <FaBriefcaseIcon /> {t("common.findJob") || "Find Jobs"}
+                        </Link>
+                        <Link to={ROUTES.DASHBOARD} className="cta-button secondary">
+                          <FaTachometerAlt /> {t("common.dashboard") || "Dashboard"}
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="cta-title">{t("home.cta.title")}</h2>
+                  <p className="cta-description">{t("home.cta.description")}</p>
+                  <div className="cta-buttons">
+                    <Link to={ROUTES.REGISTER} className="cta-button primary">
+                      {t("home.cta.registerNow")}
+                    </Link>
+                    <Link to={ROUTES.LOGIN} className="cta-button secondary">
+                      {t("home.cta.login")}
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </section>

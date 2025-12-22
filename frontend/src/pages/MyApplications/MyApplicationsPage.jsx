@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./MyApplicationsPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
@@ -80,6 +80,7 @@ const CLIENT_SIDEBAR_MENU = [
 function MyApplicationsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   // Get sidebar menu based on user role
@@ -184,6 +185,20 @@ function MyApplicationsPage() {
 
     fetchApplications();
   }, [user]);
+
+  // Auto-open application modal if applicationId is passed via navigation state
+  useEffect(() => {
+    if (location.state?.applicationId && applications.length > 0) {
+      const application = applications.find(
+        (app) => app.id === location.state.applicationId
+      );
+      if (application) {
+        setSelectedApplication(application);
+        // Clear the state to prevent reopening on refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, applications]);
 
   const handleAcceptApplication = async (applicationId) => {
     if (!user || user.role !== "client") return;
@@ -816,36 +831,7 @@ function MyApplicationsPage() {
                     </div>
 
                     <div className={styles.cardActions}>
-                      <button
-                        className={styles.viewDetailsBtn}
-                        onClick={() => handleViewDetails(application)}
-                      >
-                        {t("applications.viewDetails")}
-                      </button>
-                      {isClient ? (
-                        <>
-                          {application.resumeUrl ? (
-                            <button
-                              onClick={() =>
-                                openResumeModal(application.resumeUrl)
-                              }
-                              className={styles.viewResumeBtn}
-                            >
-                              <FaFileAlt /> {t("applications.modal.viewResume")}
-                            </button>
-                          ) : (
-                            <span className={styles.noResumeText}>
-                              <FaFileAlt /> {t("applications.noResume")}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <button className={styles.withdrawBtn}>
-                          {t("applications.withdraw")}
-                        </button>
-                      )}
-
-                      {/* Job Completion Button - Show for approved applications */}
+                      {/* Job Completion Button - Show for approved applications - Top */}
                       {isApplicationApproved(application) && (
                         <>
                           {application.completedAt ? (
@@ -900,6 +886,38 @@ function MyApplicationsPage() {
                           )}
                         </>
                       )}
+
+                      {/* Resume - Middle */}
+                      {isClient ? (
+                        <>
+                          {application.resumeUrl ? (
+                            <button
+                              onClick={() =>
+                                openResumeModal(application.resumeUrl)
+                              }
+                              className={styles.viewResumeBtn}
+                            >
+                              <FaFileAlt /> {t("applications.modal.viewResume")}
+                            </button>
+                          ) : (
+                            <span className={styles.noResumeText}>
+                              <FaFileAlt /> {t("applications.noResume")}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <button className={styles.withdrawBtn}>
+                          {t("applications.withdraw")}
+                        </button>
+                      )}
+
+                      {/* View Details - Bottom */}
+                      <button
+                        className={styles.viewDetailsBtn}
+                        onClick={() => handleViewDetails(application)}
+                      >
+                        {t("applications.viewDetails")}
+                      </button>
                     </div>
                   </div>
                 );

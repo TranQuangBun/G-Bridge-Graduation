@@ -67,12 +67,6 @@ export async function createCertification(req, res) {
       userId: parseInt(userId),
     };
 
-    console.log("📝 [CREATE CERTIFICATION] Request data:", {
-      userId,
-      certificationData,
-      body: req.body,
-    });
-
     const certification = await certificationService.createCertification(
       certificationData
     );
@@ -191,7 +185,6 @@ export async function uploadCertificationImage(req, res) {
       `${req.protocol}://${req.get("host")}`;
     const fileUrl = `${baseUrl}${relativeUrl}`;
 
-    console.log("💾 [UPLOAD CERTIFICATION IMAGE] Saving to database with URL:", fileUrl);
     const certification = await certificationService.updateCertificationImage(userId, id, fileUrl);
 
     console.log("✅ [UPLOAD CERTIFICATION IMAGE] Saved certification:", {

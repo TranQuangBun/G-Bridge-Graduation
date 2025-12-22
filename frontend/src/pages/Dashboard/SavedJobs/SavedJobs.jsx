@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaBookmark,
@@ -130,24 +130,55 @@ const SavedJobs = () => {
     navigate(`/job/${jobId}`);
   };
 
-  const getFilteredAndSortedJobs = () => {
+  // Memoize filtered and sorted jobs - must be called before any early returns
+  const filteredJobs = useMemo(() => {
     let filtered = [...savedJobs];
+
+    // Apply status filter
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((job) => {
+        const jobStatus = job.status || job.job?.status || job.statusOpenStop || job.job?.statusOpenStop;
+        if (filterStatus === "active") {
+          return jobStatus === "open" || jobStatus === "active";
+        } else if (filterStatus === "closed") {
+          return jobStatus === "closed" || jobStatus === "inactive";
+        }
+        return true;
+      });
+    }
 
     // Apply sorting
     if (sortBy === "newest") {
-      filtered.sort((a, b) => new Date(b.saved_at) - new Date(a.saved_at));
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.saved_at || a.savedDate || a.createdAt || 0);
+        const dateB = new Date(b.saved_at || b.savedDate || b.createdAt || 0);
+        return dateB - dateA;
+      });
     } else if (sortBy === "oldest") {
-      filtered.sort((a, b) => new Date(a.saved_at) - new Date(b.saved_at));
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.saved_at || a.savedDate || a.createdAt || 0);
+        const dateB = new Date(b.saved_at || b.savedDate || b.createdAt || 0);
+        return dateA - dateB;
+      });
     } else if (sortBy === "salary_high") {
       filtered.sort((a, b) => {
-        const salaryA = parseInt(a.pay_rate?.replace(/[^0-9]/g, "") || 0);
-        const salaryB = parseInt(b.pay_rate?.replace(/[^0-9]/g, "") || 0);
+        // Try multiple possible salary fields
+        const salaryA = parseInt(
+          (a.pay_rate || a.salary || a.job?.maxSalary || a.maxSalary || "0")
+            .toString()
+            .replace(/[^0-9]/g, "") || "0"
+        );
+        const salaryB = parseInt(
+          (b.pay_rate || b.salary || b.job?.maxSalary || b.maxSalary || "0")
+            .toString()
+            .replace(/[^0-9]/g, "") || "0"
+        );
         return salaryB - salaryA;
       });
     }
 
     return filtered;
-  };
+  }, [savedJobs, filterStatus, sortBy]);
 
   if (loading) {
     return (
@@ -170,8 +201,6 @@ const SavedJobs = () => {
       </MainLayout>
     );
   }
-
-  const filteredJobs = getFilteredAndSortedJobs();
 
   return (
     <MainLayout>

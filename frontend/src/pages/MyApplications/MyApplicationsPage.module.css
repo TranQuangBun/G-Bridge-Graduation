@@ -741,47 +741,51 @@
 /* Card Actions */
 .cardActions {
   display: flex;
-  gap: 8px;
-  padding: 12px 18px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   margin-top: auto;
 }
 
 .viewDetailsBtn {
-  flex: 1;
-  background: var(--primary);
+  width: 100%;
+  background: #3b82f6;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  white-space: nowrap;
 }
 
 .viewDetailsBtn:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+  background: #2563eb;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .withdrawBtn {
+  width: 100%;
   background: #ffffff;
   color: #dc2626;
   border: 1px solid #ef4444;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .withdrawBtn:hover {
@@ -790,28 +794,21 @@
 }
 
 .viewResumeBtn {
+  width: 100%;
   background: #ffffff;
   color: #1e40af;
   border: 1.5px solid #3b82f6;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
+  justify-content: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .viewResumeBtn:hover {
@@ -825,12 +822,14 @@
 }
 
 .noResumeText {
+  width: 100%;
   color: #6b7280;
-  font-size: 0.9rem;
-  display: inline-flex;
+  font-size: 0.875rem;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 10px 20px;
   opacity: 0.7;
 }
 
@@ -840,15 +839,17 @@
 
 /* Job Completion Buttons */
 .completedBadge {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #d1fae5;
   color: #047857;
   border: 1px solid #10b981;
-  border-radius: 6px;
-  font-size: 0.813rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -858,25 +859,26 @@
 }
 
 .requestCompletionBtn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  width: 100%;
+  background: #10b981;
   color: white;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   white-space: nowrap;
 }
 
 .requestCompletionBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  background: #059669;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
 }
 
 .requestCompletionBtn:disabled {
@@ -884,19 +886,25 @@
   cursor: not-allowed;
 }
 
+.requestCompletionBtn svg {
+  font-size: 0.875rem;
+}
+
 .pendingCompletionBtn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  width: 100%;
+  background: #f59e0b;
   color: white;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   white-space: nowrap;
 }
 
@@ -912,18 +920,20 @@
 }
 
 .confirmCompletionBtn {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  width: 100%;
+  background: #3b82f6;
   color: white;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.813rem;
-  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   white-space: nowrap;
 }
 

@@ -125,11 +125,6 @@ export class CertificationService {
       verificationStatus: data.verificationStatus || CertificationStatus.PENDING,
     };
     
-    console.log("🔧 [CERTIFICATION SERVICE] Creating certification with data:", {
-      ...certificationData,
-      passwordHash: certificationData.passwordHash ? "[HIDDEN]" : undefined,
-    });
-    
     const certification = this.certificationRepository.repository.create(certificationData);
     const saved = await this.certificationRepository.repository.save(certification);
     

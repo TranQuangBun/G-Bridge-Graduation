@@ -50,24 +50,42 @@ export default function AISuggestedJobsSection({ interpreterId, autoFetch = fals
 
       // Call AI service to match - use interpreter profile ID if available
       const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || interpreterId;
-      const matches = [];
-      for (const job of jobs.slice(0, 20)) { // Limit to 20 jobs for performance
-        try {
-          const scoreRes = await aiMatchingService.scoreSuitability(job.id, profileId);
-          if (scoreRes.success && scoreRes.data?.suitability_score) {
-            matches.push({
+      const jobsToScore = jobs.slice(0, 20); // Limit to 20 jobs for performance
+      const jobIds = jobsToScore.map((job) => job.id);
+      
+      try {
+        // Use batch scoring instead of individual calls
+        const batchRes = await aiMatchingService.batchScoreSuitability(
+          jobIds,
+          profileId
+        );
+        
+        if (batchRes.success && batchRes.data?.job_scores) {
+          // Map scores back to jobs
+          const scoreMap = new Map();
+          batchRes.data.job_scores.forEach((item) => {
+            scoreMap.set(item.job_id, item.suitability_score);
+          });
+          
+          const matches = jobsToScore
+            .map((job) => ({
               job,
-              suitability_score: scoreRes.data.suitability_score,
-            });
-          }
-        } catch (err) {
-          console.error(`Error scoring job ${job.id}:`, err);
+              suitability_score: scoreMap.get(job.id),
+            }))
+            .filter((match) => match.suitability_score) // Only include jobs with scores
+            .sort(
+              (a, b) =>
+                b.suitability_score.overall_score -
+                a.suitability_score.overall_score
+            );
+          
+          setSuggestedJobs(matches.slice(0, 5));
         }
+      } catch (err) {
+        console.error("Error batch scoring jobs:", err);
+        // Fallback to empty array on error
+        setSuggestedJobs([]);
       }
-
-      // Sort by score and take top 5
-      matches.sort((a, b) => b.suitability_score.overall_score - a.suitability_score.overall_score);
-      setSuggestedJobs(matches.slice(0, 5));
       setHasFetched(true);
     } catch (err) {
       console.error("Error fetching AI suggestions:", err);

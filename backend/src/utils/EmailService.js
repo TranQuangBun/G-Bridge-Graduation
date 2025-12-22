@@ -100,10 +100,7 @@ class EmailService {
     console.log("From:", mailOptions.from);
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log("✅ Password reset email sent successfully!");
-      console.log("Message ID:", info.messageId);
-      console.log("Response:", info.response);
+      await this.transporter.sendMail(mailOptions);
       logger.info(`Password reset email sent to ${to}`);
       return true;
     } catch (error) {

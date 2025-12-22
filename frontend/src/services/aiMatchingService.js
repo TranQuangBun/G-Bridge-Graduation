@@ -39,6 +39,25 @@ const aiMatchingService = {
   },
 
   /**
+   * Batch score suitability of one interpreter for multiple jobs
+   * @param {Array<number>} jobIds - Array of job IDs
+   * @param {number} interpreterId - Interpreter ID
+   * @returns {Promise<Object>} Batch suitability scores
+   */
+  batchScoreSuitability: async (jobIds, interpreterId) => {
+    try {
+      const response = await apiClient.post("/ai-match/score/batch", {
+        jobIds,
+        interpreterId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error batch scoring suitability:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
+  /**
    * Filter and rank job applications using AI
    * @param {number} jobId - Job ID
    * @param {number} minScore - Minimum suitability score (default: 50)

@@ -66,15 +66,7 @@ export class UserProfileService {
     }
 
     // Ensure specializations is properly formatted as array
-    const updateData = { ...profileData };
-
-    console.log("updateInterpreterProfileData - Received profileData:", {
-      profileData,
-      specializations: profileData.specializations,
-      specializationsType: typeof profileData.specializations,
-      isArray: Array.isArray(profileData.specializations),
-      length: profileData.specializations?.length,
-    });
+    const updateData = { ...profileData     };
 
     if (updateData.specializations !== undefined) {
       // Ensure it's an array
@@ -112,22 +104,7 @@ export class UserProfileService {
       } else {
         updateData.specializations = [];
       }
-    } else {
-      // If specializations is not provided, keep the existing value
-      console.log(
-        "specializations not provided in updateData, keeping existing value"
-      );
     }
-
-    console.log("Updating interpreter profile:", {
-      userId,
-      profileId: profile.id,
-      updateData,
-      specializations: updateData.specializations,
-      specializationsType: typeof updateData.specializations,
-      isArray: Array.isArray(updateData.specializations),
-      currentSpecializations: profile.specializations,
-    });
 
     // Update fields individually to ensure proper handling
     if (updateData.hourlyRate !== undefined) {

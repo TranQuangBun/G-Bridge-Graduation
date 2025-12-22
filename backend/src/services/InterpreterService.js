@@ -149,17 +149,6 @@ export class InterpreterService {
 
     const [interpreters, count] = await queryBuilder.getManyAndCount();
 
-    // Debug log
-    console.log("📊 Interpreters found:", interpreters.length);
-    if (interpreters.length > 0) {
-      console.log("📝 First interpreter profile:", {
-        name: interpreters[0].fullName,
-        hasProfile: !!interpreters[0].interpreterProfile,
-        rating: interpreters[0].interpreterProfile?.rating,
-        totalReviews: interpreters[0].interpreterProfile?.totalReviews,
-      });
-    }
-
     return {
       interpreters,
       pagination: {
@@ -206,6 +195,41 @@ export class InterpreterService {
 
     return specializations;
   }
+
+  // Get top rated interpreters for testimonials
+  async getTopRatedInterpreters(limit = 3) {
+    try {
+      const queryBuilder = AppDataSource.getRepository(User)
+        .createQueryBuilder("user")
+        .leftJoinAndSelect("user.interpreterProfile", "profile")
+        .where("user.role = :role", { role: "interpreter" })
+        .andWhere("user.isActive = :isActive", { isActive: true })
+        .andWhere("profile.id IS NOT NULL")
+        .andWhere("profile.rating >= :minRating", { minRating: 4.0 })
+        .andWhere("profile.totalReviews > :minReviews", { minReviews: 0 })
+        .orderBy("profile.rating", "DESC")
+        .addOrderBy("profile.totalReviews", "DESC")
+        .take(limit);
+
+      const interpreters = await queryBuilder.getMany();
+
+      return interpreters.map((interpreter) => ({
+        id: interpreter.id,
+        fullName: interpreter.fullName,
+        email: interpreter.email,
+        avatar: interpreter.avatar,
+        role: "Interpreter",
+        rating: interpreter.interpreterProfile?.rating || 0,
+        totalReviews: interpreter.interpreterProfile?.totalReviews || 0,
+        experience: interpreter.interpreterProfile?.experience || 0,
+        specializations: interpreter.interpreterProfile?.specializations || [],
+        portfolio: interpreter.interpreterProfile?.portfolio || "",
+      }));
+    } catch (error) {
+      console.error("Error fetching top rated interpreters:", error);
+      throw error;
+    }
+  }
 }
 
 const interpreterService = new InterpreterService();
@@ -224,4 +248,8 @@ export async function getAvailableLanguagesForFilter() {
 
 export async function getAvailableSpecializationsForFilter() {
   return await interpreterService.getAvailableSpecializationsForFilter();
+}
+
+export async function getTopRatedInterpreters(limit = 3) {
+  return await interpreterService.getTopRatedInterpreters(limit);
 }

@@ -2,6 +2,7 @@ import express from "express";
 import {
   matchJobToInterpreters,
   scoreSuitability,
+  batchScoreSuitability,
   filterApplications,
   aiServiceHealth,
 } from "../controllers/AIMatchingController.js";
@@ -18,6 +19,11 @@ router.get(
   "/score/:jobId/:interpreterId",
   authRequired,
   scoreSuitability
+);
+router.post(
+  "/score/batch",
+  authRequired,
+  batchScoreSuitability
 );
 router.get(
   "/filter-applications/:jobId",

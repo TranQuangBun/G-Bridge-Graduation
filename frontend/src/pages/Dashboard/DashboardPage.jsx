@@ -255,12 +255,19 @@ function DashboardPage() {
         const notificationsFilter =
           activeMenu === "notifications" && showUnreadOnly ? false : undefined;
 
+        // Reset notifications when filter changes
+        if (activeMenu === "notifications") {
+          setNotifications([]);
+          setNotificationsPagination({ page: 1, totalPages: 1, total: 0 });
+        }
+
         const [applicationsResponse, savedJobsResponse, notificationsResponse] =
           await Promise.all([
             jobService.getMyApplications(),
             jobService.getSavedJobs(),
             notificationService.getMyNotifications({
               limit: notificationsLimit,
+              page: 1,
               isRead: notificationsFilter,
             }),
           ]);
@@ -691,7 +698,11 @@ function DashboardPage() {
                     className={`${styles.filterBtn} ${
                       showUnreadOnly ? styles.filterBtnActive : ""
                     }`}
-                    onClick={() => setShowUnreadOnly((prev) => !prev)}
+                    onClick={() => {
+                      setShowUnreadOnly((prev) => !prev);
+                      // Reset pagination when filter changes
+                      setNotificationsPagination({ page: 1, totalPages: 1, total: 0 });
+                    }}
                   >
                     {showUnreadOnly
                       ? t("notificationsPage.showAll") || "Show all"
@@ -1131,7 +1142,12 @@ function DashboardPage() {
 
                           {/* Action Column */}
                           <div className={styles.actionColumn}>
-                            <button className={styles.viewDetailsBtn}>
+                            <button 
+                              className={styles.viewDetailsBtn}
+                              onClick={() => navigate(ROUTES.MY_APPLICATIONS, {
+                                state: { applicationId: job.id }
+                              })}
+                            >
                               {t("dashboard.recentJobs.viewDetails")}
                             </button>
                           </div>

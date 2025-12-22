@@ -1681,3 +1681,26 @@ export async function closeJob(req, res) {
     return sendError(res, "Error closing job", 500, error);
   }
 }
+
+// Get public statistics for homepage
+export async function getPublicStats(req, res) {
+  try {
+    const stats = await jobService.getPublicStats();
+    return sendSuccess(res, stats, "Public stats fetched successfully");
+  } catch (error) {
+    logError(error, "Fetching public stats");
+    return sendError(res, "Error fetching public stats", 500, error);
+  }
+}
+
+// Get featured jobs for homepage
+export async function getFeaturedJobs(req, res) {
+  try {
+    const { limit = 9 } = req.query;
+    const jobs = await jobService.getFeaturedJobs(parseInt(limit));
+    return sendSuccess(res, jobs, "Featured jobs fetched successfully");
+  } catch (error) {
+    logError(error, "Fetching featured jobs");
+    return sendError(res, "Error fetching featured jobs", 500, error);
+  }
+}

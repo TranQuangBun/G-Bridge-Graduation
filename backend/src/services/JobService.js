@@ -2,12 +2,17 @@ import { JobRepository } from "../repositories/JobRepository.js";
 import { AppDataSource } from "../config/DataSource.js";
 import { Organization } from "../entities/Organization.js";
 import { WorkingMode } from "../entities/WorkingMode.js";
+import { User } from "../entities/User.js";
+import { JobApplication } from "../entities/JobApplication.js";
+import { Not } from "typeorm";
 
 export class JobService {
   constructor() {
     this.jobRepository = new JobRepository();
     this.organizationRepository = AppDataSource.getRepository(Organization);
     this.workingModeRepository = AppDataSource.getRepository(WorkingMode);
+    this.userRepository = AppDataSource.getRepository(User);
+    this.jobApplicationRepository = AppDataSource.getRepository(JobApplication);
   }
 
   async getAllJobs(query) {
@@ -134,6 +139,84 @@ export class JobService {
       throw new Error("Job not found");
     }
     return true;
+  }
+
+  // Get public statistics for homepage
+  async getPublicStats() {
+    try {
+      const [
+        totalJobs,
+        totalInterpreters,
+        totalOrganizations,
+        totalApplications,
+        completedApplications,
+      ] = await Promise.all([
+        // Total approved jobs
+        this.jobRepository.repository.count({
+          where: { reviewStatus: "approved" },
+        }),
+        // Total active interpreters
+        this.userRepository.count({
+          where: { role: "interpreter", isActive: true },
+        }),
+        // Total approved organizations
+        this.organizationRepository.count({
+          where: { approvalStatus: "approved" },
+        }),
+        // Total applications
+        this.jobApplicationRepository.count(),
+        // Completed applications (status is not pending)
+        // Note: status is a string field, so we use Not operator
+        this.jobApplicationRepository.count({
+          where: { status: Not("pending") },
+        }),
+      ]);
+
+      // Calculate success rate (completed / total * 100)
+      const successRate =
+        totalApplications > 0
+          ? Math.round((completedApplications / totalApplications) * 100)
+          : 0;
+
+      return {
+        totalJobs,
+        totalInterpreters,
+        totalOrganizations,
+        successRate,
+      };
+    } catch (error) {
+      console.error("Error fetching public stats:", error);
+      throw error;
+    }
+  }
+
+  // Get featured jobs for homepage (top jobs: urgent, newest, with many applications)
+  async getFeaturedJobs(limit = 9) {
+    try {
+      const jobRepository = this.jobRepository.repository;
+      
+      // Get featured jobs: approved, open, ordered by createdDate DESC, limit
+      const featuredJobs = await jobRepository
+        .createQueryBuilder("job")
+        .leftJoinAndSelect("job.organization", "organization")
+        .leftJoinAndSelect("job.workingMode", "workingMode")
+        .leftJoinAndSelect("job.domains", "domains")
+        .leftJoinAndSelect("domains.domain", "domain")
+        .leftJoinAndSelect("job.requiredLanguages", "requiredLanguages")
+        .leftJoinAndSelect("requiredLanguages.language", "language")
+        .leftJoinAndSelect("requiredLanguages.level", "level")
+        .where("job.reviewStatus = :reviewStatus", { reviewStatus: "approved" })
+        .andWhere("job.statusOpenStop = :status", { status: "open" })
+        .andWhere("job.expirationDate > :now", { now: new Date() })
+        .orderBy("job.createdDate", "DESC")
+        .take(limit)
+        .getMany();
+
+      return featuredJobs;
+    } catch (error) {
+      console.error("Error fetching featured jobs:", error);
+      throw error;
+    }
   }
 }
 

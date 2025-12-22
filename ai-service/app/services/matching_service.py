@@ -1,5 +1,6 @@
 from typing import List
 import time
+import asyncio
 from app.services.openai_service import OpenAIService
 from app.models.schemas import (
     JobInput,
@@ -12,6 +13,9 @@ from app.models.schemas import (
     FilterApplicationsRequest,
     FilteredApplication,
     FilterApplicationsResponse,
+    BatchScoreSuitabilityRequest,
+    BatchScoreSuitabilityResponse,
+    JobScoreResult,
 )
 from app.core.exceptions import ValidationException
 
@@ -150,6 +154,57 @@ class MatchingService:
             total_applications=len(request.applications),
             filtered_count=len(filtered_applications),
             filtered_applications=filtered_applications,
+            processing_time_ms=round(processing_time, 2),
+        )
+
+    async def batch_score_suitability(
+        self, request: BatchScoreSuitabilityRequest
+    ) -> BatchScoreSuitabilityResponse:
+        """
+        Score the suitability of one interpreter for multiple jobs in a SINGLE OpenAI API call.
+        This avoids rate limiting by making only one request instead of multiple parallel requests.
+        """
+        start_time = time.time()
+
+        if not request.jobs:
+            raise ValidationException("At least one job is required")
+
+        print(f"\n🎯 MatchingService: Starting batch scoring")
+        print(f"   Interpreter ID: {request.interpreter.id}")
+        print(f"   Jobs to score: {len(request.jobs)}")
+
+        # Call OpenAI service with batch method - SINGLE API CALL
+        suitability_scores = await self.openai_service.batch_score_suitability(
+            request.jobs, request.interpreter
+        )
+
+        # Build results - map scores to jobs by index
+        job_scores: List[JobScoreResult] = []
+        for idx, score in enumerate(suitability_scores):
+            if idx < len(request.jobs):
+                job_scores.append(
+                    JobScoreResult(
+                        job_id=request.jobs[idx].id,
+                        suitability_score=score,
+                    )
+                )
+
+        # Sort by score (descending)
+        job_scores.sort(
+            key=lambda x: x.suitability_score.overall_score, reverse=True
+        )
+
+        processing_time = (time.time() - start_time) * 1000  # Convert to ms
+
+        print(f"⏱️  Processing time: {round(processing_time, 2)}ms")
+        print(f"📊 Top 3 scores:")
+        for i, js in enumerate(job_scores[:3], 1):
+            print(f"   {i}. Job {js.job_id}: {js.suitability_score.overall_score:.1f}%")
+
+        return BatchScoreSuitabilityResponse(
+            interpreter_id=request.interpreter.id,
+            total_jobs=len(request.jobs),
+            job_scores=job_scores,
             processing_time_ms=round(processing_time, 2),
         )
 

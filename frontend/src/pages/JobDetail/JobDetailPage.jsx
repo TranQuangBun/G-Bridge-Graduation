@@ -16,7 +16,6 @@ import {
   FaClock,
   FaTimesCircle,
   FaBookmark,
-  FaArrowLeft,
   FaEnvelope,
   FaPhone,
   FaUsers,
@@ -366,10 +365,6 @@ export default function JobDetailPage() {
     navigate(`${ROUTES.POST_JOB}?edit=${id}`);
   }
 
-  function handleBackToMyJobs() {
-    navigate(ROUTES.MY_JOBS);
-  }
-
 
   // Check if current user is the owner of this job (via organization)
   const isJobOwner = user?.role === "client" && job?.organization?.ownerUserId === user?.id;
@@ -446,20 +441,6 @@ export default function JobDetailPage() {
       )}
 
       <div className={styles.jobDetailRoot}>
-        {/* Back Button */}
-        <button
-          className={styles.backBtn}
-          onClick={() => {
-            if (isJobOwner) {
-              navigate(ROUTES.MY_JOBS);
-            } else {
-              navigate(ROUTES.FIND_JOB);
-            }
-          }}
-        >
-          <FaArrowLeft /> {t("common.back") || "Quay lại"}
-        </button>
-
         {/* Job Header */}
         <div className={styles.jobHeader}>
           <div className={styles.logo}>{job.company[0]}</div>
@@ -522,6 +503,11 @@ export default function JobDetailPage() {
                 </span>
               )}
             </div>
+            {isJobOwner && (
+              <button className={styles.editBtn} onClick={handleEditJob}>
+                <FaEdit /> {t("jobDetail.editJob")}
+              </button>
+            )}
             {job.reviewNotes && (
               <div className={styles.reviewNotesBanner}>
                 <strong>{t("jobDetail.reviewNotes")}:</strong> {job.reviewNotes}
@@ -529,16 +515,7 @@ export default function JobDetailPage() {
             )}
           </div>
           <div className={styles.headerActions}>
-            {isJobOwner ? (
-              <>
-                <button className={styles.editBtn} onClick={handleEditJob}>
-                  <FaEdit /> {t("jobDetail.editJob")}
-                </button>
-                <button className={styles.backBtn} onClick={handleBackToMyJobs}>
-                  <FaArrowLeft /> {t("jobDetail.backToMyJobs")}
-                </button>
-              </>
-            ) : (
+            {!isJobOwner && (
               <>
                 <button className={styles.applyBtn} onClick={handleApply}>
                   {t("common.applyNow") || "Ứng tuyển ngay"}
