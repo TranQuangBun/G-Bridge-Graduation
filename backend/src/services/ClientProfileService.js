@@ -95,6 +95,30 @@ export class ClientProfileService {
       throw new Error("Client profile not found");
     }
 
+    // Validate and normalize companySize enum value
+    const { CompanySize } = await import("../entities/ClientProfile.js");
+    if (data.companySize) {
+      const validSizes = Object.values(CompanySize);
+      // Map old value to new value if needed
+      if (data.companySize === "size_1001_plus") {
+        data.companySize = CompanySize.SIZE_1000_PLUS;
+      } else if (!validSizes.includes(data.companySize)) {
+        // If invalid value, set to null instead of throwing error
+        console.warn(`Invalid companySize value: ${data.companySize}, setting to null`);
+        data.companySize = null;
+      }
+    }
+
+    // Validate companyType enum value
+    const { CompanyType } = await import("../entities/ClientProfile.js");
+    if (data.companyType) {
+      const validTypes = Object.values(CompanyType);
+      if (!validTypes.includes(data.companyType)) {
+        console.warn(`Invalid companyType value: ${data.companyType}, setting to null`);
+        data.companyType = null;
+      }
+    }
+
     await this.clientProfileRepository.update(parseInt(id), data);
     return await this.clientProfileRepository.findById(parseInt(id), {
       relations: ["user"],

@@ -391,17 +391,28 @@ const SavedInterpreters = () => {
                     {/* Card Header */}
                     <div className={styles.cardHeader}>
                       <div className={styles.avatarWrapper}>
-                        {interpreter.avatar ? (
+                        {(interpreter.user?.avatar || interpreter.avatar) ? (
                           <img
-                            src={`http://localhost:4000${interpreter.avatar}`}
+                            src={
+                              (interpreter.user?.avatar || interpreter.avatar).startsWith("http")
+                                ? (interpreter.user?.avatar || interpreter.avatar)
+                                : `http://localhost:4000${interpreter.user?.avatar || interpreter.avatar}`
+                            }
                             alt={interpreter.fullName}
                             className={styles.avatar}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextElementSibling?.classList.remove(styles.avatarPlaceholderHidden);
+                            }}
                           />
-                        ) : (
-                          <div className={styles.avatarPlaceholder}>
-                            {interpreter.fullName?.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                        ) : null}
+                        <div
+                          className={`${styles.avatarPlaceholder} ${
+                            (interpreter.user?.avatar || interpreter.avatar) ? styles.avatarPlaceholderHidden : ""
+                          }`}
+                        >
+                          {interpreter.fullName?.charAt(0)?.toUpperCase() || "I"}
+                        </div>
                         {interpreter.profile?.rating >= 4.5 && (
                           <div className={styles.verifiedBadge}>
                             <FaCheckCircle />

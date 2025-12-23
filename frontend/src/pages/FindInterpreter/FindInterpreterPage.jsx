@@ -3,6 +3,7 @@ import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ROUTES } from "../../constants/enums";
 import interpreterService from "../../services/interpreterService";
 import savedInterpreterService from "../../services/savedInterpreterService";
 import aiMatchingService from "../../services/aiMatchingService";
@@ -27,6 +28,13 @@ const FindInterpreterPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const jobId = searchParams.get("jobId"); // Optional: if coming from a job context
+
+  // Redirect interpreter to Find Job page
+  useEffect(() => {
+    if (user?.role === "interpreter") {
+      navigate(ROUTES.FIND_JOB, { replace: true });
+    }
+  }, [user?.role, navigate]);
 
   // State
   const [interpreters, setInterpreters] = useState([]);

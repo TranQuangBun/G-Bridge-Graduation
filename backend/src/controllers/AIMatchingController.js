@@ -135,11 +135,32 @@ export async function filterApplications(req, res) {
     }
 
     // Transform applications data for AI service
-    const applications = applicationsData.map((app) => ({
-      id: app.id,
-      interpreterId: app.interpreterId,
-      interpreter: app.interpreterProfile || app.interpreter,
-    }));
+    // Filter out applications without interpreter profiles
+    const applications = applicationsData
+      .filter((app) => {
+        const interpreter = app.interpreterProfile || app.interpreter;
+        return interpreter && interpreter.id;
+      })
+      .map((app) => ({
+        id: app.id,
+        interpreterId: app.interpreterId,
+        interpreter: app.interpreterProfile || app.interpreter,
+      }));
+
+    // If no valid applications after filtering, return empty result
+    if (applications.length === 0) {
+      return sendSuccess(
+        res,
+        {
+          job_id: parseInt(jobId),
+          total_applications: applicationsData.length,
+          filtered_count: 0,
+          filtered_applications: [],
+          processing_time_ms: 0,
+        },
+        "No applications with valid interpreter profiles found"
+      );
+    }
 
     // Call AI service
     const result = await AIService.filterApplications(

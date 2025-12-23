@@ -26,6 +26,9 @@ import {
   ResetPasswordPage,
   NotFoundPage,
   ErrorPage,
+  PrivacyPolicyPage,
+  TermsOfServicePage,
+  CookiePolicyPage,
 } from "../pages";
 import FindInterpreterPage from "../pages/FindInterpreter/FindInterpreterPage";
 import SavedJobs from "../pages/Dashboard/SavedJobs/SavedJobs";
@@ -244,6 +247,18 @@ const router = createBrowserRouter([
         <MessagesPage />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPolicyPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsOfServicePage />,
+  },
+  {
+    path: "/cookies",
+    element: <CookiePolicyPage />,
   },
       {
         path: "*",

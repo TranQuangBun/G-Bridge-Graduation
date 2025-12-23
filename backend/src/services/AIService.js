@@ -156,9 +156,19 @@ class AIService {
     minScore = 50,
     maxResults = 20
   ) {
+    // Filter out applications without valid interpreter data
+    const validApplications = applicationsData.filter((app) => {
+      const interpreter = app.interpreter;
+      return interpreter && interpreter.id;
+    });
+
+    if (validApplications.length === 0) {
+      throw new Error("No applications with valid interpreter profiles found");
+    }
+
     const requestBody = {
       job: this._transformJobData(jobData),
-      applications: applicationsData.map((app) => ({
+      applications: validApplications.map((app) => ({
         id: app.id || app.applicationId,
         interpreter_id: app.interpreterId || app.interpreter?.id,
         interpreter: app.interpreter
@@ -209,6 +219,10 @@ class AIService {
    * @private
    */
   _transformInterpreterData(interpreter) {
+    if (!interpreter) {
+      throw new Error("Interpreter data is required");
+    }
+
     return {
       id: interpreter.id || interpreter.userId,
       languages: (interpreter.languages || []).map((lang) => {

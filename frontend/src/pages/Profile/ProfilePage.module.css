@@ -676,7 +676,8 @@
 }
 
 .basicInfoHeader .editBtn,
-.professionalInfoHeader .editBtn {
+.professionalInfoHeader .editBtn,
+.cardHeader .editBtn {
   background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
   color: var(--primary);
   border: 1px solid var(--border-light);
@@ -696,7 +697,8 @@
 }
 
 .basicInfoHeader .editBtn:hover,
-.professionalInfoHeader .editBtn:hover {
+.professionalInfoHeader .editBtn:hover,
+.cardHeader .editBtn:hover {
   background: #0ea5e9;
   color: white;
   transform: translateY(-1px);
@@ -704,7 +706,8 @@
 }
 
 .basicInfoHeader .editBtn svg,
-.professionalInfoHeader .editBtn svg {
+.professionalInfoHeader .editBtn svg,
+.cardHeader .editBtn svg {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
@@ -1223,14 +1226,12 @@
 }
 
 /* General editBtn - only apply if not in header (lower specificity) */
-.cardHeader .editBtn,
 .certActions .editBtn {
   background: var(--primary);
   color: white;
   box-shadow: 0 1px 3px rgba(14, 165, 233, 0.2);
 }
 
-.cardHeader .editBtn:hover,
 .certActions .editBtn:hover {
   background: #0ea5e9;
   transform: translateY(-1px);

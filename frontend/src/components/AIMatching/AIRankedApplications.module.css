@@ -9,6 +9,102 @@
   margin-bottom: 20px;
   gap: 16px;
   flex-wrap: wrap;
+  flex-direction: row;
+}
+
+/* AI Button - Similar to FindJobPage */
+.aiButton {
+  padding: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 200% 200%;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35),
+              0 2px 8px rgba(118, 75, 162, 0.2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  width: auto;
+  min-width: 40px;
+  max-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-left: auto;
+  margin-right: 0;
+  order: 2;
+}
+
+.aiButton svg,
+.aiButton .spinningIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.spinningIcon {
+  animation: spin 1s linear infinite;
+}
+
+.aiButton::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.aiButton:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.aiButton:hover:not(:disabled) {
+  background-position: 100% 50%;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5),
+              0 4px 12px rgba(118, 75, 162, 0.3);
+}
+
+.aiButton:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4),
+              0 2px 8px rgba(118, 75, 162, 0.25);
+}
+
+.aiButton.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  background-size: 200% 200%;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5),
+              0 3px 10px rgba(124, 58, 237, 0.3);
+  animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.aiButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  box-shadow: 0 2px 8px rgba(156, 163, 175, 0.2);
 }
 
 .sortControls {
@@ -49,6 +145,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: 0;
+  margin-right: auto;
+  order: 1;
 }
 
 .filterSelect {
@@ -62,10 +161,18 @@
 
 .loadingState,
 .errorState,
-.emptyState {
+.emptyState,
+.initialState {
   text-align: center;
   padding: 40px 20px;
   color: #6b7280;
+}
+
+.initialState {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
 }
 
 .spinner {
@@ -188,7 +295,25 @@
 .cardActions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
+  align-items: center;
+}
+
+.matchAnalysisButton {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.matchAnalysisButton:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
 }
 
 .viewButton {
@@ -205,5 +330,75 @@
 
 .viewButton:hover {
   background: #2563eb;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modalCloseButton {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.modalCloseButton:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.modalBody {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 

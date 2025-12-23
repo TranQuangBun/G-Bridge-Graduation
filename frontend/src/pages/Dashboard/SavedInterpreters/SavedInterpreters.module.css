@@ -488,6 +488,10 @@
   border: 3px solid #eff6ff;
 }
 
+.avatarPlaceholderHidden {
+  display: none;
+}
+
 .verifiedBadge {
   position: absolute;
   bottom: 0;
