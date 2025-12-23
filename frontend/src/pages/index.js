@@ -26,3 +26,6 @@ export { default as ForgotPasswordPage } from "./ForgotPassword/ForgotPasswordPa
 export { default as ResetPasswordPage } from "./ResetPassword/ResetPasswordPage";
 export { default as NotFoundPage } from "./NotFound";
 export { default as ErrorPage } from "./Error";
+export { default as PrivacyPolicyPage } from "./PrivacyPolicy/PrivacyPolicyPage";
+export { default as TermsOfServicePage } from "./TermsOfService/TermsOfServicePage";
+export { default as CookiePolicyPage } from "./CookiePolicy/CookiePolicyPage";

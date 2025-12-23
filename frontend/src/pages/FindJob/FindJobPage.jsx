@@ -99,6 +99,13 @@ export default function FindJobPage() {
   const { user, isAuthenticated } = useAuth();
   const hasPremium = user?.isPremium || false;
 
+  // Redirect client to Find Interpreter page
+  useEffect(() => {
+    if (user?.role === "client") {
+      navigate(ROUTES.FIND_INTERPRETER, { replace: true });
+    }
+  }, [user?.role, navigate]);
+
   // Saved jobs state - track which jobs are saved
   const [savedJobIds, setSavedJobIds] = useState(new Set());
   const [showAIResults, setShowAIResults] = useState(false);

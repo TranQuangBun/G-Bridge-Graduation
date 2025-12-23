@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaSpinner, FaFilter, FaSort } from "react-icons/fa";
+import { FaSpinner } from "react-icons/fa";
 import { SuitabilityScoreBadge, MatchReasonsCard } from "./";
 import aiMatchingService from "../../services/aiMatchingService";
 import styles from "./AIRankedApplications.module.css";
@@ -20,10 +20,10 @@ export default function AIRankedApplications({
   const [aiRankedApps, setAiRankedApps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState("date"); // "ai" | "date" - default to date
   const [filterLevel, setFilterLevel] = useState("all"); // "all" | "excellent" | "good" | "fair"
-  const [expandedAppId, setExpandedAppId] = useState(null);
+  const [selectedAppForAnalysis, setSelectedAppForAnalysis] = useState(null);
   const [hasFetchedAI, setHasFetchedAI] = useState(false);
+  const [showAIResults, setShowAIResults] = useState(false);
 
   const fetchAIRankedApplications = useCallback(async () => {
     if (!jobId || applications.length === 0) {
@@ -60,31 +60,21 @@ export default function AIRankedApplications({
     }
   }, [jobId, applications]);
 
-  // Handle sort change
-  const handleSortChange = (newSortBy) => {
-    setSortBy(newSortBy);
-    if (newSortBy === "ai" && !hasFetchedAI) {
-      // Only fetch when user clicks AI Ranked button for the first time
-      fetchAIRankedApplications();
-    } else if (newSortBy === "date") {
-      // Sort by date
-      const sorted = [...applications].sort(
-        (a, b) => new Date(b.applicationDate || b.createdAt) - new Date(a.applicationDate || a.createdAt)
-      );
-      setAiRankedApps(sorted);
+  // Handle AI button click
+  const handleAIClick = async () => {
+    if (showAIResults) {
+      // If already showing AI results, hide them
+      setShowAIResults(false);
+      return;
     }
+    
+    // If not fetched yet, fetch now
+    if (!hasFetchedAI) {
+      await fetchAIRankedApplications();
+    }
+    
+    setShowAIResults(true);
   };
-
-  // Initialize with date-sorted applications
-  useEffect(() => {
-    if (applications.length > 0 && sortBy === "date" && aiRankedApps.length === 0) {
-      const sorted = [...applications].sort(
-        (a, b) => new Date(b.applicationDate || b.createdAt) - new Date(a.applicationDate || a.createdAt)
-      );
-      setAiRankedApps(sorted);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applications]);
 
   const getFilteredApps = () => {
     if (filterLevel === "all") return aiRankedApps;
@@ -94,8 +84,12 @@ export default function AIRankedApplications({
     });
   };
 
-  const toggleExpand = (appId) => {
-    setExpandedAppId(expandedAppId === appId ? null : appId);
+  const handleShowMatchAnalysis = (app) => {
+    setSelectedAppForAnalysis(app);
+  };
+
+  const handleCloseMatchAnalysis = () => {
+    setSelectedAppForAnalysis(null);
   };
 
   const filteredApps = getFilteredApps();
@@ -104,23 +98,8 @@ export default function AIRankedApplications({
     <div className={styles.container}>
       {/* Controls */}
       <div className={styles.controls}>
-        <div className={styles.sortControls}>
-          <button
-            className={`${styles.sortButton} ${sortBy === "ai" ? styles.active : ""}`}
-            onClick={() => handleSortChange("ai")}
-            disabled={loading}
-          >
-            <FaFilter /> 🤖 AI Ranked
-          </button>
-          <button
-            className={`${styles.sortButton} ${sortBy === "date" ? styles.active : ""}`}
-            onClick={() => handleSortChange("date")}
-          >
-            <FaSort /> Date Posted
-          </button>
-        </div>
-
-        {sortBy === "ai" && (
+        {/* Filter Controls - Only show when AI results are displayed */}
+        {showAIResults && hasFetchedAI && (
           <div className={styles.filterControls}>
             <select
               value={filterLevel}
@@ -134,6 +113,42 @@ export default function AIRankedApplications({
             </select>
           </div>
         )}
+
+        {/* AI Button */}
+        <button
+          className={`${styles.aiButton} ${showAIResults ? styles.active : ""}`}
+          onClick={handleAIClick}
+          disabled={loading || !jobId || applications.length === 0}
+          title={loading ? "AI Analyzing..." : showAIResults ? "Show All Applications" : "Get AI Rankings"}
+        >
+          {loading ? (
+            <FaSpinner className={styles.spinningIcon} />
+          ) : showAIResults ? (
+            <svg 
+              stroke="currentColor" 
+              fill="currentColor" 
+              strokeWidth="0" 
+              viewBox="0 0 512 512" 
+              height="1em" 
+              width="1em" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
+            </svg>
+          ) : (
+            <svg 
+              stroke="currentColor" 
+              fill="currentColor" 
+              strokeWidth="0" 
+              viewBox="0 0 512 512" 
+              height="1em" 
+              width="1em" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* Loading State */}
@@ -154,17 +169,27 @@ export default function AIRankedApplications({
       {/* Applications List */}
       {!loading && (
         <div className={styles.applicationsList}>
-          {filteredApps.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p>No applications found</p>
-            </div>
-          ) : (
-            filteredApps.map((app) => (
+          {(() => {
+            // Show AI ranked apps if AI is active, otherwise show original applications
+            const appsToDisplay = showAIResults && hasFetchedAI ? filteredApps : applications;
+            
+            if (appsToDisplay.length === 0) {
+              return (
+                <div className={styles.emptyState}>
+                  <p>No applications found</p>
+                </div>
+              );
+            }
+            
+            return appsToDisplay.map((app) => (
               <div key={app.id} className={styles.applicationCard}>
                 <div className={styles.cardHeader}>
                   <div className={styles.appInfo}>
                     <h3 className={styles.applicantName}>
-                      {app.interpreter?.user?.name || app.interpreter?.name || "Unknown"}
+                      {app.interpreter?.fullName ||
+                        app.interpreter?.name ||
+                        app.interpreter?.email ||
+                        "Unknown"}
                     </h3>
                     <p className={styles.appDate}>
                       Applied: {new Date(app.applicationDate || app.createdAt).toLocaleDateString()}
@@ -184,35 +209,22 @@ export default function AIRankedApplications({
                   )}
                 </div>
 
-                {app.coverLetter && (
+                {typeof app.coverLetter === "string" && app.coverLetter && (
                   <div className={styles.coverLetter}>
                     <p>{app.coverLetter.substring(0, 150)}...</p>
                   </div>
                 )}
 
-                {/* AI Match Details */}
-                {app.aiScore && (
-                  <div className={styles.matchDetails}>
-                    <button
-                      className={styles.toggleButton}
-                      onClick={() => toggleExpand(app.id)}
-                    >
-                      {expandedAppId === app.id ? "Hide" : "Show"} Match Analysis
-                    </button>
-                    {expandedAppId === app.id && (
-                      <div className={styles.matchCardWrapper}>
-                        <MatchReasonsCard
-                          suitabilityScore={app.aiScore}
-                          expandable={false}
-                          defaultExpanded={true}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Actions */}
                 <div className={styles.cardActions}>
+                  {app.aiScore && (
+                    <button
+                      className={styles.matchAnalysisButton}
+                      onClick={() => handleShowMatchAnalysis(app)}
+                    >
+                      Show Match Analysis
+                    </button>
+                  )}
                   {onApplicationClick && (
                     <button
                       className={styles.viewButton}
@@ -223,8 +235,38 @@ export default function AIRankedApplications({
                   )}
                 </div>
               </div>
-            ))
-          )}
+            ));
+          })()}
+        </div>
+      )}
+
+      {/* Match Analysis Modal */}
+      {selectedAppForAnalysis && selectedAppForAnalysis.aiScore && (
+        <div
+          className={styles.modalOverlay}
+          onClick={handleCloseMatchAnalysis}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2>AI Match Analysis</h2>
+              <button
+                className={styles.modalCloseButton}
+                onClick={handleCloseMatchAnalysis}
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <MatchReasonsCard
+                suitabilityScore={selectedAppForAnalysis.aiScore}
+                expandable={false}
+                defaultExpanded={true}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

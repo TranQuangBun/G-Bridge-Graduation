@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaBookmark,
@@ -21,6 +21,8 @@ import { useLanguage } from "../../../translet/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { ROUTES } from "../../../constants";
 import savedJobService from "../../../services/savedJobService";
+import interpreterService from "../../../services/interpreterService.js";
+import aiMatchingService from "../../../services/aiMatchingService.js";
 import styles from "./SavedJobs.module.css";
 
 // Sidebar menu for Interpreter role
@@ -83,6 +85,10 @@ const SavedJobs = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [activeMenu, setActiveMenu] = useState("savedJobs");
+  const [viewMode, setViewMode] = useState("all"); // "all" | "ai"
+  const [aiRankedJobs, setAiRankedJobs] = useState([]);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [hasFetchedAI, setHasFetchedAI] = useState(false);
 
   // Get sidebar menu based on user role
   const SIDEBAR_MENU =
@@ -117,7 +123,16 @@ const SavedJobs = () => {
       const result = await savedJobService.unsaveJob(jobId);
 
       if (result.success) {
-        setSavedJobs(savedJobs.filter((job) => job.id !== jobId));
+        // Update savedJobs
+        setSavedJobs((prev) => prev.filter((job) => {
+          const jobIdToCheck = job.id || job.job?.id;
+          return jobIdToCheck !== jobId;
+        }));
+        // Also remove from AI ranked jobs if present
+        setAiRankedJobs((prev) => prev.filter(({ job }) => {
+          const jobData = job.job || job;
+          return jobData.id !== jobId;
+        }));
       } else {
         console.error("Failed to unsave job:", result.message);
       }
@@ -130,21 +145,149 @@ const SavedJobs = () => {
     navigate(`/job/${jobId}`);
   };
 
+  // Fetch AI ranked jobs - only 10 newest saved jobs
+  const fetchAIRankedJobs = useCallback(async () => {
+    if (!user?.id || user?.role !== "interpreter") {
+      console.log("Cannot fetch AI: user not interpreter or no user id");
+      return;
+    }
+    
+    console.log("Fetching AI ranked jobs, savedJobs count:", savedJobs.length);
+    setLoadingAI(true);
+    try {
+      // Get saved jobs and take 10 newest
+      const sortedByDate = [...savedJobs].sort((a, b) => {
+        const dateA = new Date(a.saved_at || a.savedDate || a.createdAt || 0);
+        const dateB = new Date(b.saved_at || b.savedDate || b.createdAt || 0);
+        return dateB - dateA;
+      });
+      const newest10Jobs = sortedByDate.slice(0, 10);
+      console.log("Newest 10 jobs:", newest10Jobs.length);
+
+      if (newest10Jobs.length === 0) {
+        console.log("No saved jobs found");
+        setAiRankedJobs([]);
+        setHasFetchedAI(true);
+        setLoadingAI(false);
+        return;
+      }
+
+      // Extract job data - don't filter by status, show all
+      const jobs = newest10Jobs.map((savedJob) => {
+        const jobData = savedJob.job || savedJob;
+        return jobData;
+      }).filter((job) => job && job.id);
+      
+      console.log("Extracted jobs:", jobs.length, jobs);
+
+      if (jobs.length === 0) {
+        console.log("No valid jobs extracted");
+        setAiRankedJobs([]);
+        setHasFetchedAI(true);
+        setLoadingAI(false);
+        return;
+      }
+
+      const interpreterRes = await interpreterService.getInterpreterById(user.id);
+      const interpreter = interpreterRes?.data || interpreterRes;
+      
+      if (!interpreter) {
+        throw new Error("Interpreter not found");
+      }
+
+      const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || user.id;
+      const jobIds = jobs.map((job) => job.id);
+      
+      console.log("Calling AI service with jobIds:", jobIds, "profileId:", profileId);
+      const batchRes = await aiMatchingService.batchScoreSuitability(jobIds, profileId);
+      console.log("AI service response:", batchRes);
+      
+      if (batchRes.success && batchRes.data?.job_scores) {
+        const scoreMap = new Map();
+        batchRes.data.job_scores.forEach((item) => {
+          scoreMap.set(item.job_id, item.suitability_score);
+        });
+        
+        const matches = jobs
+          .map((job) => ({
+            job,
+            suitability_score: scoreMap.get(job.id),
+          }))
+          .sort((a, b) => {
+            // Sort by score if available, otherwise keep original order
+            if (a.suitability_score && b.suitability_score) {
+              return b.suitability_score.overall_score - a.suitability_score.overall_score;
+            }
+            if (a.suitability_score) return -1;
+            if (b.suitability_score) return 1;
+            return 0;
+          });
+        
+        console.log("AI ranked matches:", matches.length);
+        setAiRankedJobs(matches);
+      } else {
+        // If AI fails, still show jobs without scores
+        console.log("AI service failed or no scores, showing jobs without scores");
+        setAiRankedJobs(jobs.map((job) => ({ job, suitability_score: null })));
+      }
+      setHasFetchedAI(true);
+    } catch (err) {
+      console.error("Error fetching AI ranked jobs:", err);
+      // On error, still try to show jobs without scores
+      try {
+        const sortedByDate = [...savedJobs].sort((a, b) => {
+          const dateA = new Date(a.saved_at || a.savedDate || a.createdAt || 0);
+          const dateB = new Date(b.saved_at || b.savedDate || b.createdAt || 0);
+          return dateB - dateA;
+        });
+        const newest10Jobs = sortedByDate.slice(0, 10);
+        const jobs = newest10Jobs.map((savedJob) => {
+          const jobData = savedJob.job || savedJob;
+          return jobData;
+        }).filter((job) => job && job.id);
+        setAiRankedJobs(jobs.map((job) => ({ job, suitability_score: null })));
+      } catch (fallbackErr) {
+        console.error("Fallback also failed:", fallbackErr);
+        setAiRankedJobs([]);
+      }
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [user?.id, user?.role, savedJobs]);
+
+  // Fetch AI ranked jobs when viewMode changes to ai - only fetch if not already fetched
+  useEffect(() => {
+    if (user?.role === "interpreter" && viewMode === "ai" && savedJobs.length > 0 && !hasFetchedAI) {
+      fetchAIRankedJobs();
+    }
+  }, [viewMode, user?.role, savedJobs.length, hasFetchedAI, fetchAIRankedJobs]);
+
   // Memoize filtered and sorted jobs - must be called before any early returns
   const filteredJobs = useMemo(() => {
     let filtered = [...savedJobs];
+    console.log("Filtering jobs - savedJobs count:", savedJobs.length, "filterStatus:", filterStatus);
 
     // Apply status filter
     if (filterStatus !== "all") {
-      filtered = filtered.filter((job) => {
-        const jobStatus = job.status || job.job?.status || job.statusOpenStop || job.job?.statusOpenStop;
+      filtered = filtered.filter((savedJob) => {
+        // Extract job data
+        const job = savedJob.job || savedJob;
+        const jobStatus = job.status || savedJob.status || job.statusOpenStop || savedJob.statusOpenStop;
+        
+        console.log("Checking job:", job.id || savedJob.id, "status:", jobStatus, "filterStatus:", filterStatus);
+        
         if (filterStatus === "active") {
-          return jobStatus === "open" || jobStatus === "active";
+          const matches = jobStatus === "open" || jobStatus === "active";
+          console.log("Active filter - matches:", matches);
+          return matches;
         } else if (filterStatus === "closed") {
-          return jobStatus === "closed" || jobStatus === "inactive";
+          const matches = jobStatus === "closed" || jobStatus === "inactive";
+          console.log("Closed filter - matches:", matches);
+          return matches;
         }
         return true;
       });
+      console.log("After status filter:", filtered.length);
     }
 
     // Apply sorting
@@ -162,14 +305,18 @@ const SavedJobs = () => {
       });
     } else if (sortBy === "salary_high") {
       filtered.sort((a, b) => {
+        // Extract job data for salary comparison
+        const jobA = a.job || a;
+        const jobB = b.job || b;
+        
         // Try multiple possible salary fields
         const salaryA = parseInt(
-          (a.pay_rate || a.salary || a.job?.maxSalary || a.maxSalary || "0")
+          (jobA.pay_rate || jobA.salary || jobA.maxSalary || a.pay_rate || a.salary || a.maxSalary || "0")
             .toString()
             .replace(/[^0-9]/g, "") || "0"
         );
         const salaryB = parseInt(
-          (b.pay_rate || b.salary || b.job?.maxSalary || b.maxSalary || "0")
+          (jobB.pay_rate || jobB.salary || jobB.maxSalary || b.pay_rate || b.salary || b.maxSalary || "0")
             .toString()
             .replace(/[^0-9]/g, "") || "0"
         );
@@ -177,8 +324,95 @@ const SavedJobs = () => {
       });
     }
 
+    console.log("Final filtered jobs count:", filtered.length);
     return filtered;
   }, [savedJobs, filterStatus, sortBy]);
+
+  // Memoize filtered and sorted AI ranked jobs
+  const filteredAiRankedJobs = useMemo(() => {
+    let filtered = [...aiRankedJobs];
+    console.log("Filtering AI ranked jobs - aiRankedJobs count:", aiRankedJobs.length, "filterStatus:", filterStatus);
+
+    // Apply status filter
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(({ job }) => {
+        // Extract job data - handle both nested and flat structures
+        const jobData = job.job || job;
+        // Check multiple possible status fields (same as filteredJobs)
+        const jobStatus = jobData.status || job.status || jobData.statusOpenStop || job.statusOpenStop;
+        
+        console.log("Checking AI job:", jobData.id, "status:", jobStatus, "filterStatus:", filterStatus);
+        
+        if (filterStatus === "active") {
+          const matches = jobStatus === "open" || jobStatus === "active";
+          console.log("Active filter - matches:", matches);
+          return matches;
+        } else if (filterStatus === "closed") {
+          const matches = jobStatus === "closed" || jobStatus === "inactive" || jobStatus === "stop";
+          console.log("Closed filter - matches:", matches);
+          return matches;
+        }
+        return true;
+      });
+      console.log("After status filter (AI):", filtered.length);
+    }
+
+    // Apply sorting
+    if (sortBy === "newest") {
+      filtered.sort((a, b) => {
+        const jobA = a.job.job || a.job;
+        const jobB = b.job.job || b.job;
+        // Find original savedJob for date
+        const savedJobA = savedJobs.find((sj) => {
+          const sjJob = sj.job || sj;
+          return (sjJob.id || sj.id) === (jobA.id || a.job.id);
+        });
+        const savedJobB = savedJobs.find((sj) => {
+          const sjJob = sj.job || sj;
+          return (sjJob.id || sj.id) === (jobB.id || b.job.id);
+        });
+        const dateA = new Date(savedJobA?.saved_at || savedJobA?.savedDate || savedJobA?.createdAt || jobA.createdAt || 0);
+        const dateB = new Date(savedJobB?.saved_at || savedJobB?.savedDate || savedJobB?.createdAt || jobB.createdAt || 0);
+        return dateB - dateA;
+      });
+    } else if (sortBy === "oldest") {
+      filtered.sort((a, b) => {
+        const jobA = a.job.job || a.job;
+        const jobB = b.job.job || b.job;
+        const savedJobA = savedJobs.find((sj) => {
+          const sjJob = sj.job || sj;
+          return (sjJob.id || sj.id) === (jobA.id || a.job.id);
+        });
+        const savedJobB = savedJobs.find((sj) => {
+          const sjJob = sj.job || sj;
+          return (sjJob.id || sj.id) === (jobB.id || b.job.id);
+        });
+        const dateA = new Date(savedJobA?.saved_at || savedJobA?.savedDate || savedJobA?.createdAt || jobA.createdAt || 0);
+        const dateB = new Date(savedJobB?.saved_at || savedJobB?.savedDate || savedJobB?.createdAt || jobB.createdAt || 0);
+        return dateA - dateB;
+      });
+    } else if (sortBy === "salary_high") {
+      filtered.sort((a, b) => {
+        const jobA = a.job.job || a.job;
+        const jobB = b.job.job || b.job;
+        
+        const salaryA = parseInt(
+          (jobA.pay_rate || jobA.salary || jobA.maxSalary || "0")
+            .toString()
+            .replace(/[^0-9]/g, "") || "0"
+        );
+        const salaryB = parseInt(
+          (jobB.pay_rate || jobB.salary || jobB.maxSalary || "0")
+            .toString()
+            .replace(/[^0-9]/g, "") || "0"
+        );
+        return salaryB - salaryA;
+      });
+    }
+
+    console.log("Final filtered AI ranked jobs count:", filtered.length);
+    return filtered;
+  }, [aiRankedJobs, filterStatus, sortBy, savedJobs]);
 
   if (loading) {
     return (
@@ -267,11 +501,33 @@ const SavedJobs = () => {
             </p>
           </header>
 
-          {/* Filter Section */}
-          <div className={styles.filterSection}>
-            <div className={styles.filterContainer}>
-              <div className={styles.filterGroup}>
-                <FaFilter className={styles.filterIcon} />
+          {/* Controls and View Mode Toggle - Combined for compact layout */}
+          <section className={styles.controlsSection}>
+            <div className={styles.controlsWrapper}>
+              {/* View Mode Toggle - Only for interpreter */}
+              {user?.role === "interpreter" && savedJobs.length > 0 && (
+                <div className={styles.viewModeToggle}>
+                  <button
+                    className={`${styles.viewModeButton} ${
+                      viewMode === "all" ? styles.active : ""
+                    }`}
+                    onClick={() => setViewMode("all")}
+                  >
+                    {t("savedJobs.viewMode.all") || "All"}
+                  </button>
+                  <button
+                    className={`${styles.viewModeButton} ${
+                      viewMode === "ai" ? styles.active : ""
+                    }`}
+                    onClick={() => setViewMode("ai")}
+                  >
+                    {t("savedJobs.viewMode.ai") || "AI Ranked"}
+                  </button>
+                </div>
+              )}
+
+              {/* Filters */}
+              <div className={styles.controls}>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -287,10 +543,7 @@ const SavedJobs = () => {
                     {t("savedJobs.filters.closed") || "Closed"}
                   </option>
                 </select>
-              </div>
 
-              <div className={styles.filterGroup}>
-                <FaSortAmountDown className={styles.filterIcon} />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -308,16 +561,155 @@ const SavedJobs = () => {
                 </select>
               </div>
             </div>
-
-            <div className={styles.resultsCount}>
-              {filteredJobs.length}{" "}
-              {t("savedJobs.resultsCount") || "saved jobs"}
-            </div>
-          </div>
+          </section>
 
           {/* Content */}
           <div className={styles.contentContainer}>
-            {filteredJobs.length === 0 ? (
+            {/* AI Ranked Jobs - Only for interpreter when viewMode is ai */}
+            {user?.role === "interpreter" && viewMode === "ai" ? (
+              loadingAI ? (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner}></div>
+                  <p>{t("savedJobs.ai.loading") || "AI is analyzing your saved jobs..."}</p>
+                </div>
+              ) : filteredAiRankedJobs.length > 0 ? (
+                <div className={styles.jobsGrid}>
+                  {filteredAiRankedJobs.map(({ job, suitability_score }) => {
+                    // Extract job data - handle both nested and flat structures
+                    const jobData = job.job || job;
+                    const jobId = jobData.id || job.id;
+                    
+                    // Find original savedJob to get saved_at date
+                    const originalSavedJob = savedJobs.find((sj) => {
+                      const sjJob = sj.job || sj;
+                      return (sjJob.id || sj.id) === jobId;
+                    });
+                    
+                    return (
+                      <div
+                        key={jobId}
+                        className={styles.jobCard}
+                        onClick={() => handleJobClick(jobId)}
+                      >
+                        {/* Card Header */}
+                        <div className={styles.cardHeader}>
+                          <div className={styles.companyLogo}>
+                            <FaBriefcase />
+                          </div>
+                          <div className={styles.cardHeaderRight}>
+                            {suitability_score && (
+                              <div className={styles.scoreBadge}>
+                                {Math.round(suitability_score.overall_score)}%
+                              </div>
+                            )}
+                            <button
+                              className={styles.unsaveButton}
+                              onClick={(e) => handleUnsaveJob(jobId, e)}
+                              title={t("savedJobs.unsave") || "Remove from saved"}
+                            >
+                              <FaBookmark />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Job Info */}
+                        <div className={styles.jobInfo}>
+                          <h3 className={styles.jobTitle}>{jobData.title}</h3>
+                          <p className={styles.companyName}>
+                            {jobData.company_name || jobData.organization?.name}
+                          </p>
+                        </div>
+
+                        {/* Job Details */}
+                        <div className={styles.jobDetails}>
+                          {(jobData.location || jobData.province || jobData.address) && (
+                            <div className={styles.detailItem}>
+                              <FaMapMarkerAlt className={styles.detailIcon} />
+                              <span>{jobData.location || jobData.province || jobData.address}</span>
+                            </div>
+                          )}
+                          {(jobData.pay_rate || (jobData.minSalary && jobData.maxSalary)) && (
+                            <div className={styles.detailItem}>
+                              <FaDollarSign className={styles.detailIcon} />
+                              <span>
+                                {jobData.pay_rate || 
+                                 (jobData.minSalary && jobData.maxSalary 
+                                   ? `$${jobData.minSalary}-${jobData.maxSalary}`
+                                   : jobData.minSalary 
+                                   ? `$${jobData.minSalary}+`
+                                   : "Negotiable")}
+                              </span>
+                            </div>
+                          )}
+                          {(jobData.job_type || jobData.workingMode?.name) && (
+                            <div className={styles.detailItem}>
+                              <FaClock className={styles.detailIcon} />
+                              <span>{jobData.job_type || jobData.workingMode?.name}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Languages */}
+                        {(jobData.languages || jobData.requiredLanguages) && (jobData.languages?.length > 0 || jobData.requiredLanguages?.length > 0) && (
+                          <div className={styles.languageTags}>
+                            {(jobData.languages || jobData.requiredLanguages).slice(0, 3).map((lang, index) => (
+                              <span key={index} className={styles.languageTag}>
+                                {lang.name || lang.language?.name || lang}
+                              </span>
+                            ))}
+                            {(jobData.languages || jobData.requiredLanguages).length > 3 && (
+                              <span className={styles.languageTag}>
+                                +{(jobData.languages || jobData.requiredLanguages).length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Card Footer */}
+                        <div className={styles.cardFooter}>
+                          <span className={styles.savedDate}>
+                            {t("savedJobs.savedOn") || "Saved"}{" "}
+                            {new Date(
+                              originalSavedJob?.saved_at || 
+                              originalSavedJob?.savedDate || 
+                              originalSavedJob?.createdAt || 
+                              jobData.saved_at || 
+                              jobData.createdAt
+                            ).toLocaleDateString()}
+                          </span>
+                          <button
+                            className={styles.viewButton}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleJobClick(jobId);
+                            }}
+                          >
+                            <FaEye />
+                            {t("savedJobs.viewDetails") || "View Details"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyIcon}>
+                    <FaRegBookmark />
+                  </div>
+                  <h2 className={styles.emptyTitle}>
+                    {filterStatus !== "all" 
+                      ? t("savedJobs.empty.filteredNoJobs") || "No jobs match your filter"
+                      : t("savedJobs.ai.noJobs") || "No AI ranked jobs found"}
+                  </h2>
+                  <p className={styles.emptyDescription}>
+                    {filterStatus !== "all"
+                      ? t("savedJobs.empty.filteredNoJobsDesc") || "Try changing your filter settings"
+                      : t("savedJobs.ai.noJobsDesc") || "Try saving more jobs to get AI recommendations"}
+                  </p>
+                </div>
+              )
+            ) : filteredJobs.length === 0 ? (
               // Empty State
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>
@@ -340,11 +732,16 @@ const SavedJobs = () => {
             ) : (
               // Jobs Grid
               <div className={styles.jobsGrid}>
-                {filteredJobs.map((job) => (
+                {filteredJobs.map((savedJob) => {
+                  // Extract job data - handle both nested and flat structures
+                  const job = savedJob.job || savedJob;
+                  const jobId = job.id || savedJob.id;
+                  
+                  return (
                   <div
-                    key={job.id}
+                    key={jobId}
                     className={styles.jobCard}
-                    onClick={() => handleJobClick(job.id)}
+                    onClick={() => handleJobClick(jobId)}
                   >
                     {/* Card Header */}
                     <div className={styles.cardHeader}>
@@ -353,7 +750,7 @@ const SavedJobs = () => {
                       </div>
                       <button
                         className={styles.unsaveButton}
-                        onClick={(e) => handleUnsaveJob(job.id, e)}
+                        onClick={(e) => handleUnsaveJob(jobId, e)}
                         title={t("savedJobs.unsave") || "Remove from saved"}
                       >
                         <FaBookmark />
@@ -370,37 +767,44 @@ const SavedJobs = () => {
 
                     {/* Job Details */}
                     <div className={styles.jobDetails}>
-                      {job.location && (
+                      {(job.location || job.province || job.address) && (
                         <div className={styles.detailItem}>
                           <FaMapMarkerAlt className={styles.detailIcon} />
-                          <span>{job.location}</span>
+                          <span>{job.location || job.province || job.address}</span>
                         </div>
                       )}
-                      {job.pay_rate && (
+                      {(job.pay_rate || (job.minSalary && job.maxSalary)) && (
                         <div className={styles.detailItem}>
                           <FaDollarSign className={styles.detailIcon} />
-                          <span>{job.pay_rate}</span>
+                          <span>
+                            {job.pay_rate || 
+                             (job.minSalary && job.maxSalary 
+                               ? `$${job.minSalary}-${job.maxSalary}`
+                               : job.minSalary 
+                               ? `$${job.minSalary}+`
+                               : "Negotiable")}
+                          </span>
                         </div>
                       )}
-                      {job.job_type && (
+                      {(job.job_type || job.workingMode?.name) && (
                         <div className={styles.detailItem}>
                           <FaClock className={styles.detailIcon} />
-                          <span>{job.job_type}</span>
+                          <span>{job.job_type || job.workingMode?.name}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Languages */}
-                    {job.languages && job.languages.length > 0 && (
+                    {(job.languages || job.requiredLanguages) && (job.languages?.length > 0 || job.requiredLanguages?.length > 0) && (
                       <div className={styles.languageTags}>
-                        {job.languages.slice(0, 3).map((lang, index) => (
+                        {(job.languages || job.requiredLanguages).slice(0, 3).map((lang, index) => (
                           <span key={index} className={styles.languageTag}>
-                            {lang.name || lang}
+                            {lang.name || lang.language?.name || lang}
                           </span>
                         ))}
-                        {job.languages.length > 3 && (
+                        {(job.languages || job.requiredLanguages).length > 3 && (
                           <span className={styles.languageTag}>
-                            +{job.languages.length - 3}
+                            +{(job.languages || job.requiredLanguages).length - 3}
                           </span>
                         )}
                       </div>
@@ -410,13 +814,13 @@ const SavedJobs = () => {
                     <div className={styles.cardFooter}>
                       <span className={styles.savedDate}>
                         {t("savedJobs.savedOn") || "Saved"}{" "}
-                        {new Date(job.saved_at).toLocaleDateString()}
+                        {new Date(savedJob.saved_at || savedJob.savedDate || savedJob.createdAt || job.createdAt).toLocaleDateString()}
                       </span>
                       <button
                         className={styles.viewButton}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleJobClick(job.id);
+                          handleJobClick(jobId);
                         }}
                       >
                         <FaEye />
@@ -424,7 +828,8 @@ const SavedJobs = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

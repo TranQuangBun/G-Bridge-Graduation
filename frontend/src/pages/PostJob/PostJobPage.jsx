@@ -947,7 +947,7 @@ const PostJobPage = () => {
                                   className={styles.statusBadge}
                                   style={{ background: "#fbbf24" }}
                                 >
-                                  Chờ duyệt
+                                  {t("postJob.organization.status.pending") || "Pending Review"}
                                 </span>
                               )}
                               {org.approvalStatus === "approved" && (
@@ -955,7 +955,7 @@ const PostJobPage = () => {
                                   className={styles.statusBadge}
                                   style={{ background: "#10b981" }}
                                 >
-                                  Đã duyệt
+                                  {t("postJob.organization.status.approved") || "Approved"}
                                 </span>
                               )}
                               {org.approvalStatus === "rejected" && (
@@ -963,7 +963,7 @@ const PostJobPage = () => {
                                   className={styles.statusBadge}
                                   style={{ background: "#ef4444" }}
                                 >
-                                  Bị từ chối
+                                  {t("postJob.organization.status.rejected") || "Rejected"}
                                 </span>
                               )}
                             </div>
@@ -971,7 +971,7 @@ const PostJobPage = () => {
                             {org.approvalStatus === "rejected" &&
                               org.rejectionReason && (
                                 <p className={styles.rejectionReason}>
-                                  <strong>Lý do:</strong> {org.rejectionReason}
+                                  <strong>{t("postJob.organization.rejectionReason") || "Reason:"}</strong> {org.rejectionReason}
                                 </p>
                               )}
                           </div>
@@ -982,7 +982,7 @@ const PostJobPage = () => {
                             className={styles.editOrgBtn}
                             onClick={() => handleEditOrganization(org)}
                           >
-                            Chỉnh sửa & nộp lại
+                            {t("postJob.organization.editAndResubmit") || "Edit & Resubmit"}
                           </button>
                         )}
                       </div>
@@ -994,7 +994,7 @@ const PostJobPage = () => {
                   <div className={styles.organizationForm}>
                     <h3>
                       {editingOrganizationId
-                        ? "Chỉnh sửa tổ chức"
+                        ? t("postJob.organization.editOrganization") || "Edit Organization"
                         : t("postJob.organization.formTitle")}
                     </h3>
                     <div className={styles.fieldGrid}>

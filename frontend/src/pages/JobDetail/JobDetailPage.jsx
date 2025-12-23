@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { ROUTES } from "../../constants/enums";
 import jobService from "../../services/jobService.js";
 import { AIRankedApplications } from "../../components/AIMatching";
+import { getErrorMessage } from "../../utils/errors";
 import styles from "./JobDetailPage.module.css";
 import {
   FaMapMarkerAlt,
@@ -44,6 +45,9 @@ export default function JobDetailPage() {
   const [applications, setApplications] = useState([]);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [applicationActionLoading, setApplicationActionLoading] = useState(false);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [applicationData, setApplicationData] = useState({
@@ -53,6 +57,31 @@ export default function JobDetailPage() {
   });
 
   const hasPremium = user?.isPremium || false;
+
+  const normalizeApplication = useCallback((app) => {
+    if (!app) return app;
+    const rawStatus =
+      app.status || app.statusLabel || app.statusName || app.statusCounts;
+    const statusText =
+      typeof rawStatus === "string"
+        ? rawStatus
+        : rawStatus
+        ? rawStatus?.name ||
+          rawStatus?.code ||
+          // stringify object statusCounts to avoid React rendering objects
+          JSON.stringify(rawStatus)
+        : "pending";
+    const coverLetterText =
+      typeof app.coverLetter === "string" ? app.coverLetter : "";
+    const resumeUrlText =
+      typeof app.resumeUrl === "string" ? app.resumeUrl : null;
+    return {
+      ...app,
+      statusText,
+      coverLetter: coverLetterText,
+      resumeUrl: resumeUrlText,
+    };
+  }, []);
 
   // Notification functions
   function showNotification(message, type = "error") {
@@ -234,8 +263,8 @@ export default function JobDetailPage() {
 
         showNotification(
           isSaved
-            ? t("findJob.saveJob.saved") || "Đã lưu việc làm"
-            : t("findJob.saveJob.unsaved") || "Đã bỏ lưu việc làm",
+            ? t("findJob.saveJob.saved") || "Job saved"
+            : t("findJob.saveJob.unsaved") || "Job unsaved",
           "success"
         );
       }
@@ -244,7 +273,7 @@ export default function JobDetailPage() {
       showNotification(
         error.message ||
           t("findJob.errors.saveFailed") ||
-          "Không thể lưu việc làm",
+          "Unable to save job",
         "error"
       );
     } finally {
@@ -255,7 +284,7 @@ export default function JobDetailPage() {
   function handleApply() {
     if (!isAuthenticated || !user) {
       showNotification(
-        t("findJob.errors.loginRequired") || "Vui lòng đăng nhập để ứng tuyển",
+        t("findJob.errors.loginRequired") || "Please log in to apply",
         "error"
       );
       return;
@@ -272,7 +301,7 @@ export default function JobDetailPage() {
       }));
     } else {
       showNotification(
-        t("findJob.applicationModal.pdfOnlyError") || "Chỉ chấp nhận file PDF",
+        t("findJob.applicationModal.pdfOnlyError") || "PDF files only",
         "error"
       );
     }
@@ -285,7 +314,7 @@ export default function JobDetailPage() {
     if (!applicationData.pdfFile && !applicationData.introduction.trim()) {
       showNotification(
         t("findJob.applicationModal.validationError") ||
-          "Vui lòng điền đầy đủ thông tin",
+          "Please complete all required fields",
         "error"
       );
       return;
@@ -293,7 +322,7 @@ export default function JobDetailPage() {
 
     if (!applicationData.pdfFile) {
       showNotification(
-        t("findJob.applicationModal.missingCV") || "Vui lòng upload CV",
+        t("findJob.applicationModal.missingCV") || "Please upload your CV",
         "error"
       );
       return;
@@ -302,7 +331,7 @@ export default function JobDetailPage() {
     if (!applicationData.introduction.trim()) {
       showNotification(
         t("findJob.applicationModal.missingIntro") ||
-          "Vui lòng nhập giới thiệu",
+          "Please enter an introduction",
         "error"
       );
       return;
@@ -323,7 +352,7 @@ export default function JobDetailPage() {
       if (response && response.success !== false) {
         showNotification(
           t("findJob.applicationModal.successMessage") ||
-            "Ứng tuyển thành công!",
+            "Application submitted successfully!",
           "success"
         );
 
@@ -340,7 +369,7 @@ export default function JobDetailPage() {
         }, 1500);
       } else {
         showNotification(
-          response.message || "Có lỗi xảy ra khi ứng tuyển",
+          response.message || "An error occurred while submitting the application",
           "error"
         );
       }
@@ -349,7 +378,7 @@ export default function JobDetailPage() {
       showNotification(
         error.message ||
           t("findJob.applicationModal.errorMessage") ||
-          "Không thể gửi đơn ứng tuyển",
+          "Unable to submit the application",
         "error"
       );
     } finally {
@@ -363,6 +392,70 @@ export default function JobDetailPage() {
 
   function handleEditJob() {
     navigate(`${ROUTES.POST_JOB}?edit=${id}`);
+  }
+
+  function handleApplicationClick(app) {
+    setSelectedApplication(normalizeApplication(app));
+    setApplicationModalOpen(true);
+    if (app.resumeUrl) {
+      setSelectedResumeUrl(app.resumeUrl);
+    } else {
+      setSelectedResumeUrl(null);
+    }
+  }
+
+  async function handleApplicationAction(type) {
+    if (!selectedApplication?.id) return;
+    setApplicationActionLoading(true);
+    try {
+      const action =
+        type === "accept"
+          ? jobService.acceptApplication
+          : jobService.rejectApplication;
+      const response = await action(selectedApplication.id, "");
+
+      if (response && response.success !== false) {
+        // Optimistically update local state
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.id === selectedApplication.id
+              ? { ...app, status: type === "accept" ? "approved" : "rejected" }
+              : app
+          )
+        );
+        setSelectedApplication((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: type === "accept" ? "approved" : "rejected",
+              }
+            : prev
+        );
+        showNotification(
+          type === "accept"
+            ? t("applications.accepted") || "Đã chấp nhận ứng viên"
+            : t("applications.rejected") || "Đã từ chối ứng viên",
+          "success"
+        );
+      } else {
+        showNotification(
+          response?.message ||
+            t("applications.error") ||
+            "Cannot perform action",
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Application action error:", error);
+      showNotification(
+        getErrorMessage(error) ||
+          t("applications.error") ||
+          "Cannot perform action",
+        "error"
+      );
+    } finally {
+      setApplicationActionLoading(false);
+    }
   }
 
 
@@ -383,7 +476,7 @@ export default function JobDetailPage() {
           : response.data?.applications || [];
 
         if (response && response.success !== false) {
-          setApplications(applicationsData);
+          setApplications(applicationsData.map((app) => normalizeApplication(app)));
         }
       } catch (error) {
         console.error("Error fetching applications:", error);
@@ -391,7 +484,7 @@ export default function JobDetailPage() {
     };
 
     fetchApplications();
-  }, [isJobOwner, job?.id]);
+  }, [isJobOwner, job?.id, normalizeApplication]);
 
   if (loading) {
     return (
@@ -586,13 +679,7 @@ export default function JobDetailPage() {
                     <AIRankedApplications
                       jobId={job?.id}
                       applications={applications}
-                      onApplicationClick={(app) => {
-                        // Handle application click - could open detail modal
-                        if (app.resumeUrl) {
-                          setSelectedResumeUrl(app.resumeUrl);
-                          setResumeModalOpen(true);
-                        }
-                      }}
+                      onApplicationClick={handleApplicationClick}
                     />
                   ) : (
                     <div className={styles.emptyApplications}>
@@ -834,6 +921,189 @@ export default function JobDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Application Detail Modal */}
+      {applicationModalOpen && selectedApplication && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            setApplicationModalOpen(false);
+            setSelectedApplication(null);
+            setSelectedResumeUrl(null);
+          }}
+        >
+          <div className={styles.applicationModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.resumeModalHeader}>
+              <h2>{t("applications.modal.viewApplication") || "Application Details"}</h2>
+              <button
+                className={styles.closeBtn}
+                onClick={() => {
+                  setApplicationModalOpen(false);
+                  setSelectedApplication(null);
+                  setSelectedResumeUrl(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.resumeModalBody}>
+              <div className={styles.applicationDetails}>
+                {/* Applicant Header Card */}
+                <div className={styles.applicantHeaderCard}>
+                  {(() => {
+                    const rawStatus =
+                      typeof selectedApplication?.status === "string"
+                        ? selectedApplication.status
+                        : selectedApplication?.statusText;
+                    const statusValue =
+                      typeof rawStatus === "string"
+                        ? rawStatus
+                        : rawStatus
+                        ? JSON.stringify(rawStatus)
+                        : "pending";
+                    const statusKey =
+                      typeof rawStatus === "string"
+                        ? rawStatus
+                        : rawStatus
+                        ? "custom-status"
+                        : "pending";
+
+                    return (
+                      <div className={styles.applicantHeaderContent}>
+                        <div className={styles.applicantAvatar}>
+                          {(selectedApplication.interpreter?.fullName ||
+                            selectedApplication.interpreter?.name ||
+                            "U")[0].toUpperCase()}
+                        </div>
+                        <div className={styles.applicantInfo}>
+                          <div className={styles.applicantName}>
+                            {selectedApplication.interpreter?.fullName ||
+                              selectedApplication.interpreter?.name ||
+                              selectedApplication.interpreter?.email ||
+                              "Unknown"}
+                          </div>
+                          <div className={styles.applicantMeta}>
+                            <span className={styles.metaItem}>
+                              <FaCalendarAlt className={styles.metaIcon} />
+                              {new Date(
+                                selectedApplication.applicationDate ||
+                                  selectedApplication.createdAt
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className={`${styles.statusBadge} ${
+                            styles[statusKey] || ""
+                          }`}
+                        >
+                          {statusValue}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Resume Section */}
+                {selectedApplication.resumeUrl && (
+                  <div className={styles.infoCard}>
+                    <div className={styles.cardHeader}>
+                      <FaFileAlt className={styles.cardIcon} />
+                      <span className={styles.cardTitle}>
+                        {t("applications.resume") || "Resume"}
+                      </span>
+                    </div>
+                    <a
+                      href={selectedApplication.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.resumeLink}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {t("applications.downloadResume") ||
+                        "View/Download Resume"}
+                      <FaFileAlt />
+                    </a>
+                  </div>
+                )}
+
+                {/* Cover Letter Section */}
+                {selectedApplication.coverLetter && (
+                  <div className={styles.infoCard}>
+                    <div className={styles.cardHeader}>
+                      <FaEnvelope className={styles.cardIcon} />
+                      <span className={styles.cardTitle}>
+                        {t("applications.coverLetter") || "Cover Letter"}
+                      </span>
+                    </div>
+                    <div className={styles.coverLetterContent}>
+                      {typeof selectedApplication.coverLetter === "string"
+                        ? selectedApplication.coverLetter
+                        : ""}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons - Fixed at bottom */}
+              <div className={styles.modalActionsRow}>
+                {(() => {
+                  const rawStatus =
+                    typeof selectedApplication?.status === "string"
+                      ? selectedApplication.status
+                      : selectedApplication?.statusText;
+                  const statusValue =
+                    typeof rawStatus === "string"
+                      ? rawStatus.toLowerCase()
+                      : rawStatus
+                      ? String(rawStatus).toLowerCase()
+                      : "pending";
+                  
+                  const isApproved = statusValue === "approved" || statusValue === "accepted";
+                  const isRejected = statusValue === "rejected";
+                  
+                  return (
+                    <>
+                      <button
+                        className={styles.rejectBtn}
+                        disabled={applicationActionLoading || isRejected}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApplicationAction("reject");
+                        }}
+                      >
+                        {applicationActionLoading
+                          ? t("common.loading") || "Processing..."
+                          : isRejected
+                          ? t("applications.rejected") || "Rejected"
+                          : t("applications.reject") || "Reject"}
+                      </button>
+                      <button
+                        className={styles.acceptBtn}
+                        disabled={applicationActionLoading || isApproved}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApplicationAction("accept");
+                        }}
+                      >
+                        {applicationActionLoading
+                          ? t("common.loading") || "Processing..."
+                          : isApproved
+                          ? t("applications.accepted") || "Accepted"
+                          : t("applications.accept") || "Accept"}
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Resume View Modal */}
       {resumeModalOpen && selectedResumeUrl && (

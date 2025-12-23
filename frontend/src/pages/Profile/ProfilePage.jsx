@@ -601,7 +601,8 @@ const ProfilePage = () => {
 
   // Handle toggle active status
   const handleToggleActiveStatus = async () => {
-    if (user.role !== "interpreter") return;
+    // Allow both interpreter and client to toggle active status
+    if (user.role !== "interpreter" && user.role !== "client") return;
 
     const currentStatus = user.isActive !== false;
     
@@ -1309,8 +1310,8 @@ const ProfilePage = () => {
                           <p>{user.phone}</p>
                         </div>
                       )}
-                      {/* Active Status Toggle - Only for interpreters */}
-                      {user.role === "interpreter" && (
+                      {/* Active Status Toggle - For interpreters and clients */}
+                      {(user.role === "interpreter" || user.role === "client") && (
                         <div className={styles.infoItem}>
                           <label className={styles.basicInfoLabel}>
                             {t("profile.activeStatus.label") || "ACTIVE STATUS"}
@@ -2140,10 +2141,10 @@ const ProfilePage = () => {
                     onClick={() =>
                       setIsEditingCompanyInfo(!isEditingCompanyInfo)
                     }
-                    title={isEditingCompanyInfo ? (t("profile.cancel") || "Cancel") : (t("profile.edit") || "Edit")}
+                    title={isEditingCompanyInfo ? t("profile.basicInfo.cancel") : t("profile.basicInfo.edit")}
                   >
                     {isEditingCompanyInfo ? (
-                      t("profile.cancel") || "Cancel"
+                      t("profile.basicInfo.cancel")
                     ) : (
                       <FaEdit />
                     )}
@@ -2371,7 +2372,7 @@ const ProfilePage = () => {
                               501-1000{" "}
                               {t("profile.company.employees") || "employees"}
                             </option>
-                            <option value="size_1001_plus">
+                            <option value="size_1000_plus">
                               1001+ {t("profile.company.employees") || "employees"}
                             </option>
                           </select>

@@ -61,7 +61,11 @@ async def filter_applications(request: FilterApplicationsRequest):
     try:
         return await matching_service.filter_applications(request)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_detail = str(e)
+        print(f"Error in filter_applications: {error_detail}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.post("/score/batch", response_model=BatchScoreSuitabilityResponse)
