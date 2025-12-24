@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useLanguage } from "../../translet/LanguageContext";
 import { ROUTES } from "../../constants";
 import AdminHeader from "../../components/AdminHeader/AdminHeader";
 import {
@@ -13,54 +14,62 @@ import {
 } from "react-icons/fa";
 import "./AdminLayout.css";
 
-const ADMIN_MENU = [
-  {
-    id: "dashboard",
-    path: ROUTES.ADMIN_DASHBOARD,
-    icon: FaChartBar,
-    label: "Dashboard",
-  },
-  {
-    id: "certifications",
-    path: ROUTES.ADMIN_CERTIFICATIONS,
-    icon: FaCertificate,
-    label: "Duyệt chứng chỉ",
-  },
-  {
-    id: "organizations",
-    path: ROUTES.ADMIN_ORGANIZATIONS,
-    icon: FaBuilding,
-    label: "Duyệt tổ chức",
-  },
-  {
-    id: "jobs",
-    path: ROUTES.ADMIN_JOB_MODERATION,
-    icon: FaBriefcase,
-    label: "Duyệt công việc",
-  },
-  {
-    id: "users",
-    path: ROUTES.ADMIN_USERS,
-    icon: FaUsers,
-    label: "Quản lý người dùng",
-  },
-  {
-    id: "revenue",
-    path: ROUTES.ADMIN_REVENUE,
-    icon: FaDollarSign,
-    label: "Quản lý doanh thu",
-  },
-  {
-    id: "notifications",
-    path: ROUTES.ADMIN_NOTIFICATIONS,
-    icon: FaBell,
-    label: "Thông báo hệ thống",
-  },
-];
-
 const AdminLayout = ({ children }) => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const ADMIN_MENU = [
+    {
+      id: "dashboard",
+      path: ROUTES.ADMIN_DASHBOARD,
+      icon: FaChartBar,
+      labelKey: "admin.sidebar.dashboard",
+      label: "Dashboard",
+    },
+    {
+      id: "certifications",
+      path: ROUTES.ADMIN_CERTIFICATIONS,
+      icon: FaCertificate,
+      labelKey: "admin.sidebar.certifications",
+      label: "Duyệt chứng chỉ",
+    },
+    {
+      id: "organizations",
+      path: ROUTES.ADMIN_ORGANIZATIONS,
+      icon: FaBuilding,
+      labelKey: "admin.sidebar.organizations",
+      label: "Duyệt tổ chức",
+    },
+    {
+      id: "jobs",
+      path: ROUTES.ADMIN_JOB_MODERATION,
+      icon: FaBriefcase,
+      labelKey: "admin.sidebar.jobs",
+      label: "Duyệt công việc",
+    },
+    {
+      id: "users",
+      path: ROUTES.ADMIN_USERS,
+      icon: FaUsers,
+      labelKey: "admin.sidebar.users",
+      label: "Quản lý người dùng",
+    },
+    {
+      id: "revenue",
+      path: ROUTES.ADMIN_REVENUE,
+      icon: FaDollarSign,
+      labelKey: "admin.sidebar.revenue",
+      label: "Quản lý doanh thu",
+    },
+    {
+      id: "notifications",
+      path: ROUTES.ADMIN_NOTIFICATIONS,
+      icon: FaBell,
+      labelKey: "admin.sidebar.notifications",
+      label: "Thông báo hệ thống",
+    },
+  ];
 
   const isActive = (path) => {
     if (path === ROUTES.ADMIN_DASHBOARD) {
@@ -79,6 +88,7 @@ const AdminLayout = ({ children }) => {
             {ADMIN_MENU.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
+              const label = t(item.labelKey) || item.label;
               return (
                 <button
                   key={item.id}
@@ -88,7 +98,7 @@ const AdminLayout = ({ children }) => {
                   <div className="admin-menu-icon">
                     <Icon />
                   </div>
-                  <span className="admin-menu-label">{item.label}</span>
+                  <span className="admin-menu-label">{label}</span>
                 </button>
               );
             })}
