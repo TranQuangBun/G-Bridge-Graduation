@@ -142,7 +142,7 @@ const UserManagementPage = () => {
     // Only require reason when deactivating (locking) account
     const willBeActive = !selectedUser.isActive;
     if (!willBeActive && !toggleReason.trim()) {
-      await alertService.error("Vui lòng nhập lý do khóa tài khoản");
+      await alertService.error(t("admin.userManagement.lockReasonRequired") || "Vui lòng nhập lý do khóa tài khoản");
       return;
     }
 
@@ -189,9 +189,9 @@ const UserManagementPage = () => {
 
   const getRoleLabel = (role) => {
     const roleMap = {
-      admin: "Quản trị viên",
-      client: "Khách hàng",
-      interpreter: "Phiên dịch viên",
+      admin: t("admin.userManagement.admin") || "Quản trị viên",
+      client: t("admin.userManagement.client") || "Khách hàng",
+      interpreter: t("admin.userManagement.interpreter") || "Phiên dịch viên",
     };
     return roleMap[role] || role;
   };
@@ -240,7 +240,7 @@ const UserManagementPage = () => {
         <div className={commonStyles.adminContainer}>
           <div className={commonStyles.adminLoading}>
             <FaSpinner className={commonStyles.adminSpinner} />
-            <p>Đang tải...</p>
+            <p>{t("admin.userManagement.loading") || "Đang tải..."}</p>
           </div>
         </div>
       </AdminLayout>
@@ -254,7 +254,7 @@ const UserManagementPage = () => {
           <div className={commonStyles.adminSearchBox}>
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên, email..."
+              placeholder={t("admin.userManagement.searchPlaceholder") || "Tìm kiếm theo tên, email..."}
               value={search}
               onChange={handleSearch}
               className={commonStyles.adminSearchInput}
@@ -266,10 +266,10 @@ const UserManagementPage = () => {
               onChange={handleRoleFilter}
               className={commonStyles.adminFilterSelect}
             >
-              <option value="">Tất cả vai trò</option>
-              <option value="admin">Quản trị viên</option>
-              <option value="client">Khách hàng</option>
-              <option value="interpreter">Phiên dịch viên</option>
+              <option value="">{t("admin.userManagement.allRoles") || "Tất cả vai trò"}</option>
+              <option value="admin">{t("admin.userManagement.admin") || "Quản trị viên"}</option>
+              <option value="client">{t("admin.userManagement.client") || "Khách hàng"}</option>
+              <option value="interpreter">{t("admin.userManagement.interpreter") || "Phiên dịch viên"}</option>
             </select>
           </div>
           <div className={commonStyles.adminFilterGroup}>
@@ -278,9 +278,9 @@ const UserManagementPage = () => {
               onChange={handleStatusFilter}
               className={commonStyles.adminFilterSelect}
             >
-              <option value="">Tất cả trạng thái</option>
-              <option value="active">Đang hoạt động</option>
-              <option value="inactive">Đã khóa</option>
+              <option value="">{t("admin.userManagement.allStatus") || "Tất cả trạng thái"}</option>
+              <option value="active">{t("admin.userManagement.active") || "Đang hoạt động"}</option>
+              <option value="inactive">{t("admin.userManagement.inactive") || "Đã khóa"}</option>
             </select>
           </div>
         </div>
@@ -289,21 +289,21 @@ const UserManagementPage = () => {
           <table className={commonStyles.adminTable}>
             <thead>
               <tr>
-                <th>Thứ tự</th>
-                <th>Tên</th>
-                <th>Email</th>
-                <th>Vai trò</th>
-                <th>Trạng thái</th>
-                <th>Xác thực</th>
-                <th>Ngày gửi</th>
-                <th>Thao tác</th>
+                <th>{t("admin.userManagement.order") || "Thứ tự"}</th>
+                <th>{t("admin.userManagement.name") || "Tên"}</th>
+                <th>{t("admin.userManagement.email") || "Email"}</th>
+                <th>{t("admin.userManagement.role") || "Vai trò"}</th>
+                <th>{t("admin.userManagement.status") || "Trạng thái"}</th>
+                <th>{t("admin.userManagement.verified") || "Xác thực"}</th>
+                <th>{t("admin.userManagement.submissionDate") || "Ngày gửi"}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
                 <tr>
                   <td colSpan="8" className={styles.noData}>
-                    Không có dữ liệu
+                    {t("admin.userManagement.noData") || "Không có dữ liệu"}
                   </td>
                 </tr>
               ) : (
@@ -325,7 +325,7 @@ const UserManagementPage = () => {
                             : commonStyles.adminBadgeInactive
                         }
                       >
-                        {user.isActive ? "Hoạt động" : "Đã khóa"}
+                        {user.isActive ? (t("admin.userManagement.active") || "Hoạt động") : (t("admin.userManagement.inactive") || "Đã khóa")}
                       </span>
                     </td>
                     <td>
@@ -334,7 +334,7 @@ const UserManagementPage = () => {
                           user.isVerified ? commonStyles.adminBadgeVerified : commonStyles.adminBadgeUnverified
                         }
                       >
-                        {user.isVerified ? "Đã xác thực" : "Chưa xác thực"}
+                        {user.isVerified ? (t("admin.userManagement.verifiedStatus") || "Đã xác thực") : (t("admin.userManagement.unverifiedStatus") || "Chưa xác thực")}
                       </span>
                     </td>
                     <td>
@@ -365,7 +365,7 @@ const UserManagementPage = () => {
                               }}
                               disabled={processing === user.id || user.isActive}
                             >
-                              {processing === user.id ? "..." : "Kích hoạt tài khoản"}
+                              {processing === user.id ? "..." : (t("admin.userManagement.activateAccount") || "Kích hoạt tài khoản")}
                             </button>
                             <button
                               className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
@@ -375,7 +375,7 @@ const UserManagementPage = () => {
                               }}
                               disabled={processing === user.id || !user.isActive}
                             >
-                              Khóa tài khoản
+                              {t("admin.userManagement.deactivateAccount") || "Khóa tài khoản"}
                             </button>
                             <button
                               className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
@@ -385,7 +385,7 @@ const UserManagementPage = () => {
                               }}
                               disabled={processing === user.id}
                             >
-                              Xóa tài khoản
+                              {t("admin.userManagement.deleteAccount") || "Xóa tài khoản"}
                             </button>
                           </div>
                         )}
@@ -407,10 +407,10 @@ const UserManagementPage = () => {
               disabled={pagination.page === 1}
               className={styles.pageButton}
             >
-              Trước
+              {t("admin.userManagement.previous") || "Trước"}
             </button>
             <span className={styles.pageInfo}>
-              {t("admin.userManagement.page")} {pagination.page} / {pagination.totalPages} ({t("admin.userManagement.total")}: {pagination.total})
+              {t("admin.userManagement.page") || "Trang"} {pagination.page} / {pagination.totalPages} ({t("admin.userManagement.total") || "Tổng"}: {pagination.total})
             </span>
             <button
               onClick={() =>
@@ -422,7 +422,7 @@ const UserManagementPage = () => {
               disabled={pagination.page === pagination.totalPages}
               className={styles.pageButton}
             >
-              Sau
+              {t("admin.userManagement.next") || "Sau"}
             </button>
           </div>
         )}
@@ -462,7 +462,7 @@ const UserManagementPage = () => {
                   </div>
                 )}
                 <h3 style={{ color: selectedUser.isActive ? "#dc2626" : "#0f172a", margin: 0 }}>
-                  {selectedUser.isActive ? "Xác nhận khóa tài khoản" : "Xác nhận kích hoạt tài khoản"}
+                  {selectedUser.isActive ? (t("admin.userManagement.confirmDeactivate") || "Xác nhận khóa tài khoản") : (t("admin.userManagement.confirmActivate") || "Xác nhận kích hoạt tài khoản")}
                 </h3>
               </div>
               <button
@@ -477,22 +477,22 @@ const UserManagementPage = () => {
             </div>
             <div className={commonStyles.adminModalBody}>
               <p style={{ marginBottom: "1rem", color: "#64748b" }}>
-                Bạn có chắc muốn{" "}
+                {t("admin.userManagement.confirmText") || "Bạn có chắc muốn"}{" "}
                 <strong style={{ color: selectedUser.isActive ? "#dc2626" : "#374151" }}>
                   {selectedUser.isActive
-                    ? "vô hiệu hóa (Deactive)"
-                    : "kích hoạt (Active)"}
+                    ? (t("admin.userManagement.deactivateText") || "vô hiệu hóa (Deactive)")
+                    : (t("admin.userManagement.activateText") || "kích hoạt (Active)")}
                 </strong>{" "}
-                tài khoản của <strong style={{ color: "#374151" }}>{selectedUser.fullName || selectedUser.name}</strong>?
+                {t("admin.userManagement.accountOf") || "tài khoản của"} <strong style={{ color: "#374151" }}>{selectedUser.fullName || selectedUser.name}</strong>?
               </p>
               {selectedUser.isActive && (
                 <div className={commonStyles.adminModalSection}>
-                  <h3>Lý do *</h3>
+                  <h3>{t("admin.userManagement.reason") || "Lý do"} {t("admin.userManagement.reasonRequired") || "*"}</h3>
                   <textarea
                     className={commonStyles.adminModalTextarea}
                     value={toggleReason}
                     onChange={(e) => setToggleReason(e.target.value)}
-                    placeholder="Nhập lý do khóa tài khoản..."
+                    placeholder={t("admin.userManagement.lockReasonPlaceholder") || "Nhập lý do khóa tài khoản..."}
                     rows={4}
                   />
                 </div>
@@ -508,14 +508,14 @@ const UserManagementPage = () => {
                 }}
                 disabled={processing === selectedUser.id}
               >
-                Hủy
+                {t("admin.userManagement.cancel") || "Hủy"}
               </button>
               <button
                 className={`${commonStyles.adminButton} ${selectedUser.isActive ? commonStyles.adminButtonDanger : commonStyles.adminButtonSuccess}`}
                 onClick={handleToggleStatus}
                 disabled={processing === selectedUser.id || (selectedUser.isActive && !toggleReason.trim())}
               >
-                {processing === selectedUser.id ? "Đang xử lý..." : "Xác nhận"}
+                {processing === selectedUser.id ? (t("admin.userManagement.processing") || "Đang xử lý...") : (t("admin.common.confirm") || "Xác nhận")}
               </button>
             </div>
           </div>
@@ -553,7 +553,7 @@ const UserManagementPage = () => {
                     />
                   </svg>
                 </div>
-                <h3 style={{ color: "#dc2626", margin: 0 }}>Xác nhận xóa tài khoản</h3>
+                <h3 style={{ color: "#dc2626", margin: 0 }}>{t("admin.userManagement.confirmDeleteAccount") || "Xác nhận xóa tài khoản"}</h3>
               </div>
               <button
                 className={commonStyles.adminModalCloseBtn}
@@ -568,20 +568,20 @@ const UserManagementPage = () => {
             </div>
             <div className={commonStyles.adminModalBody}>
               <p style={{ marginBottom: "1rem", color: "#64748b" }}>
-                Bạn có chắc muốn <strong style={{ color: "#dc2626" }}>xóa vĩnh viễn</strong> tài khoản của{" "}
+                {t("admin.userManagement.confirmText") || "Bạn có chắc muốn"} <strong style={{ color: "#dc2626" }}>{t("admin.userManagement.permanentlyDelete") || "xóa vĩnh viễn"}</strong> {t("admin.userManagement.accountOf") || "tài khoản của"}{" "}
                 <strong style={{ color: "#374151" }}>{selectedUser.fullName || selectedUser.name}</strong>?
                 <br />
                 <span style={{ color: "#dc2626", fontSize: "0.875rem" }}>
-                  Hành động này không thể hoàn tác!
+                  {t("admin.userManagement.cannotUndo") || "Hành động này không thể hoàn tác!"}
                 </span>
               </p>
               <div className={commonStyles.adminModalSection}>
-                <h3>Lý do *</h3>
+                <h3>{t("admin.userManagement.reason") || "Lý do"} {t("admin.userManagement.reasonRequired") || "*"}</h3>
                 <textarea
                   className={commonStyles.adminModalTextarea}
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
-                  placeholder="Nhập lý do xóa tài khoản..."
+                  placeholder={t("admin.userManagement.deleteReasonPlaceholder") || "Nhập lý do xóa tài khoản..."}
                   rows={4}
                 />
               </div>
@@ -596,14 +596,14 @@ const UserManagementPage = () => {
                 }}
                 disabled={processing === selectedUser.id}
               >
-                Hủy
+                {t("admin.userManagement.cancel") || "Hủy"}
               </button>
               <button
                 className={`${commonStyles.adminButton} ${commonStyles.adminButtonDanger}`}
                 onClick={handleDelete}
                 disabled={processing === selectedUser.id || !deleteReason.trim()}
               >
-                {processing === selectedUser.id ? "Đang xử lý..." : "Xác nhận xóa"}
+                {processing === selectedUser.id ? (t("admin.userManagement.processing") || "Đang xử lý...") : (t("admin.userManagement.confirmDelete") || "Xác nhận xóa")}
               </button>
             </div>
           </div>
@@ -624,7 +624,7 @@ const UserManagementPage = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className={commonStyles.adminModalHeader}>
-              <h3>Chi tiết người dùng</h3>
+                <h3>{t("admin.userManagement.userDetails") || "Chi tiết người dùng"}</h3>
               <button
                 className={commonStyles.adminModalCloseBtn}
                 onClick={() => {
@@ -638,25 +638,25 @@ const UserManagementPage = () => {
             <div className={commonStyles.adminModalBody}>
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>ID:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.userId") || "ID"}:</strong>
                   <span style={{ color: "#64748b" }}>#{detailUser.id}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Họ và tên:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.fullName") || "Họ và tên"}:</strong>
                   <span style={{ color: "#64748b" }}>{detailUser.fullName || "N/A"}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Email:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.email") || "Email"}:</strong>
                   <span style={{ color: "#64748b" }}>{detailUser.email || "N/A"}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Vai trò:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.role") || "Vai trò"}:</strong>
                   <span className={commonStyles.adminBadgeRole}>
                     {getRoleLabel(detailUser.role)}
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Trạng thái:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.status") || "Trạng thái"}:</strong>
                   <span
                     className={
                       detailUser.isActive
@@ -664,11 +664,11 @@ const UserManagementPage = () => {
                         : commonStyles.adminBadgeInactive
                     }
                   >
-                    {detailUser.isActive ? "Hoạt động" : "Đã khóa"}
+                    {detailUser.isActive ? (t("admin.userManagement.active") || "Hoạt động") : (t("admin.userManagement.inactive") || "Đã khóa")}
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Xác thực:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.verifiedLabel") || "Xác thực:"}</strong>
                   <span
                     className={
                       detailUser.isVerified
@@ -676,30 +676,30 @@ const UserManagementPage = () => {
                         : commonStyles.adminBadgeUnverified
                     }
                   >
-                    {detailUser.isVerified ? "Đã xác thực" : "Chưa xác thực"}
+                    {detailUser.isVerified ? (t("admin.userManagement.verifiedStatus") || "Đã xác thực") : (t("admin.userManagement.unverifiedStatus") || "Chưa xác thực")}
                   </span>
                 </div>
                 {detailUser.phone && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Số điện thoại:</strong>
+                    <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.phone") || "Số điện thoại:"}</strong>
                     <span style={{ color: "#64748b" }}>{detailUser.phone}</span>
                   </div>
                 )}
                 {detailUser.address && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Địa chỉ:</strong>
+                    <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.address") || "Địa chỉ:"}</strong>
                     <span style={{ color: "#64748b" }}>{detailUser.address}</span>
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Ngày tạo:</strong>
+                  <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.createdAtLabel") || "Ngày tạo:"}</strong>
                   <span style={{ color: "#64748b" }}>
                     {new Date(detailUser.createdAt).toLocaleString("vi-VN")}
                   </span>
                 </div>
                 {detailUser.updatedAt && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <strong style={{ color: "#374151", fontSize: "0.875rem" }}>Cập nhật lần cuối:</strong>
+                    <strong style={{ color: "#374151", fontSize: "0.875rem" }}>{t("admin.userManagement.lastUpdated") || "Cập nhật lần cuối:"}</strong>
                     <span style={{ color: "#64748b" }}>
                       {new Date(detailUser.updatedAt).toLocaleString("vi-VN")}
                     </span>

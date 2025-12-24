@@ -174,7 +174,7 @@ const AdminJobModerationPage = () => {
       setShowModal(false);
       setSelectedJob(null);
       setReviewNotes("");
-      await alertService.success("Duyệt công việc thành công");
+      await alertService.success(t("admin.jobModeration.approveSuccess") || "Duyệt công việc thành công");
     } catch (error) {
       console.error("Error approving job:", error);
       await alertService.error(error.message || "Failed to approve job");
@@ -225,7 +225,7 @@ const AdminJobModerationPage = () => {
     if (!selectedJob) return;
     const jobId = selectedJob.id;
     if (!reviewNotes.trim()) {
-      await alertService.error("Vui lòng nhập lý do từ chối");
+      await alertService.error(t("admin.jobModeration.rejectReasonRequired") || "Vui lòng nhập lý do từ chối");
       return;
     }
     
@@ -237,7 +237,7 @@ const AdminJobModerationPage = () => {
       await fetchCounts();
       setSelectedJob(null);
       setReviewNotes("");
-      await alertService.success("Từ chối công việc thành công");
+      await alertService.success(t("admin.jobModeration.rejectSuccess") || "Từ chối công việc thành công");
     } catch (error) {
       console.error("Error rejecting job:", error);
       await alertService.error(error.message || "Failed to reject job");
@@ -272,15 +272,15 @@ const AdminJobModerationPage = () => {
   const getReviewStatusBadge = (status) => {
     const statusMap = {
       pending: {
-        label: t("adminModeration.status.pending") || "Pending",
+        label: t("admin.jobModeration.statusPending") || "Chờ duyệt",
         className: commonStyles.adminBadgePending,
       },
       approved: {
-        label: t("adminModeration.status.approved") || "Approved",
+        label: t("admin.jobModeration.statusApproved") || "Đã duyệt",
         className: commonStyles.adminBadgeActive,
       },
       rejected: {
-        label: t("adminModeration.status.rejected") || "Rejected",
+        label: t("admin.jobModeration.statusRejected") || "Đã từ chối",
         className: commonStyles.adminBadgeInactive,
       },
     };
@@ -313,7 +313,7 @@ const AdminJobModerationPage = () => {
             <input
               type="text"
               className={commonStyles.adminFilterInput}
-              placeholder="Tìm theo tên công việc hoặc tổ chức..."
+              placeholder={t("admin.jobModeration.searchPlaceholder") || "Tìm theo tên công việc hoặc tổ chức..."}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -330,10 +330,10 @@ const AdminJobModerationPage = () => {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <option value="all">{t("adminModeration.filters.all") || "All"} ({counts.all})</option>
-              <option value="pending">{t("adminModeration.filters.pending") || "Pending"} ({counts.pending})</option>
-              <option value="approved">{t("adminModeration.filters.approved") || "Approved"} ({counts.approved})</option>
-              <option value="rejected">{t("adminModeration.filters.rejected") || "Rejected"} ({counts.rejected})</option>
+              <option value="all">{t("admin.jobModeration.all") || "Tất cả"} ({counts.all})</option>
+              <option value="pending">{t("admin.jobModeration.pending") || "Chờ duyệt"} ({counts.pending})</option>
+              <option value="approved">{t("admin.jobModeration.approved") || "Đã duyệt"} ({counts.approved})</option>
+              <option value="rejected">{t("admin.jobModeration.rejected") || "Đã từ chối"} ({counts.rejected})</option>
             </select>
           </div>
         </div>
@@ -345,7 +345,7 @@ const AdminJobModerationPage = () => {
           </div>
         ) : jobs.length === 0 ? (
           <div className={commonStyles.adminEmpty}>
-            <p>{t("adminModeration.noJobs") || "No jobs found"}</p>
+            <p>{t("admin.jobModeration.noJobs") || "Không có công việc nào"}</p>
           </div>
         ) : (
           <>
@@ -353,13 +353,13 @@ const AdminJobModerationPage = () => {
               <table className={commonStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th>Thứ tự</th>
-                    <th>Tiêu đề</th>
-                    <th>Tổ chức</th>
-                    <th>Địa điểm</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày gửi</th>
-                    <th>Hành động</th>
+                    <th>{t("admin.jobModeration.order") || "Thứ tự"}</th>
+                    <th>{t("admin.jobModeration.title") || "Tiêu đề"}</th>
+                    <th>{t("admin.jobModeration.organization") || "Tổ chức"}</th>
+                    <th>{t("admin.jobModeration.location") || "Địa điểm"}</th>
+                    <th>{t("admin.jobModeration.status") || "Trạng thái"}</th>
+                    <th>{t("admin.jobModeration.submissionDate") || "Ngày gửi"}</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -410,7 +410,7 @@ const AdminJobModerationPage = () => {
                                   openModal(job);
                                 }}
                               >
-                                {t("adminModeration.viewDetails") || "View Details"}
+                                {t("admin.jobModeration.viewDetails") || "Xem chi tiết"}
                               </button>
                               <button
                                 className={commonStyles.adminMenuItem}
@@ -421,8 +421,8 @@ const AdminJobModerationPage = () => {
                                 disabled={processing === job.id || job.reviewStatus === "approved"}
                               >
                                 {processing === job.id
-                                  ? t("common.loading") || "Loading..."
-                                  : t("adminModeration.approve") || "Approve"}
+                                  ? t("admin.jobModeration.loading") || "Đang tải..."
+                                  : t("admin.jobModeration.approve") || "Duyệt"}
                               </button>
                               <button
                                 className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
@@ -432,7 +432,7 @@ const AdminJobModerationPage = () => {
                                 }}
                                 disabled={processing === job.id || job.reviewStatus === "rejected"}
                               >
-                                {t("adminModeration.reject") || "Reject"}
+                                {t("admin.jobModeration.reject") || "Từ chối"}
                               </button>
                             </div>
                           )}
@@ -490,37 +490,37 @@ const AdminJobModerationPage = () => {
 
               <div className={commonStyles.adminModalBody}>
                 <div className={commonStyles.adminModalSection}>
-                  <h3>{t("adminModeration.jobDetails") || "Job Details"}</h3>
+                  <h3>{t("admin.jobModeration.jobDetails") || "Chi tiết công việc"}</h3>
                   <div className={commonStyles.adminModalDetailGrid}>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>{t("adminModeration.company") || "Organization"}:</strong>
+                      <strong>{t("admin.jobModeration.company") || "Tổ chức"}:</strong>
                       <span>
                         {selectedJob.organization?.name || "Unknown"}
                         {selectedJob.organization?.approvalStatus !== "approved" && (
                           <span style={{ color: "#f59e0b", marginLeft: "0.5rem" }}>
-                            {" "}(Chưa duyệt)
+                            {" "}({t("admin.jobModeration.notApproved") || "Chưa duyệt"})
                           </span>
                         )}
                       </span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Trạng thái tổ chức:</strong>
+                      <strong>{t("admin.jobModeration.organizationStatus") || "Trạng thái tổ chức:"}</strong>
                       <span>
                         {selectedJob.organization?.approvalStatus === "approved" ? (
-                          <span className={commonStyles.adminBadgeActive}>Đã duyệt</span>
+                          <span className={commonStyles.adminBadgeActive}>{t("admin.jobModeration.approved") || "Đã duyệt"}</span>
                         ) : selectedJob.organization?.approvalStatus === "pending" ? (
-                          <span className={commonStyles.adminBadgePending}>Chờ duyệt</span>
+                          <span className={commonStyles.adminBadgePending}>{t("admin.jobModeration.pending") || "Chờ duyệt"}</span>
                         ) : (
-                          <span className={commonStyles.adminBadgeInactive}>Từ chối</span>
+                          <span className={commonStyles.adminBadgeInactive}>{t("admin.jobModeration.rejected") || "Từ chối"}</span>
                         )}
                       </span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Hình thức làm việc:</strong>
+                      <strong>{t("admin.jobModeration.workingMode") || "Hình thức làm việc:"}</strong>
                       <span>{selectedJob.workingMode?.name || selectedJob.workingMode?.nameVi || "N/A"}</span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Địa điểm:</strong>
+                      <strong>{t("admin.jobModeration.locationLabel") || "Địa điểm:"}</strong>
                       <span>
                         {[selectedJob.province, selectedJob.commune, selectedJob.address]
                           .filter(Boolean)
@@ -528,15 +528,15 @@ const AdminJobModerationPage = () => {
                       </span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Số lượng:</strong>
-                      <span>{selectedJob.quantity || 1} người</span>
+                      <strong>{t("admin.jobModeration.quantity") || "Số lượng:"}</strong>
+                      <span>{selectedJob.quantity || 1} {t("admin.jobModeration.people") || "người"}</span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Hạn nộp hồ sơ:</strong>
+                      <strong>{t("admin.jobModeration.applicationDeadline") || "Hạn nộp hồ sơ:"}</strong>
                       <span>{formatDate(selectedJob.expirationDate)}</span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>{t("adminModeration.salary") || "Salary"}:</strong>
+                      <strong>{t("admin.jobModeration.salary") || "Mức lương"}:</strong>
                       <span>
                         {selectedJob.salaryType === "FIXED" && selectedJob.minSalary
                           ? `$${selectedJob.minSalary}`
@@ -544,23 +544,23 @@ const AdminJobModerationPage = () => {
                           ? `$${selectedJob.minSalary} - $${selectedJob.maxSalary}`
                           : selectedJob.minSalary
                           ? `$${selectedJob.minSalary}+`
-                          : "Thỏa thuận"}
+                          : t("admin.jobModeration.negotiable") || "Thỏa thuận"}
                       </span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Email liên hệ:</strong>
+                      <strong>{t("admin.jobModeration.contactEmail") || "Email liên hệ:"}</strong>
                       <span>{selectedJob.contactEmail || "N/A"}</span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Số điện thoại:</strong>
+                      <strong>{t("admin.jobModeration.contactPhone") || "Số điện thoại:"}</strong>
                       <span>{selectedJob.contactPhone || "N/A"}</span>
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>{t("adminModeration.statusLabel") || "Status"}:</strong>
+                      <strong>{t("admin.jobModeration.statusLabel") || "Trạng thái"}:</strong>
                       {getReviewStatusBadge(selectedJob.reviewStatus)}
                     </div>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>{t("adminModeration.createdAt") || "Created at"}:</strong>
+                      <strong>{t("admin.jobModeration.createdAt") || "Ngày tạo"}:</strong>
                       <span>{formatDate(selectedJob.createdAt)}</span>
                     </div>
                   </div>
@@ -568,7 +568,7 @@ const AdminJobModerationPage = () => {
 
                 {selectedJob.domains && selectedJob.domains.length > 0 && (
                   <div className={commonStyles.adminModalSection}>
-                    <h3>Lĩnh vực / Ngành nghề</h3>
+                    <h3>{t("admin.jobModeration.domains") || "Lĩnh vực / Ngành nghề"}</h3>
                     <div className={commonStyles.adminModalTagsList}>
                       {selectedJob.domains.map((domain) => (
                         <span key={domain.domainId || domain.id} className={commonStyles.adminModalTag}>
@@ -581,7 +581,7 @@ const AdminJobModerationPage = () => {
 
                 {selectedJob.requiredLanguages && selectedJob.requiredLanguages.length > 0 && (
                   <div className={commonStyles.adminModalSection}>
-                    <h3>Yêu cầu ngôn ngữ</h3>
+                    <h3>{t("admin.jobModeration.requiredLanguages") || "Yêu cầu ngôn ngữ"}</h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {selectedJob.requiredLanguages.map((lang, idx) => (
                         <div key={idx} style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -592,7 +592,7 @@ const AdminJobModerationPage = () => {
                             {lang.level?.name || lang.level?.nameVi || lang.levelName || "N/A"}
                           </span>
                           {lang.isSourceLanguage && (
-                            <span className={commonStyles.adminBadgeRole}>Ngôn ngữ nguồn</span>
+                            <span className={commonStyles.adminBadgeRole}>{t("admin.jobModeration.sourceLanguage") || "Ngôn ngữ nguồn"}</span>
                           )}
                         </div>
                       ))}
@@ -601,22 +601,22 @@ const AdminJobModerationPage = () => {
                 )}
 
                 <div className={commonStyles.adminModalSection}>
-                  <h3>{t("adminModeration.description") || "Description"}</h3>
+                  <h3>{t("admin.jobModeration.description") || "Mô tả"}</h3>
                   <p className={commonStyles.adminModalDescriptionText}>
-                    {selectedJob.descriptions || "No description"}
+                    {selectedJob.descriptions || t("admin.jobModeration.noDescription") || "Không có mô tả"}
                   </p>
                 </div>
 
                 {selectedJob.responsibility && (
                   <div className={commonStyles.adminModalSection}>
-                    <h3>Nhiệm vụ chính</h3>
+                    <h3>{t("admin.jobModeration.responsibilities") || "Nhiệm vụ chính"}</h3>
                     <p className={commonStyles.adminModalDescriptionText}>{selectedJob.responsibility}</p>
                   </div>
                 )}
 
                 {selectedJob.benefits && (
                   <div className={commonStyles.adminModalSection}>
-                    <h3>Quyền lợi</h3>
+                    <h3>{t("admin.jobModeration.benefits") || "Quyền lợi"}</h3>
                     <p className={commonStyles.adminModalDescriptionText}>{selectedJob.benefits}</p>
                   </div>
                 )}
@@ -631,7 +631,7 @@ const AdminJobModerationPage = () => {
           <div className={commonStyles.adminModalOverlay} onClick={() => setShowOrgApprovalModal(false)}>
             <div className={commonStyles.adminModal} onClick={(e) => e.stopPropagation()}>
               <div className={commonStyles.adminModalHeader}>
-                <h3>Xác nhận duyệt tổ chức</h3>
+                <h3>{t("admin.jobModeration.confirmApproveOrg") || "Xác nhận duyệt tổ chức"}</h3>
                 <button
                   className={commonStyles.adminModalCloseBtn}
                   onClick={() => setShowOrgApprovalModal(false)}
@@ -661,8 +661,7 @@ const AdminJobModerationPage = () => {
                   </div>
                 </div>
                 <p style={{ marginBottom: "1.5rem", color: "#64748b", lineHeight: "1.6" }}>
-                  Tổ chức <strong style={{ color: "#374151" }}>"{selectedJob.organization?.name}"</strong> chưa được duyệt.
-                  Bạn có muốn duyệt tổ chức này cùng lúc với công việc không?
+                  {t("admin.jobModeration.orgNotApprovedMessage") || "Tổ chức"} <strong style={{ color: "#374151" }}>"{selectedJob.organization?.name}"</strong> {t("admin.jobModeration.orgNotApprovedMessage2") || "chưa được duyệt. Bạn có muốn duyệt tổ chức này cùng lúc với công việc không?"}
                 </p>
                 <div style={{ 
                   background: "#fef3c7", 
@@ -688,7 +687,7 @@ const AdminJobModerationPage = () => {
                     setShowOrgApprovalModal(false);
                   }}
                 >
-                  Chỉ duyệt công việc
+                  {t("admin.jobModeration.approveJobOnly") || "Chỉ duyệt công việc"}
                 </button>
                 <button
                   className={`${commonStyles.adminButton} ${commonStyles.adminButtonSuccess}`}
@@ -699,8 +698,8 @@ const AdminJobModerationPage = () => {
                   disabled={processing === selectedJob.id}
                 >
                   {processing === selectedJob.id
-                    ? "Đang xử lý..."
-                    : "Duyệt cả tổ chức và công việc"}
+                    ? t("admin.jobModeration.loading") || "Đang tải..."
+                    : t("admin.jobModeration.approveBoth") || "Duyệt cả tổ chức và công việc"}
                 </button>
               </div>
             </div>
@@ -712,7 +711,7 @@ const AdminJobModerationPage = () => {
           <div className={commonStyles.adminModalOverlay}>
             <div className={commonStyles.adminModal}>
               <div className={commonStyles.adminModalHeader}>
-                <h3>Xác nhận duyệt công việc</h3>
+                <h3>{t("admin.jobModeration.confirmApproveJob") || "Xác nhận duyệt công việc"}</h3>
                 <button
                   className={commonStyles.adminModalCloseBtn}
                   onClick={() => {
@@ -742,7 +741,7 @@ const AdminJobModerationPage = () => {
                   onClick={() => handleApprove(selectedJob?.id, false)}
                   disabled={processing === selectedJob?.id}
                 >
-                  {processing === selectedJob?.id ? "Đang xử lý..." : "Xác nhận duyệt"}
+                  {processing === selectedJob?.id ? (t("admin.jobModeration.loading") || "Đang tải...") : (t("admin.common.confirm") || "Xác nhận duyệt")}
                 </button>
               </div>
             </div>
@@ -754,7 +753,7 @@ const AdminJobModerationPage = () => {
           <div className={commonStyles.adminModalOverlay}>
             <div className={commonStyles.adminModal}>
               <div className={commonStyles.adminModalHeader}>
-                <h3>Xác nhận từ chối công việc</h3>
+                <h3>{t("admin.jobModeration.confirmRejectTitle") || "Xác nhận từ chối công việc"}</h3>
                 <button
                   className={commonStyles.adminModalCloseBtn}
                   onClick={() => {
@@ -768,17 +767,17 @@ const AdminJobModerationPage = () => {
               </div>
               <div className={commonStyles.adminModalBody}>
                 <p style={{ marginBottom: "1rem", color: "#64748b" }}>
-                  Bạn có chắc chắn muốn từ chối công việc này không?
+                  {t("admin.jobModeration.confirmRejectMessage") || "Bạn có chắc chắn muốn từ chối công việc này không?"}
                 </p>
                 <div style={{ marginTop: "1rem" }}>
                   <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600, color: "#374151" }}>
-                    Lý do từ chối <span style={{ color: "#ef4444" }}>*</span>
+                    {t("admin.jobModeration.rejectReason") || "Lý do từ chối"} <span style={{ color: "#ef4444" }}>*</span>
                   </label>
                   <textarea
                     className={commonStyles.adminModalTextarea}
                     value={reviewNotes}
                     onChange={(e) => setReviewNotes(e.target.value)}
-                    placeholder="Nhập lý do từ chối..."
+                    placeholder={t("admin.jobModeration.rejectReasonPlaceholder") || "Nhập lý do từ chối..."}
                     rows={4}
                     style={{ width: "100%", resize: "vertical", minHeight: "100px" }}
                   />
@@ -794,14 +793,14 @@ const AdminJobModerationPage = () => {
                   }}
                   disabled={processing === selectedJob?.id}
                 >
-                  Hủy
+                  {t("admin.common.cancel") || "Hủy"}
                 </button>
                 <button 
                   className={`${commonStyles.adminButton} ${commonStyles.adminButtonDanger}`} 
                   onClick={handleReject}
                   disabled={processing === selectedJob?.id || !reviewNotes.trim()}
                 >
-                  {processing === selectedJob?.id ? "Đang xử lý..." : "Xác nhận từ chối"}
+                  {processing === selectedJob?.id ? (t("admin.jobModeration.loading") || "Đang tải...") : (t("admin.common.confirm") || "Xác nhận từ chối")}
                 </button>
               </div>
             </div>

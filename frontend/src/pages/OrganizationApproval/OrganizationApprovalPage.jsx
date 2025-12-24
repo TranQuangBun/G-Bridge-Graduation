@@ -156,9 +156,9 @@ const OrganizationApprovalPage = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      pending: { label: "Chờ duyệt", className: commonStyles.adminBadgePending },
-      approved: { label: "Đã duyệt", className: commonStyles.adminBadgeActive },
-      rejected: { label: "Từ chối", className: commonStyles.adminBadgeInactive },
+      pending: { label: t("admin.organizationApproval.pending") || "Chờ duyệt", className: commonStyles.adminBadgePending },
+      approved: { label: t("admin.organizationApproval.approved") || "Đã duyệt", className: commonStyles.adminBadgeActive },
+      rejected: { label: t("admin.organizationApproval.rejected") || "Từ chối", className: commonStyles.adminBadgeInactive },
     };
     const statusInfo = statusMap[status] || statusMap.pending;
     return (
@@ -214,7 +214,7 @@ const OrganizationApprovalPage = () => {
             <input
               type="text"
               className={commonStyles.adminFilterInput}
-              placeholder="Tìm theo tên tổ chức hoặc email..."
+              placeholder={t("admin.organizationApproval.searchPlaceholder") || "Tìm theo tên tổ chức hoặc email..."}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -231,10 +231,10 @@ const OrganizationApprovalPage = () => {
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
             >
-              <option value="all">Tất cả</option>
-              <option value="pending">Chờ duyệt</option>
-              <option value="approved">Đã duyệt</option>
-              <option value="rejected">Từ chối</option>
+              <option value="all">{t("admin.organizationApproval.all") || "Tất cả"}</option>
+              <option value="pending">{t("admin.organizationApproval.pending") || "Chờ duyệt"}</option>
+              <option value="approved">{t("admin.organizationApproval.approved") || "Đã duyệt"}</option>
+              <option value="rejected">{t("admin.organizationApproval.rejected") || "Từ chối"}</option>
             </select>
           </div>
         </div>
@@ -242,11 +242,11 @@ const OrganizationApprovalPage = () => {
         {loading ? (
           <div className={commonStyles.adminLoading}>
             <FaSpinner className={commonStyles.adminSpinner} />
-            <p>Đang tải...</p>
+            <p>{t("admin.organizationApproval.loading") || "Đang tải..."}</p>
           </div>
         ) : organizations.length === 0 ? (
           <div className={commonStyles.adminEmpty}>
-            <p>Không có tổ chức nào</p>
+            <p>{t("admin.organizationApproval.noOrganizations") || "Không có tổ chức nào"}</p>
           </div>
         ) : (
           <>
@@ -254,15 +254,15 @@ const OrganizationApprovalPage = () => {
               <table className={commonStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th>Thứ tự</th>
-                    <th>Tên tổ chức</th>
-                    <th>Trạng thái</th>
-                    <th>Email</th>
-                    <th>Website</th>
-                    <th>Giấy phép KD</th>
-                    <th>Chủ sở hữu</th>
-                    <th>Ngày gửi</th>
-                    <th>Hành động</th>
+                    <th>{t("admin.organizationApproval.order") || "Thứ tự"}</th>
+                    <th>{t("admin.organizationApproval.organizationName") || "Tên tổ chức"}</th>
+                    <th>{t("admin.organizationApproval.status") || "Trạng thái"}</th>
+                    <th>{t("admin.organizationApproval.email") || "Email"}</th>
+                    <th>{t("admin.organizationApproval.website") || "Website"}</th>
+                    <th>{t("admin.organizationApproval.businessLicense") || "Giấy phép KD"}</th>
+                    <th>{t("admin.organizationApproval.owner") || "Chủ sở hữu"}</th>
+                    <th>{t("admin.organizationApproval.submissionDate") || "Ngày gửi"}</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -314,9 +314,9 @@ const OrganizationApprovalPage = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className={styles.viewLicenseBtn}
-                            title="Xem giấy phép kinh doanh"
+                            title={t("admin.organizationApproval.viewBusinessLicense") || "Xem giấy phép kinh doanh"}
                           >
-                            Xem file
+                            {t("admin.organizationApproval.viewFile") || "Xem file"}
                           </a>
                         ) : (
                           <span className={styles.noFile}>—</span>
@@ -353,7 +353,7 @@ const OrganizationApprovalPage = () => {
                                 }}
                                 disabled={processing === org.id || org.approvalStatus === "approved"}
                               >
-                                {processing === org.id ? "Đang xử lý..." : "Duyệt"}
+                                {processing === org.id ? (t("admin.organizationApproval.processing") || "Đang xử lý...") : (t("admin.organizationApproval.approve") || "Duyệt")}
                               </button>
                               <button
                                 className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
@@ -363,7 +363,7 @@ const OrganizationApprovalPage = () => {
                                 }}
                                 disabled={processing === org.id || org.approvalStatus === "rejected"}
                               >
-                                Từ chối
+                                {t("admin.organizationApproval.reject") || "Từ chối"}
                               </button>
                             </div>
                           )}
@@ -384,10 +384,10 @@ const OrganizationApprovalPage = () => {
                   }
                   disabled={pagination.page === 1}
                 >
-                  Trước
+                  {t("admin.organizationApproval.previous") || "Trước"}
                 </button>
                 <span className={commonStyles.adminPaginationInfo}>
-                  {t("admin.organizationApproval.page")} {pagination.page} / {pagination.totalPages} ({t("admin.organizationApproval.total")}: {pagination.total})
+                  {t("admin.organizationApproval.page") || "Trang"} {pagination.page} / {pagination.totalPages} ({t("admin.organizationApproval.total") || "Tổng"}: {pagination.total})
                 </span>
                 <button
                   className={commonStyles.adminPaginationButton}
@@ -396,7 +396,7 @@ const OrganizationApprovalPage = () => {
                   }
                   disabled={pagination.page === pagination.totalPages}
                 >
-                  Sau
+                  {t("admin.organizationApproval.next") || "Sau"}
                 </button>
               </div>
             )}
@@ -447,7 +447,7 @@ const OrganizationApprovalPage = () => {
                   </div>
                 </div>
                 <p style={{ textAlign: "center", color: "#64748b", marginBottom: "1.5rem", lineHeight: "1.6" }}>
-                  Bạn đang chuẩn bị duyệt tổ chức{" "}
+                  {t("admin.organizationApproval.preparingToApprove") || "Bạn đang chuẩn bị duyệt tổ chức"}{" "}
                   <strong style={{ color: "#0f172a" }}>"{selectedOrg.name}"</strong>.
                 </p>
                 <div style={{
@@ -458,15 +458,15 @@ const OrganizationApprovalPage = () => {
                   marginTop: "1rem"
                 }}>
                   <p style={{ marginBottom: "0.75rem", fontWeight: 600, color: "#92400e" }}>
-                    <strong>Lưu ý quan trọng:</strong>
+                    <strong>{t("admin.organizationApproval.importantNote") || "Lưu ý quan trọng:"}</strong>
                   </p>
                   <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#78350f" }}>
                     <li style={{ marginBottom: "0.5rem" }}>
-                      Tổ chức sẽ được kích hoạt và có thể đăng tin tuyển dụng
+                      {t("admin.organizationApproval.noteOrgActivated") || "Tổ chức sẽ được kích hoạt và có thể đăng tin tuyển dụng"}
                     </li>
-                    <li style={{ marginBottom: "0.5rem" }}>Chủ sở hữu sẽ nhận được thông báo về việc phê duyệt</li>
-                    <li style={{ marginBottom: "0.5rem" }}>Tổ chức sẽ hiển thị công khai trên hệ thống</li>
-                    <li>Hành động này không thể hoàn tác</li>
+                    <li style={{ marginBottom: "0.5rem" }}>{t("admin.organizationApproval.noteOwnerNotification") || "Chủ sở hữu sẽ nhận được thông báo về việc phê duyệt"}</li>
+                    <li style={{ marginBottom: "0.5rem" }}>{t("admin.organizationApproval.noteOrgPublic") || "Tổ chức sẽ hiển thị công khai trên hệ thống"}</li>
+                    <li>{t("admin.organizationApproval.cannotUndo") || "Hành động này không thể hoàn tác"}</li>
                   </ul>
                 </div>
               </div>
@@ -478,7 +478,7 @@ const OrganizationApprovalPage = () => {
                     setSelectedOrg(null);
                   }}
                 >
-                  Hủy
+                  {t("admin.common.cancel") || "Hủy"}
                 </button>
                 <button
                   className={`${commonStyles.adminButton} ${commonStyles.adminButtonSuccess}`}
@@ -486,8 +486,8 @@ const OrganizationApprovalPage = () => {
                   disabled={processing === selectedOrg.id}
                 >
                   {processing === selectedOrg.id
-                    ? "Đang xử lý..."
-                    : "Xác nhận duyệt"}
+                    ? (t("admin.organizationApproval.processing") || "Đang xử lý...")
+                    : (t("admin.common.confirm") || "Xác nhận duyệt")}
                 </button>
               </div>
             </div>
@@ -501,7 +501,7 @@ const OrganizationApprovalPage = () => {
           >
             <div className={commonStyles.adminModal} onClick={(e) => e.stopPropagation()}>
               <div className={commonStyles.adminModalHeader}>
-                <h3>Từ chối tổ chức</h3>
+                <h3>{t("admin.organizationApproval.rejectTitle") || "Từ chối tổ chức"}</h3>
                 <button
                   className={commonStyles.adminModalCloseBtn}
                   onClick={() => {
@@ -514,10 +514,10 @@ const OrganizationApprovalPage = () => {
                 </button>
               </div>
               <div className={commonStyles.adminModalBody}>
-                <p style={{ marginBottom: "1rem", color: "#64748b" }}>Tổ chức: <strong>{selectedOrg.name}</strong></p>
+                <p style={{ marginBottom: "1rem", color: "#64748b" }}>{t("admin.organizationApproval.organizationName") || "Tổ chức"}: <strong>{selectedOrg.name}</strong></p>
                 <textarea
                   className={commonStyles.adminFilterInput}
-                  placeholder="Nhập lý do từ chối..."
+                  placeholder={t("admin.organizationApproval.rejectReasonPlaceholder") || "Nhập lý do từ chối..."}
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   rows={4}
@@ -533,7 +533,7 @@ const OrganizationApprovalPage = () => {
                     setRejectionReason("");
                   }}
                 >
-                  Hủy
+                  {t("admin.common.cancel") || "Hủy"}
                 </button>
                 <button
                   className={`${commonStyles.adminButton} ${commonStyles.adminButtonDanger}`}
@@ -543,8 +543,8 @@ const OrganizationApprovalPage = () => {
                   }
                 >
                   {processing === selectedOrg.id
-                    ? "Đang xử lý..."
-                    : "Xác nhận từ chối"}
+                    ? (t("admin.organizationApproval.processing") || "Đang xử lý...")
+                    : (t("admin.common.confirm") || "Xác nhận từ chối")}
                 </button>
               </div>
             </div>

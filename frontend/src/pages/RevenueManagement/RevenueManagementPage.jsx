@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import commonStyles from "../../styles/adminCommon.module.css";
@@ -8,6 +9,7 @@ import { FaSpinner, FaDollarSign, FaCheckCircle, FaClock, FaTimesCircle } from "
 
 const RevenueManagementPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [revenueStats, setRevenueStats] = useState(null);
   const [payments, setPayments] = useState([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
@@ -138,7 +140,7 @@ const RevenueManagementPage = () => {
                   <FaDollarSign style={{ color: "white", fontSize: "1.5rem" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>Tổng doanh thu</h3>
+                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>{t("admin.revenue.totalRevenue") || "Tổng doanh thu"}</h3>
                   <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>
                     {formatCurrency(revenueStats.totalRevenue, "VND")}
                   </p>
@@ -152,13 +154,13 @@ const RevenueManagementPage = () => {
                   <FaCheckCircle style={{ color: "white", fontSize: "1.5rem" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>Thành công</h3>
+                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>{t("admin.revenue.success") || "Thành công"}</h3>
                   <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>
                     {revenueStats.statistics?.completedPayments || 0}
                   </p>
                   {revenueStats.statistics?.successRate && (
                     <small style={{ color: "#64748b", fontSize: "0.75rem", display: "block", marginTop: "0.25rem" }}>
-                      Tỷ lệ: {revenueStats.statistics.successRate}%
+                      {t("admin.revenue.rate") || "Tỷ lệ"}: {revenueStats.statistics.successRate}%
                     </small>
                   )}
                 </div>
@@ -171,7 +173,7 @@ const RevenueManagementPage = () => {
                   <FaClock style={{ color: "white", fontSize: "1.5rem" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>Đang chờ</h3>
+                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>{t("admin.revenue.pending") || "Đang chờ"}</h3>
                   <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>
                     {revenueStats.statistics?.pendingPayments || 0}
                   </p>
@@ -185,7 +187,7 @@ const RevenueManagementPage = () => {
                   <FaTimesCircle style={{ color: "white", fontSize: "1.5rem" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>Thất bại</h3>
+                  <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", marginBottom: "0.5rem" }}>{t("admin.revenue.failed") || "Thất bại"}</h3>
                   <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>
                     {revenueStats.statistics?.failedPayments || 0}
                   </p>
@@ -203,10 +205,10 @@ const RevenueManagementPage = () => {
               onChange={(e) => handleFilterChange("status", e.target.value)}
               className={commonStyles.adminFilterSelect}
             >
-              <option value="">Tất cả trạng thái</option>
-              <option value="completed">Thành công</option>
-              <option value="pending">Đang chờ</option>
-              <option value="failed">Thất bại</option>
+              <option value="">{t("admin.revenue.allStatus") || "Tất cả trạng thái"}</option>
+              <option value="completed">{t("admin.revenue.success") || "Thành công"}</option>
+              <option value="pending">{t("admin.revenue.pending") || "Đang chờ"}</option>
+              <option value="failed">{t("admin.revenue.failed") || "Thất bại"}</option>
             </select>
           </div>
           <div className={commonStyles.adminFilterGroup}>
@@ -215,7 +217,7 @@ const RevenueManagementPage = () => {
               onChange={(e) => handleFilterChange("paymentGateway", e.target.value)}
               className={commonStyles.adminFilterSelect}
             >
-              <option value="">Tất cả cổng thanh toán</option>
+              <option value="">{t("admin.revenue.allGateways") || "Tất cả cổng thanh toán"}</option>
               <option value="vnpay">VNPay</option>
               <option value="momo">MoMo</option>
               <option value="paypal">PayPal</option>
@@ -227,7 +229,7 @@ const RevenueManagementPage = () => {
               value={filters.startDate}
               onChange={(e) => handleFilterChange("startDate", e.target.value)}
               className={commonStyles.adminFilterInput}
-              placeholder="Từ ngày"
+              placeholder={t("admin.revenue.fromDate") || "Từ ngày"}
             />
           </div>
           <div className={commonStyles.adminFilterGroup}>
@@ -236,7 +238,7 @@ const RevenueManagementPage = () => {
               value={filters.endDate}
               onChange={(e) => handleFilterChange("endDate", e.target.value)}
               className={commonStyles.adminFilterInput}
-              placeholder="Đến ngày"
+              placeholder={t("admin.revenue.toDate") || "Đến ngày"}
             />
           </div>
         </div>
@@ -245,11 +247,11 @@ const RevenueManagementPage = () => {
         {paymentsLoading ? (
           <div className={commonStyles.adminLoading}>
             <FaSpinner className={commonStyles.adminSpinner} />
-            <p>Đang tải...</p>
+            <p>{t("admin.revenue.loading") || "Đang tải..."}</p>
           </div>
         ) : payments.length === 0 ? (
           <div className={commonStyles.adminEmpty}>
-            <p>Không có giao dịch nào</p>
+            <p>{t("admin.revenue.noPayments") || "Không có giao dịch nào"}</p>
           </div>
         ) : (
           <>
@@ -257,12 +259,12 @@ const RevenueManagementPage = () => {
               <table className={commonStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th>Thứ tự</th>
-                    <th>Người dùng</th>
-                    <th>Số tiền</th>
-                    <th>Cổng thanh toán</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày gửi</th>
+                    <th>{t("admin.revenue.order") || "Thứ tự"}</th>
+                    <th>{t("admin.revenue.user") || "Người dùng"}</th>
+                    <th>{t("admin.revenue.amount") || "Số tiền"}</th>
+                    <th>{t("admin.revenue.gateway") || "Cổng thanh toán"}</th>
+                    <th>{t("admin.revenue.status") || "Trạng thái"}</th>
+                    <th>{t("admin.revenue.submissionDate") || "Ngày gửi"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -298,10 +300,10 @@ const RevenueManagementPage = () => {
                   }
                   disabled={pagination.page === 1}
                 >
-                  Trước
+                  {t("admin.revenue.previous") || "Trước"}
                 </button>
                 <span className={commonStyles.adminPaginationInfo}>
-                  Trang {pagination.page} / {pagination.totalPages} (Tổng: {pagination.total})
+                  {t("admin.revenue.page") || "Trang"} {pagination.page} / {pagination.totalPages} ({t("admin.revenue.total") || "Tổng"}: {pagination.total})
                 </span>
                 <button
                   className={commonStyles.adminPaginationButton}
@@ -310,7 +312,7 @@ const RevenueManagementPage = () => {
                   }
                   disabled={pagination.page >= pagination.totalPages}
                 >
-                  Sau
+                  {t("admin.revenue.next") || "Sau"}
                 </button>
               </div>
             )}

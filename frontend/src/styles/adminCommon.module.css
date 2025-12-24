@@ -170,13 +170,47 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: #f9fafb;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.adminTable th:nth-child(1) { width: 80px; }
+.adminTable th:nth-child(2) { width: 150px; }
+.adminTable th:nth-child(3) { width: 150px; }
+.adminTable th:nth-child(4) { width: 150px; }
+.adminTable th:nth-child(5) { width: 180px; }
+.adminTable th:nth-child(6) { width: 120px; }
+.adminTable th:nth-child(7) { width: 100px; }
+.adminTable th:nth-child(8) { width: 200px; }
+.adminTable th:nth-child(9) { width: 130px; }
+.adminTable th:nth-child(10) { width: 100px; }
 
 .adminTable td {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #e5e7eb;
   color: #374151;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adminTable td:nth-child(1) { width: 80px; }
+.adminTable td:nth-child(2) { width: 150px; }
+.adminTable td:nth-child(3) { width: 150px; }
+.adminTable td:nth-child(4) { width: 150px; }
+.adminTable td:nth-child(5) { width: 180px; }
+.adminTable td:nth-child(6) { width: 120px; }
+.adminTable td:nth-child(7) { width: 100px; }
+.adminTable td:nth-child(8) { width: 200px; white-space: normal; word-wrap: break-word; }
+.adminTable td:nth-child(9) { width: 130px; }
+.adminTable td:nth-child(10) { 
+  width: 100px; 
+  text-align: right;
+}
+
+.adminTable th:nth-child(10) {
+  text-align: right;
 }
 
 .adminTable tbody {
@@ -729,7 +763,9 @@
 /* Context Menu (3 dots menu) */
 .adminMenuContainer {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .adminMenuButton {

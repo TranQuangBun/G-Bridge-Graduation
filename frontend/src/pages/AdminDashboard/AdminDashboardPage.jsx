@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../layouts";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../translet/LanguageContext";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import styles from "./AdminDashboardPage.module.css";
@@ -16,6 +17,7 @@ import {
 
 const AdminDashboardPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,7 +53,7 @@ const AdminDashboardPage = () => {
         <div className={styles.container}>
           <div className={styles.loading}>
             <FaSpinner className={styles.spinner} />
-            <p>Đang tải dữ liệu...</p>
+            <p>{t("admin.dashboard.loading") || "Đang tải dữ liệu..."}</p>
           </div>
         </div>
       </AdminLayout>
@@ -68,15 +70,15 @@ const AdminDashboardPage = () => {
               <FaUsers className={styles.statIcon} />
             </div>
             <div className={styles.statContent}>
-              <h3 className={styles.statTitle}>Tổng người dùng</h3>
+              <h3 className={styles.statTitle}>{t("admin.dashboard.totalUsers") || "Tổng người dùng"}</h3>
               <p className={styles.statValue}>{stats.users?.total || 0}</p>
               <div className={styles.statDetails}>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Phiên dịch viên:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.interpreters") || "Phiên dịch viên"}:</span>
                   <span className={styles.statDetailValue}>{stats.users?.interpreters || 0}</span>
                 </span>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Khách hàng:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.clients") || "Khách hàng"}:</span>
                   <span className={styles.statDetailValue}>{stats.users?.clients || 0}</span>
                 </span>
               </div>
@@ -89,19 +91,19 @@ const AdminDashboardPage = () => {
               <FaClock className={styles.statIcon} />
             </div>
             <div className={styles.statContent}>
-              <h3 className={styles.statTitle}>Chờ duyệt</h3>
+              <h3 className={styles.statTitle}>{t("admin.dashboard.pendingApprovals") || "Chờ duyệt"}</h3>
               <p className={styles.statValue}>{stats.pendingApprovals?.total || 0}</p>
               <div className={styles.statDetails}>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Chứng chỉ:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.certificates") || "Chứng chỉ"}:</span>
                   <span className={styles.statDetailValue}>{stats.pendingApprovals?.certifications || 0}</span>
                 </span>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Tổ chức:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.organizations") || "Tổ chức"}:</span>
                   <span className={styles.statDetailValue}>{stats.pendingApprovals?.organizations || 0}</span>
                 </span>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Công việc:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.jobs") || "Công việc"}:</span>
                   <span className={styles.statDetailValue}>{stats.pendingApprovals?.jobs || 0}</span>
                 </span>
               </div>
@@ -114,11 +116,11 @@ const AdminDashboardPage = () => {
               <FaCertificate className={styles.statIcon} />
             </div>
             <div className={styles.statContent}>
-              <h3 className={styles.statTitle}>Tổng chứng chỉ</h3>
+              <h3 className={styles.statTitle}>{t("admin.dashboard.totalCertificates") || "Tổng chứng chỉ"}</h3>
               <p className={styles.statValue}>{stats.total?.certifications || 0}</p>
               <div className={styles.statDetails}>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Đã duyệt:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.approved") || "Đã duyệt"}:</span>
                   <span className={styles.statDetailValue}>
                     <FaCheckCircle style={{ color: "#10b981", marginRight: "4px" }} />
                     {stats.total?.certifications - (stats.pendingApprovals?.certifications || 0) || 0}
@@ -134,11 +136,11 @@ const AdminDashboardPage = () => {
               <FaBuilding className={styles.statIcon} />
             </div>
             <div className={styles.statContent}>
-              <h3 className={styles.statTitle}>Tổng tổ chức</h3>
+              <h3 className={styles.statTitle}>{t("admin.dashboard.totalOrganizations") || "Tổng tổ chức"}</h3>
               <p className={styles.statValue}>{stats.total?.organizations || 0}</p>
               <div className={styles.statDetails}>
                 <span className={styles.statDetailItem}>
-                  <span className={styles.statDetailLabel}>Đã duyệt:</span>
+                  <span className={styles.statDetailLabel}>{t("admin.dashboard.approved") || "Đã duyệt"}:</span>
                   <span className={styles.statDetailValue}>
                     <FaCheckCircle style={{ color: "#10b981", marginRight: "4px" }} />
                     {stats.total?.organizations - (stats.pendingApprovals?.organizations || 0) || 0}
@@ -155,11 +157,11 @@ const AdminDashboardPage = () => {
                 <FaBriefcase className={styles.statIcon} />
               </div>
               <div className={styles.statContent}>
-                <h3 className={styles.statTitle}>Tổng công việc</h3>
+                <h3 className={styles.statTitle}>{t("admin.dashboard.totalJobs") || "Tổng công việc"}</h3>
                 <p className={styles.statValue}>{stats.total?.jobs || 0}</p>
                 <div className={styles.statDetails}>
                   <span className={styles.statDetailItem}>
-                    <span className={styles.statDetailLabel}>Đã duyệt:</span>
+                    <span className={styles.statDetailLabel}>{t("admin.dashboard.approved") || "Đã duyệt"}:</span>
                     <span className={styles.statDetailValue}>
                       <FaCheckCircle style={{ color: "#10b981", marginRight: "4px" }} />
                       {stats.total?.jobs - (stats.pendingApprovals?.jobs || 0) || 0}

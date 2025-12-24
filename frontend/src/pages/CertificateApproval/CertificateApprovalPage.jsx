@@ -120,10 +120,10 @@ const CertificateApprovalPage = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      pending: { label: "Chờ duyệt", className: commonStyles.adminBadgePending },
-      approved: { label: "Đã duyệt", className: commonStyles.adminBadgeActive },
-      rejected: { label: "Đã từ chối", className: commonStyles.adminBadgeInactive },
-      draft: { label: "Bản nháp", className: commonStyles.adminBadgeUnverified },
+      pending: { label: t("admin.certificateApproval.pending") || "Chờ duyệt", className: commonStyles.adminBadgePending },
+      approved: { label: t("admin.certificateApproval.approved") || "Đã duyệt", className: commonStyles.adminBadgeActive },
+      rejected: { label: t("admin.certificateApproval.rejected") || "Đã từ chối", className: commonStyles.adminBadgeInactive },
+      draft: { label: t("admin.certificateApproval.draft") || "Bản nháp", className: commonStyles.adminBadgeUnverified },
     };
     const statusInfo = statusMap[status] || {
       label: status,
@@ -285,7 +285,7 @@ const CertificateApprovalPage = () => {
           <div className={commonStyles.adminSearchBox}>
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên chứng chỉ, tổ chức cấp, hoặc tên người nộp..."
+              placeholder={t("admin.certificateApproval.searchPlaceholder") || "Tìm kiếm theo tên chứng chỉ, tổ chức cấp, hoặc tên người nộp..."}
               value={search}
               onChange={handleSearch}
               className={commonStyles.adminSearchInput}
@@ -298,11 +298,11 @@ const CertificateApprovalPage = () => {
               onChange={handleStatusFilter}
               className={commonStyles.adminFilterSelect}
             >
-              <option value="all">Tất cả</option>
-              <option value="pending">Chờ duyệt</option>
-              <option value="approved">Đã duyệt</option>
-              <option value="rejected">Đã từ chối</option>
-              <option value="draft">Bản nháp</option>
+              <option value="all">{t("admin.certificateApproval.all") || "Tất cả"}</option>
+              <option value="pending">{t("admin.certificateApproval.pending") || "Chờ duyệt"}</option>
+              <option value="approved">{t("admin.certificateApproval.approved") || "Đã duyệt"}</option>
+              <option value="rejected">{t("admin.certificateApproval.rejected") || "Đã từ chối"}</option>
+              <option value="draft">{t("admin.certificateApproval.draft") || "Bản nháp"}</option>
             </select>
           </div>
         </div>
@@ -310,11 +310,11 @@ const CertificateApprovalPage = () => {
         {loading ? (
           <div className={commonStyles.adminLoading}>
             <FaSpinner className={commonStyles.adminSpinner} />
-            <p>Đang tải...</p>
+            <p>{t("admin.certificateApproval.loading") || "Đang tải..."}</p>
           </div>
         ) : certifications.length === 0 ? (
           <div className={commonStyles.adminEmpty}>
-            <p>Không có chứng chỉ nào</p>
+            <p>{t("admin.certificateApproval.noCertificates") || "Không có chứng chỉ nào"}</p>
           </div>
         ) : (
           <>
@@ -322,16 +322,16 @@ const CertificateApprovalPage = () => {
               <table className={commonStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th>Thứ tự</th>
-                    <th>Tên chứng chỉ</th>
-                    <th>Tổ chức cấp</th>
-                    <th>Người nộp</th>
-                    <th>Email</th>
-                    <th>Trạng thái</th>
-                    <th>Tham chiếu</th>
-                    <th>Mô tả</th>
-                    <th>Ngày gửi</th>
-                    <th>Thao tác</th>
+                    <th>{t("admin.certificateApproval.order") || "Thứ tự"}</th>
+                    <th>{t("admin.certificateApproval.certificateName") || "Tên chứng chỉ"}</th>
+                    <th>{t("admin.certificateApproval.issuingOrganization") || "Tổ chức cấp"}</th>
+                    <th>{t("admin.certificateApproval.submitter") || "Người nộp"}</th>
+                    <th>{t("admin.certificateApproval.email") || "Email"}</th>
+                    <th>{t("admin.certificateApproval.status") || "Trạng thái"}</th>
+                    <th>{t("admin.certificateApproval.reference") || "Tham chiếu"}</th>
+                    <th>{t("admin.certificateApproval.description") || "Mô tả"}</th>
+                    <th>{t("admin.certificateApproval.submissionDate") || "Ngày gửi"}</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -390,7 +390,7 @@ const CertificateApprovalPage = () => {
                                 className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemView}`}
                                 onClick={() => handleViewCert(cert)}
                               >
-                                Xem chứng chỉ
+                                {t("admin.certificateApproval.viewCertificate") || "Xem chứng chỉ"}
                               </button>
                               <button
                                 className={commonStyles.adminMenuItem}
@@ -398,15 +398,15 @@ const CertificateApprovalPage = () => {
                                 disabled={processing === cert.id || cert.verificationStatus === "approved"}
                               >
                                 {processing === cert.id
-                                  ? t("admin.certificateApproval.processing") || "Processing..."
-                                  : t("admin.certificateApproval.approve") || "Approve"}
+                                  ? t("admin.certificateApproval.processing") || "Đang xử lý..."
+                                  : t("admin.certificateApproval.approve") || "Duyệt"}
                               </button>
                               <button
                                 className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
                                 onClick={() => handleRejectFromMenu(cert)}
                                 disabled={processing === cert.id || cert.verificationStatus === "rejected"}
                               >
-                                {t("admin.certificateApproval.reject") || "Reject"}
+                                {t("admin.certificateApproval.reject") || "Từ chối"}
                               </button>
                             </div>
                           )}
@@ -427,10 +427,10 @@ const CertificateApprovalPage = () => {
                   }
                   disabled={pagination.page === 1}
                 >
-                  Trước
+                  {t("admin.certificateApproval.previous") || "Trước"}
                 </button>
                 <span className={commonStyles.adminPaginationInfo}>
-                  {t("admin.certificateApproval.page")} {pagination.page} / {pagination.totalPages}
+                  {t("admin.certificateApproval.page") || "Trang"} {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
                   className={commonStyles.adminPaginationButton}
@@ -439,7 +439,7 @@ const CertificateApprovalPage = () => {
                   }
                   disabled={pagination.page === pagination.totalPages}
                 >
-                  Sau
+                  {t("admin.certificateApproval.next") || "Sau"}
                 </button>
               </div>
             )}
@@ -516,7 +516,7 @@ const CertificateApprovalPage = () => {
               style={{ maxWidth: "900px", maxHeight: "95vh" }}
             >
               <div className={commonStyles.adminModalHeader}>
-                <h3>Chi tiết chứng chỉ</h3>
+                <h3>{t("admin.certificateApproval.certificateDetails") || "Chi tiết chứng chỉ"}</h3>
                 <button
                   className={commonStyles.adminModalCloseBtn}
                   onClick={() => {
@@ -686,67 +686,106 @@ const CertificateApprovalPage = () => {
                 })()}
 
                 <div className={commonStyles.adminModalSection}>
-                  <h3>Thông tin chứng chỉ</h3>
+                  <h3>{t("admin.certificateApproval.certificateInfo") || "Thông tin chứng chỉ"}</h3>
                   <div className={commonStyles.adminModalDetailGrid}>
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Tổ chức cấp:</strong>
+                      <strong>{t("admin.certificateApproval.issuingOrganizationLabel") || "Tổ chức cấp:"}</strong>
                       <span>
                         {viewCert.issuingOrganization || "N/A"}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Người nộp:</strong>
+                      <strong>{t("admin.certificateApproval.submitterLabel") || "Người nộp:"}</strong>
                       <span>
                         {viewCert.user?.fullName || "N/A"}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Email:</strong>
+                      <strong>{t("admin.certificateApproval.emailLabel") || "Email:"}</strong>
                       <span>
                         {viewCert.user?.email || "N/A"}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Ngày cấp:</strong>
+                      <strong>{t("admin.certificateApproval.issueDate") || "Ngày cấp:"}</strong>
                       <span>
                         {formatDate(viewCert.issueDate)}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Ngày hết hạn:</strong>
+                      <strong>{t("admin.certificateApproval.expiryDate") || "Ngày hết hạn:"}</strong>
                       <span>
                         {formatDate(viewCert.expiryDate)}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Mã chứng chỉ:</strong>
+                      <strong>{t("admin.certificateApproval.credentialId") || "Mã chứng chỉ:"}</strong>
                       <span>
                         {viewCert.credentialId || "N/A"}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Điểm:</strong>
+                      <strong>{t("admin.certificateApproval.score") || "Điểm:"}</strong>
                       <span>
                         {viewCert.score || "N/A"}
                       </span>
                     </div>
 
                     <div className={commonStyles.adminModalDetailItem}>
-                      <strong>Ngày tạo:</strong>
+                      <strong>{t("admin.certificateApproval.createdAtLabel") || "Ngày tạo:"}</strong>
                       <span>
                         {formatDate(viewCert.createdAt)}
                       </span>
                     </div>
 
+                    {viewCert.updatedAt && (
+                      <div className={commonStyles.adminModalDetailItem}>
+                        <strong>{t("admin.certificateApproval.updatedAt") || "Ngày cập nhật:"}</strong>
+                        <span>
+                          {formatDate(viewCert.updatedAt)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>{t("admin.certificateApproval.isVerified") || "Đã xác thực:"}</strong>
+                      <span>
+                        {viewCert.isVerified ? (
+                          <span className={commonStyles.adminBadgeActive}>
+                            {t("admin.certificateApproval.verified") || "Đã xác thực"}
+                          </span>
+                        ) : (
+                          <span className={commonStyles.adminBadgeInactive}>
+                            {t("admin.certificateApproval.notVerified") || "Chưa xác thực"}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>{t("admin.certificateApproval.isActive") || "Trạng thái:"}</strong>
+                      <span>
+                        {viewCert.isActive ? (
+                          <span className={commonStyles.adminBadgeActive}>
+                            {t("admin.certificateApproval.active") || "Đang hoạt động"}
+                          </span>
+                        ) : (
+                          <span className={commonStyles.adminBadgeInactive}>
+                            {t("admin.certificateApproval.inactive") || "Không hoạt động"}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
                     {viewCert.credentialUrl && (
                       <div className={commonStyles.adminModalDetailItem}>
-                        <strong>Link chứng chỉ:</strong>
+                        <strong>{t("admin.certificateApproval.certificateLink") || "Link chứng chỉ:"}</strong>
                         <a
                           href={viewCert.credentialUrl}
                           target="_blank"
@@ -764,7 +803,7 @@ const CertificateApprovalPage = () => {
 
                 {viewCert.description && (
                   <div className={commonStyles.adminModalSection}>
-                    <h3>Mô tả</h3>
+                    <h3>{t("admin.certificateApproval.descriptionLabel") || "Mô tả"}</h3>
                     <p className={commonStyles.adminModalDescriptionText}>
                       {viewCert.description}
                     </p>
