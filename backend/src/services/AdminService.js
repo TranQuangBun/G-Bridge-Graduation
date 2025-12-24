@@ -1,6 +1,7 @@
 import { CertificationRepository } from "../repositories/CertificationRepository.js";
 import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
 import { NotificationService } from "./NotificationService.js";
+import { NotificationRepository } from "../repositories/NotificationRepository.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { PaymentRepository } from "../repositories/PaymentRepository.js";
 import { AppDataSource } from "../config/DataSource.js";
@@ -16,6 +17,7 @@ export class AdminService {
     this.certificationRepository = new CertificationRepository();
     this.organizationRepository = new OrganizationRepository();
     this.notificationService = new NotificationService();
+    this.notificationRepository = new NotificationRepository();
     this.userRepository = new UserRepository();
     this.paymentRepository = new PaymentRepository();
     this.userRepo = AppDataSource.getRepository(User);
@@ -177,7 +179,7 @@ export class AdminService {
     if (search) {
       const condition = status ? "andWhere" : "where";
       queryBuilder[condition](
-        "(organization.name LIKE :search OR organization.description LIKE :search OR owner.fullName LIKE :search)",
+        "(organization.name LIKE :search OR organization.email LIKE :search OR organization.description LIKE :search OR owner.fullName LIKE :search OR owner.email LIKE :search)",
         { search: `%${search}%` }
       );
     }
@@ -332,6 +334,7 @@ export class AdminService {
   async createSystemNotification({
     title,
     message,
+    recipientEmails = null,
     recipientIds = null,
     metadata = null,
   }) {
@@ -339,44 +342,129 @@ export class AdminService {
       throw new Error("Title and message are required");
     }
 
-    let notifications = [];
+    // Create a common timestamp for the entire batch
+    // This ensures all notifications in the same batch have the same createdAt
+    const batchTimestamp = new Date();
 
-    if (recipientIds && recipientIds.length > 0) {
-      // Send to specific users
-      for (const recipientId of recipientIds) {
-        const notification = await this.notificationService.createNotification({
-          recipientId,
-          actorId: null, // System notification
-          type: NotificationType.SYSTEM_NOTIFICATION,
-          title,
-          message,
-          metadata,
-        });
-        notifications.push(notification);
+    let notifications = [];
+    let recipientUserIds = [];
+
+    if (recipientEmails && recipientEmails.length > 0) {
+      // Collect user IDs from emails
+      for (const email of recipientEmails) {
+        const user = await this.userRepository.findByEmail(email.trim());
+        if (!user) {
+          throw new Error(`User with email ${email.trim()} not found`);
+        }
+        if (!user.isActive) {
+          continue; // Skip inactive users
+        }
+        recipientUserIds.push(user.id);
       }
+    } else if (recipientIds && recipientIds.length > 0) {
+      // Use provided IDs (backward compatibility)
+      recipientUserIds = recipientIds;
     } else {
       // Send to all active users
       const users = await this.userRepo.find({
         where: { isActive: true },
         select: ["id"],
       });
+      recipientUserIds = users.map((user) => user.id);
+    }
 
-      for (const user of users) {
-        const notification = await this.notificationService.createNotification({
-          recipientId: user.id,
-          actorId: null,
-          type: NotificationType.SYSTEM_NOTIFICATION,
-          title,
-          message,
-          metadata,
-        });
-        notifications.push(notification);
-      }
+    // Create all notifications with the same timestamp
+    for (const recipientId of recipientUserIds) {
+      const notification = await this.notificationService.createNotification({
+        recipientId,
+        actorId: null, // System notification
+        type: NotificationType.SYSTEM_NOTIFICATION,
+        title,
+        message,
+        metadata,
+        createdAt: batchTimestamp, // Use the same timestamp for all notifications in batch
+      });
+      notifications.push(notification);
     }
 
     return {
       count: notifications.length,
       notifications,
+    };
+  }
+
+  async getSystemNotifications(filters = {}) {
+    const { page = 1, limit = 20, search = "" } = filters;
+
+    // First, get ALL system notifications (no pagination yet)
+    const queryBuilder = this.notificationRepository.repository
+      .createQueryBuilder("notification")
+      .leftJoinAndSelect("notification.recipient", "recipient")
+      .where("notification.type = :type", { type: NotificationType.SYSTEM_NOTIFICATION });
+
+    if (search) {
+      queryBuilder.andWhere(
+        "(notification.title LIKE :search OR notification.message LIKE :search OR recipient.fullName LIKE :search OR recipient.email LIKE :search)",
+        { search: `%${search}%` }
+      );
+    }
+
+    queryBuilder.orderBy("notification.createdAt", "DESC");
+
+    // Get all notifications first
+    const allNotifications = await queryBuilder.getMany();
+
+    // Group notifications by title and createdAt to show unique notifications
+    // Since all notifications in a batch now have the same createdAt, we can group by exact match
+    const groupedMap = new Map();
+    
+    allNotifications.forEach((notif) => {
+      // Use full ISO string for exact matching (all notifications in batch have same timestamp)
+      const createdAtKey = notif.createdAt ? new Date(notif.createdAt).toISOString() : '';
+      // Key includes both title and exact time to distinguish different notifications
+      const key = `${notif.title}_${createdAtKey}`;
+      
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          id: notif.id,
+          title: notif.title,
+          message: notif.message,
+          createdAt: notif.createdAt,
+          recipientCount: 0,
+          recipients: [],
+        });
+      }
+      const group = groupedMap.get(key);
+      group.recipientCount++;
+      if (notif.recipient) {
+        group.recipients.push({
+          id: notif.recipient.id,
+          name: notif.recipient.fullName,
+          email: notif.recipient.email,
+        });
+      }
+    });
+
+    // Convert to array and sort by createdAt DESC
+    const groupedNotifications = Array.from(groupedMap.values()).sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    // Now apply pagination on grouped results
+    const total = groupedNotifications.length;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedNotifications = groupedNotifications.slice(skip, skip + limitNum);
+
+    return {
+      notifications: paginatedNotifications,
+      pagination: {
+        total: total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
     };
   }
 
@@ -493,26 +581,70 @@ export class AdminService {
     return userResponse;
   }
 
-  async deleteUser(id) {
+  async deleteUser(id, adminId, reason = "") {
     const user = await this.userRepository.findById(parseInt(id));
     if (!user) {
       throw new NotFoundError("User");
+    }
+
+    // Send notification to user before deletion
+    try {
+      await this.notificationService.createNotification({
+        recipientId: parseInt(id),
+        actorId: parseInt(adminId),
+        type: NotificationType.GENERIC,
+        title: "Tài khoản đã bị xóa",
+        message: reason
+          ? `Tài khoản của bạn đã bị xóa. Lý do: ${reason}`
+          : "Tài khoản của bạn đã bị xóa bởi quản trị viên.",
+        metadata: {
+          type: "account_deleted",
+          reason: reason,
+        },
+      });
+    } catch (notifyError) {
+      // Log but don't fail the deletion
+      console.error("Error sending deletion notification:", notifyError);
     }
 
     await this.userRepository.delete(parseInt(id));
     return true;
   }
 
-  async toggleUserStatus(id) {
+  async toggleUserStatus(id, adminId, reason = "") {
     const user = await this.userRepository.findById(parseInt(id));
     if (!user) {
       throw new NotFoundError("User");
     }
 
+    const wasActive = user.isActive;
     user.isActive = !user.isActive;
     const updated = await this.userRepository.repository.save(user);
     const userResponse = { ...updated };
     delete userResponse.passwordHash;
+
+    // Send notification to user
+    try {
+      const action = user.isActive ? "kích hoạt" : "vô hiệu hóa";
+      await this.notificationService.createNotification({
+        recipientId: parseInt(id),
+        actorId: parseInt(adminId),
+        type: NotificationType.GENERIC,
+        title: `Tài khoản đã được ${action}`,
+        message: reason
+          ? `Tài khoản của bạn đã được ${action}. Lý do: ${reason}`
+          : `Tài khoản của bạn đã được ${action} bởi quản trị viên.`,
+        metadata: {
+          type: "account_status_changed",
+          isActive: user.isActive,
+          reason: reason,
+        },
+      });
+    } catch (notifyError) {
+      // Log but don't fail the status update
+      console.error("Error sending status change notification:", notifyError);
+    }
+
     return userResponse;
   }
 

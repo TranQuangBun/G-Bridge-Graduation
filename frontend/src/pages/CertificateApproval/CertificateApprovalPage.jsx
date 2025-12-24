@@ -7,6 +7,8 @@ import alertService from "../../services/alertService";
 import adminService from "../../services/adminService";
 import { ROUTES } from "../../constants";
 import styles from "./CertificateApprovalPage.module.css";
+import commonStyles from "../../styles/adminCommon.module.css";
+import { FaSpinner } from "react-icons/fa";
 
 const CertificateApprovalPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -25,8 +27,6 @@ const CertificateApprovalPage = () => {
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [viewCert, setViewCert] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailCert, setDetailCert] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 5,
@@ -35,6 +35,16 @@ const CertificateApprovalPage = () => {
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -110,14 +120,14 @@ const CertificateApprovalPage = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      pending: { label: "Chờ duyệt", className: styles.statusPending },
-      approved: { label: "Đã duyệt", className: styles.statusApproved },
-      rejected: { label: "Đã từ chối", className: styles.statusRejected },
-      draft: { label: "Bản nháp", className: styles.statusDraft },
+      pending: { label: "Chờ duyệt", className: commonStyles.adminBadgePending },
+      approved: { label: "Đã duyệt", className: commonStyles.adminBadgeActive },
+      rejected: { label: "Đã từ chối", className: commonStyles.adminBadgeInactive },
+      draft: { label: "Bản nháp", className: commonStyles.adminBadgeUnverified },
     };
     const statusInfo = statusMap[status] || {
       label: status,
-      className: styles.statusDefault,
+      className: commonStyles.adminBadgePending,
     };
     return <span className={statusInfo.className}>{statusInfo.label}</span>;
   };
@@ -227,15 +237,11 @@ const CertificateApprovalPage = () => {
     setOpenMenuId(null);
   };
 
-  const openDetailModal = (cert) => {
-    setDetailCert(cert);
-    setShowDetailModal(true);
-  };
 
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(`.${styles.menuContainer}`)) {
+      if (!event.target.closest(`.${commonStyles.adminMenuContainer}`)) {
         setOpenMenuId(null);
       }
     };
@@ -247,11 +253,6 @@ const CertificateApprovalPage = () => {
       };
     }
   }, [openMenuId]);
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("vi-VN");
-  };
 
   const isPdfUrl = (url) => {
     if (!url) return false;
@@ -279,29 +280,23 @@ const CertificateApprovalPage = () => {
 
   return (
     <AdminLayout>
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1>Quản lý chứng chỉ</h1>
-          <p>Danh sách tất cả chứng chỉ</p>
-        </div>
-
-        <div className={styles.filters}>
-          <div className={styles.searchBar}>
+      <div className={commonStyles.adminContainer}>
+        <div className={commonStyles.adminFilters}>
+          <div className={commonStyles.adminSearchBox}>
             <input
               type="text"
               placeholder="Tìm kiếm theo tên chứng chỉ, tổ chức cấp, hoặc tên người nộp..."
               value={search}
               onChange={handleSearch}
-              className={styles.searchInput}
+              className={commonStyles.adminSearchInput}
             />
           </div>
-          <div className={styles.statusFilter}>
-            <label htmlFor="statusFilter">Lọc theo trạng thái:</label>
+          <div className={commonStyles.adminFilterGroup}>
             <select
               id="statusFilter"
               value={statusFilter}
               onChange={handleStatusFilter}
-              className={styles.statusSelect}
+              className={commonStyles.adminFilterSelect}
             >
               <option value="all">Tất cả</option>
               <option value="pending">Chờ duyệt</option>
@@ -313,16 +308,21 @@ const CertificateApprovalPage = () => {
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Đang tải...</div>
+          <div className={commonStyles.adminLoading}>
+            <FaSpinner className={commonStyles.adminSpinner} />
+            <p>Đang tải...</p>
+          </div>
         ) : certifications.length === 0 ? (
-          <div className={styles.empty}>Không có chứng chỉ nào</div>
+          <div className={commonStyles.adminEmpty}>
+            <p>Không có chứng chỉ nào</p>
+          </div>
         ) : (
           <>
-            <div className={styles.tableContainer}>
-              <table className={styles.certTable}>
+            <div className={commonStyles.adminTableContainer}>
+              <table className={commonStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Thứ tự</th>
                     <th>Tên chứng chỉ</th>
                     <th>Tổ chức cấp</th>
                     <th>Người nộp</th>
@@ -330,20 +330,14 @@ const CertificateApprovalPage = () => {
                     <th>Trạng thái</th>
                     <th>Tham chiếu</th>
                     <th>Mô tả</th>
+                    <th>Ngày gửi</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {certifications.map((cert) => (
+                  {certifications.map((cert, index) => (
                     <tr key={cert.id}>
-                      <td>
-                        <button
-                          className={styles.idButton}
-                          onClick={() => openDetailModal(cert)}
-                        >
-                          #{cert.id}
-                        </button>
-                      </td>
+                      <td>{(pagination.page - 1) * pagination.limit + index + 1}</td>
                       <td className={styles.certName}>{cert.name || "N/A"}</td>
                       <td>{cert.issuingOrganization || "N/A"}</td>
                       <td>{cert.user?.fullName || "N/A"}</td>
@@ -374,45 +368,43 @@ const CertificateApprovalPage = () => {
                           "N/A"
                         )}
                       </td>
-                      <td className={styles.actionsCell}>
-                        <div className={styles.menuContainer}>
+                      <td>{formatDate(cert.createdAt)}</td>
+                      <td>
+                        <div className={commonStyles.adminMenuContainer}>
                           <button
-                            className={styles.menuButton}
+                            className={commonStyles.adminMenuButton}
                             onClick={(e) => toggleMenu(cert.id, e)}
                             disabled={processing === cert.id}
                           >
-                            <span className={styles.menuDots}>⋮</span>
+                            <span className={commonStyles.adminMenuDots}>⋮</span>
                           </button>
                           {openMenuId === cert.id && (
                             <div
-                              className={styles.contextMenu}
+                              className={commonStyles.adminContextMenu}
                               style={{
                                 top: `${menuPosition.top}px`,
                                 left: `${menuPosition.left}px`,
                               }}
                             >
                               <button
-                                className={`${styles.menuItem} ${styles.menuItemView}`}
+                                className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemView}`}
                                 onClick={() => handleViewCert(cert)}
                               >
                                 Xem chứng chỉ
                               </button>
-                              {(cert.verificationStatus === "pending" ||
-                                cert.verificationStatus === "draft") && (
-                                <button
-                                  className={styles.menuItem}
-                                  onClick={() => handleApproveFromMenu(cert)}
-                                  disabled={processing === cert.id}
-                                >
-                                  {processing === cert.id
-                                    ? t("admin.certificateApproval.processing") || "Processing..."
-                                    : t("admin.certificateApproval.approve") || "Approve"}
-                                </button>
-                              )}
                               <button
-                                className={styles.menuItem}
+                                className={commonStyles.adminMenuItem}
+                                onClick={() => handleApproveFromMenu(cert)}
+                                disabled={processing === cert.id || cert.verificationStatus === "approved"}
+                              >
+                                {processing === cert.id
+                                  ? t("admin.certificateApproval.processing") || "Processing..."
+                                  : t("admin.certificateApproval.approve") || "Approve"}
+                              </button>
+                              <button
+                                className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
                                 onClick={() => handleRejectFromMenu(cert)}
-                                disabled={processing === cert.id}
+                                disabled={processing === cert.id || cert.verificationStatus === "rejected"}
                               >
                                 {t("admin.certificateApproval.reject") || "Reject"}
                               </button>
@@ -427,8 +419,9 @@ const CertificateApprovalPage = () => {
             </div>
 
             {pagination.totalPages > 1 && (
-              <div className={styles.pagination}>
+              <div className={commonStyles.adminPagination}>
                 <button
+                  className={commonStyles.adminPaginationButton}
                   onClick={() =>
                     setPagination((p) => ({ ...p, page: p.page - 1 }))
                   }
@@ -436,10 +429,11 @@ const CertificateApprovalPage = () => {
                 >
                   Trước
                 </button>
-                <span>
+                <span className={commonStyles.adminPaginationInfo}>
                   {t("admin.certificateApproval.page")} {pagination.page} / {pagination.totalPages}
                 </span>
                 <button
+                  className={commonStyles.adminPaginationButton}
                   onClick={() =>
                     setPagination((p) => ({ ...p, page: p.page + 1 }))
                   }
@@ -452,137 +446,41 @@ const CertificateApprovalPage = () => {
           </>
         )}
 
-        {showDetailModal && detailCert && (
+        {showModal && selectedCert && (
           <div
-            className={styles.modalOverlay}
-            onClick={() => setShowDetailModal(false)}
+            className={commonStyles.adminModalOverlay}
+            onClick={() => setShowModal(false)}
           >
-            <div
-              className={styles.detailModal}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={styles.modalHeader}>
-                <h3>Chi tiết chứng chỉ</h3>
+            <div className={commonStyles.adminModal} onClick={(e) => e.stopPropagation()}>
+              <div className={commonStyles.adminModalHeader}>
+                <h3>{t("admin.certificateApproval.rejectTitle") || "Reject Certificate"}</h3>
                 <button
-                  className={styles.closeBtn}
-                  onClick={() => setShowDetailModal(false)}
+                  className={commonStyles.adminModalCloseBtn}
+                  onClick={() => {
+                    setShowModal(false);
+                    setSelectedCert(null);
+                    setRejectionReason("");
+                  }}
                 >
                   ×
                 </button>
               </div>
-              <div className={styles.detailContent}>
-                <div className={styles.detailRow}>
-                  <strong>ID:</strong>
-                  <span>#{detailCert.id}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Tên chứng chỉ:</strong>
-                  <span>{detailCert.name || "N/A"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Tổ chức cấp:</strong>
-                  <span>{detailCert.issuingOrganization || "N/A"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Người nộp:</strong>
-                  <span>{detailCert.user?.fullName || "N/A"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Email:</strong>
-                  <span>{detailCert.user?.email || "N/A"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Trạng thái:</strong>
-                  {getStatusBadge(detailCert.verificationStatus)}
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Ngày cấp:</strong>
-                  <span>{formatDate(detailCert.issueDate)}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Ngày hết hạn:</strong>
-                  <span>{formatDate(detailCert.expiryDate)}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Mã chứng chỉ:</strong>
-                  <span>{detailCert.credentialId || "N/A"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Điểm:</strong>
-                  <span>{detailCert.score || "N/A"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Ngày tạo:</strong>
-                  <span>{formatDate(detailCert.createdAt)}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Tham chiếu:</strong>
-                  {detailCert.imageUrl ? (
-                    <a
-                      href={detailCert.imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Xem ảnh chứng chỉ
-                    </a>
-                  ) : (
-                    <span>N/A</span>
-                  )}
-                </div>
-                {detailCert.description && (
-                  <div className={styles.detailRow}>
-                    <strong>Mô tả:</strong>
-                    <p>{detailCert.description}</p>
-                  </div>
-                )}
+              <div className={commonStyles.adminModalBody}>
+                <p style={{ marginBottom: "1rem", color: "#64748b" }}>
+                  {t("admin.certificateApproval.certificateLabel") || "Certificate"}: <strong>{selectedCert.name}</strong>
+                </p>
+                <textarea
+                  className={commonStyles.adminFilterInput}
+                  placeholder={t("admin.certificateApproval.rejectReasonPlaceholder") || "Enter rejection reason..."}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                  style={{ width: "100%", resize: "vertical", minHeight: "100px" }}
+                />
               </div>
-              {(detailCert.verificationStatus === "pending" ||
-                detailCert.verificationStatus === "draft") && (
-                <div className={styles.detailActions}>
-                  <button
-                    className={styles.approveButton}
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      confirmApprove(detailCert.id);
-                    }}
-                    disabled={processing === detailCert.id}
-                  >
-                    {processing === detailCert.id ? t("admin.certificateApproval.processing") || "Processing..." : t("admin.certificateApproval.approve") || "Approve"}
-                  </button>
-                  <button
-                    className={styles.rejectButton}
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      openRejectModal(detailCert);
-                    }}
-                    disabled={processing === detailCert.id}
-                  >
-                    {t("admin.certificateApproval.reject") || "Reject"}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {showModal && selectedCert && (
-          <div
-            className={styles.modalOverlay}
-            onClick={() => setShowModal(false)}
-          >
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>{t("admin.certificateApproval.rejectTitle") || "Reject Certificate"}</h3>
-              <p>{t("admin.certificateApproval.certificateLabel") || "Certificate"}: {selectedCert.name}</p>
-              <textarea
-                className={styles.reasonInput}
-                placeholder={t("admin.certificateApproval.rejectReasonPlaceholder") || "Enter rejection reason..."}
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                rows={4}
-              />
-              <div className={styles.modalActions}>
+              <div className={commonStyles.adminModalActions}>
                 <button
-                  className={styles.cancelButton}
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSecondary}`}
                   onClick={() => {
                     setShowModal(false);
                     setSelectedCert(null);
@@ -592,7 +490,7 @@ const CertificateApprovalPage = () => {
                   {t("common.cancel") || "Cancel"}
                 </button>
                 <button
-                  className={styles.confirmRejectButton}
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonDanger}`}
                   onClick={() => confirmReject(selectedCert.id)}
                   disabled={
                     !rejectionReason.trim() || processing === selectedCert.id
@@ -609,17 +507,18 @@ const CertificateApprovalPage = () => {
 
         {showViewModal && viewCert && (
           <div
-            className={styles.modalOverlay}
+            className={commonStyles.adminModalOverlay}
             onClick={() => setShowViewModal(false)}
           >
             <div
-              className={styles.viewModal}
+              className={commonStyles.adminModal}
               onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: "900px", maxHeight: "95vh" }}
             >
-              <div className={styles.viewModalHeader}>
-                <h2>Chi tiết chứng chỉ</h2>
+              <div className={commonStyles.adminModalHeader}>
+                <h3>Chi tiết chứng chỉ</h3>
                 <button
-                  className={styles.closeButton}
+                  className={commonStyles.adminModalCloseBtn}
                   onClick={() => {
                     setShowViewModal(false);
                     setViewCert(null);
@@ -628,10 +527,10 @@ const CertificateApprovalPage = () => {
                   ×
                 </button>
               </div>
-              <div className={styles.viewModalContent}>
-                <div className={styles.viewSection}>
+              <div className={commonStyles.adminModalBody}>
+                <div className={commonStyles.adminModalSection}>
                   <h3>{viewCert.name || "N/A"}</h3>
-                  <div className={styles.statusBadgeContainer}>
+                  <div style={{ marginTop: "0.75rem" }}>
                     {getStatusBadge(viewCert.verificationStatus)}
                   </div>
                 </div>
@@ -642,8 +541,8 @@ const CertificateApprovalPage = () => {
                   // Show PDF viewer if PDF is detected
                   if (pdfUrl) {
                     return (
-                      <div className={styles.viewSection}>
-                        <h4>{t("admin.certificateApproval.certificateDocumentPdf") || "Certificate Document (PDF)"}</h4>
+                      <div className={commonStyles.adminModalSection}>
+                        <h3>{t("admin.certificateApproval.certificateDocumentPdf") || "Certificate Document (PDF)"}</h3>
                         <div className={styles.pdfContainer}>
                           <iframe
                             src={`${pdfUrl}#toolbar=0`}
@@ -681,8 +580,8 @@ const CertificateApprovalPage = () => {
                   // Show image if exists
                   if (viewCert.imageUrl) {
                     return (
-                      <div className={styles.viewSection}>
-                        <h4>{t("admin.certificateApproval.certificateImageDocument") || "Certificate Image/Document"}</h4>
+                      <div className={commonStyles.adminModalSection}>
+                        <h3>{t("admin.certificateApproval.certificateImageDocument") || "Certificate Image/Document"}</h3>
                         <div className={styles.certImageContainer}>
                           <img
                             src={viewCert.imageUrl}
@@ -747,8 +646,8 @@ const CertificateApprovalPage = () => {
                   // Show credentialUrl if exists
                   if (viewCert.credentialUrl) {
                     return (
-                      <div className={styles.viewSection}>
-                        <h4>{t("admin.certificateApproval.certificateDocument") || "Certificate Document"}</h4>
+                      <div className={commonStyles.adminModalSection}>
+                        <h3>{t("admin.certificateApproval.certificateDocument") || "Certificate Document"}</h3>
                         <div className={styles.pdfActions}>
                           <a
                             href={viewCert.credentialUrl}
@@ -774,11 +673,11 @@ const CertificateApprovalPage = () => {
 
                   // Show message if no file/URL
                   return (
-                    <div className={styles.viewSection}>
-                      <h4>{t("admin.certificateApproval.certificateDocument") || "Certificate Document"}</h4>
-                      <div className={styles.noFileMessage}>
+                    <div className={commonStyles.adminModalSection}>
+                      <h3>{t("admin.certificateApproval.certificateDocument") || "Certificate Document"}</h3>
+                      <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
                         <p>{t("admin.certificateApproval.noDocumentAttached") || "This certificate has no attached document."}</p>
-                        <p className={styles.noFileSubtext}>
+                        <p style={{ marginTop: "0.5rem", fontSize: "0.875rem" }}>
                           {t("admin.certificateApproval.noDocumentSubtext") || "The user has not uploaded an image or PDF file for this certificate."}
                         </p>
                       </div>
@@ -786,82 +685,87 @@ const CertificateApprovalPage = () => {
                   );
                 })()}
 
-                <div className={styles.viewGrid}>
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Tổ chức cấp:</span>
-                    <span className={styles.viewValue}>
-                      {viewCert.issuingOrganization || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Người nộp:</span>
-                    <span className={styles.viewValue}>
-                      {viewCert.user?.fullName || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Email:</span>
-                    <span className={styles.viewValue}>
-                      {viewCert.user?.email || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Ngày cấp:</span>
-                    <span className={styles.viewValue}>
-                      {formatDate(viewCert.issueDate)}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Ngày hết hạn:</span>
-                    <span className={styles.viewValue}>
-                      {formatDate(viewCert.expiryDate)}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Mã chứng chỉ:</span>
-                    <span className={styles.viewValue}>
-                      {viewCert.credentialId || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Điểm:</span>
-                    <span className={styles.viewValue}>
-                      {viewCert.score || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className={styles.viewItem}>
-                    <span className={styles.viewLabel}>Ngày tạo:</span>
-                    <span className={styles.viewValue}>
-                      {formatDate(viewCert.createdAt)}
-                    </span>
-                  </div>
-
-                  {viewCert.credentialUrl && (
-                    <div className={styles.viewItem}>
-                      <span className={styles.viewLabel}>Link chứng chỉ:</span>
-                      <a
-                        href={viewCert.credentialUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.viewLink}
-                      >
-                        {viewCert.credentialUrl}
-                      </a>
+                <div className={commonStyles.adminModalSection}>
+                  <h3>Thông tin chứng chỉ</h3>
+                  <div className={commonStyles.adminModalDetailGrid}>
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Tổ chức cấp:</strong>
+                      <span>
+                        {viewCert.issuingOrganization || "N/A"}
+                      </span>
                     </div>
-                  )}
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Người nộp:</strong>
+                      <span>
+                        {viewCert.user?.fullName || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Email:</strong>
+                      <span>
+                        {viewCert.user?.email || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Ngày cấp:</strong>
+                      <span>
+                        {formatDate(viewCert.issueDate)}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Ngày hết hạn:</strong>
+                      <span>
+                        {formatDate(viewCert.expiryDate)}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Mã chứng chỉ:</strong>
+                      <span>
+                        {viewCert.credentialId || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Điểm:</strong>
+                      <span>
+                        {viewCert.score || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className={commonStyles.adminModalDetailItem}>
+                      <strong>Ngày tạo:</strong>
+                      <span>
+                        {formatDate(viewCert.createdAt)}
+                      </span>
+                    </div>
+
+                    {viewCert.credentialUrl && (
+                      <div className={commonStyles.adminModalDetailItem}>
+                        <strong>Link chứng chỉ:</strong>
+                        <a
+                          href={viewCert.credentialUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#3b82f6", textDecoration: "none" }}
+                          onMouseEnter={(e) => e.target.style.textDecoration = "underline"}
+                          onMouseLeave={(e) => e.target.style.textDecoration = "none"}
+                        >
+                          {viewCert.credentialUrl}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {viewCert.description && (
-                  <div className={styles.viewSection}>
-                    <h4>Mô tả</h4>
-                    <p className={styles.viewDescription}>
+                  <div className={commonStyles.adminModalSection}>
+                    <h3>Mô tả</h3>
+                    <p className={commonStyles.adminModalDescriptionText}>
                       {viewCert.description}
                     </p>
                   </div>
@@ -873,13 +777,26 @@ const CertificateApprovalPage = () => {
 
         {/* Approve Confirmation Modal */}
         {showApproveConfirm && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.confirmModal}>
-              <h2>{t("admin.certificateApproval.confirmApproveTitle") || "Confirm Certificate Approval"}</h2>
-              <p>{t("admin.certificateApproval.confirmApproveMessage") || "Are you sure you want to approve this certificate?"}</p>
-              <div className={styles.confirmActions}>
+          <div className={commonStyles.adminModalOverlay}>
+            <div className={commonStyles.adminModal}>
+              <div className={commonStyles.adminModalHeader}>
+                <h3>{t("admin.certificateApproval.confirmApproveTitle") || "Confirm Certificate Approval"}</h3>
                 <button
-                  className={styles.cancelButton}
+                  className={commonStyles.adminModalCloseBtn}
+                  onClick={() => {
+                    setShowApproveConfirm(false);
+                    setActionCertId(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={commonStyles.adminModalBody}>
+                <p>{t("admin.certificateApproval.confirmApproveMessage") || "Are you sure you want to approve this certificate?"}</p>
+              </div>
+              <div className={commonStyles.adminModalActions}>
+                <button
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSecondary}`}
                   onClick={() => {
                     setShowApproveConfirm(false);
                     setActionCertId(null);
@@ -888,7 +805,7 @@ const CertificateApprovalPage = () => {
                   {t("common.cancel") || "Cancel"}
                 </button>
                 <button
-                  className={styles.confirmButton}
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSuccess}`}
                   onClick={handleApprove}
                 >
                   {t("admin.certificateApproval.confirmApprove") || "Confirm Approval"}
@@ -900,13 +817,26 @@ const CertificateApprovalPage = () => {
 
         {/* Reject Confirmation Modal */}
         {showRejectConfirm && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.confirmModal}>
-              <h2>{t("admin.certificateApproval.confirmRejectTitle") || "Confirm Certificate Rejection"}</h2>
-              <p>{t("admin.certificateApproval.confirmRejectMessage") || "Are you sure you want to reject this certificate?"}</p>
-              <div className={styles.confirmActions}>
+          <div className={commonStyles.adminModalOverlay}>
+            <div className={commonStyles.adminModal}>
+              <div className={commonStyles.adminModalHeader}>
+                <h3>{t("admin.certificateApproval.confirmRejectTitle") || "Confirm Certificate Rejection"}</h3>
                 <button
-                  className={styles.cancelButton}
+                  className={commonStyles.adminModalCloseBtn}
+                  onClick={() => {
+                    setShowRejectConfirm(false);
+                    setActionCertId(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={commonStyles.adminModalBody}>
+                <p>{t("admin.certificateApproval.confirmRejectMessage") || "Are you sure you want to reject this certificate?"}</p>
+              </div>
+              <div className={commonStyles.adminModalActions}>
+                <button
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSecondary}`}
                   onClick={() => {
                     setShowRejectConfirm(false);
                     setActionCertId(null);
@@ -914,7 +844,10 @@ const CertificateApprovalPage = () => {
                 >
                   {t("common.cancel") || "Cancel"}
                 </button>
-                <button className={styles.rejectButton} onClick={handleReject}>
+                <button 
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonDanger}`} 
+                  onClick={handleReject}
+                >
                   {t("admin.certificateApproval.confirmReject") || "Confirm Rejection"}
                 </button>
               </div>

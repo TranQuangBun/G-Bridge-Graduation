@@ -85,7 +85,10 @@ export async function getJobs(req, res) {
 
     if (search) {
       const condition = hasWhere ? "andWhere" : "where";
-      queryBuilder[condition]("job.title LIKE :search", { search: `%${search}%` });
+      queryBuilder[condition](
+        "(job.title LIKE :search OR organization.name LIKE :search)",
+        { search: `%${search}%` }
+      );
       hasWhere = true;
     }
 

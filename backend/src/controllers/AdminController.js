@@ -130,13 +130,30 @@ export async function rejectOrganization(req, res) {
 }
 
 // System Notifications
+export async function getSystemNotifications(req, res) {
+  try {
+    const result = await adminService.getSystemNotifications(req.query);
+    return sendPaginated(
+      res,
+      result.notifications,
+      result.pagination,
+      "System notifications fetched successfully"
+    );
+  } catch (error) {
+    logError(error, "Fetching system notifications");
+    return sendError(res, "Error fetching system notifications", 500, error);
+  }
+}
+
 export async function createSystemNotification(req, res) {
   try {
-    const { title, message, recipientIds, metadata } = req.body;
+    const { title, message, recipientEmails, recipientIds, metadata } = req.body;
+    // Support both recipientEmails and recipientIds for backward compatibility
     const result = await adminService.createSystemNotification({
       title,
       message,
-      recipientIds,
+      recipientEmails: recipientEmails || null,
+      recipientIds: recipientIds || null,
       metadata,
     });
     return sendSuccess(
@@ -220,7 +237,9 @@ export async function updateUser(req, res) {
 export async function deleteUser(req, res) {
   try {
     const { id } = req.params;
-    await adminService.deleteUser(id);
+    const { reason } = req.body;
+    const adminId = req.user.sub || req.user.id;
+    await adminService.deleteUser(id, adminId, reason);
     return sendSuccess(res, null, "User deleted successfully");
   } catch (error) {
     if (error instanceof AppError || error.message === "User not found") {
@@ -234,7 +253,9 @@ export async function deleteUser(req, res) {
 export async function toggleUserStatus(req, res) {
   try {
     const { id } = req.params;
-    const user = await adminService.toggleUserStatus(id);
+    const { reason } = req.body;
+    const adminId = req.user.sub || req.user.id;
+    const user = await adminService.toggleUserStatus(id, adminId, reason);
     return sendSuccess(res, user, "User status updated successfully");
   } catch (error) {
     if (error instanceof AppError || error.message === "User not found") {

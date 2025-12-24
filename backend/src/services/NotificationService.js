@@ -16,6 +16,7 @@ export class NotificationService {
     title,
     message = "",
     metadata = null,
+    createdAt = null,
   }) {
     if (!recipientId || !title) {
       throw new Error("recipientId and title are required");
@@ -29,6 +30,11 @@ export class NotificationService {
       message,
       metadata,
     };
+
+    // If createdAt is provided, use it (for batch notifications)
+    if (createdAt) {
+      payload.createdAt = createdAt;
+    }
 
     return await this.notificationRepository.create(payload);
   }
