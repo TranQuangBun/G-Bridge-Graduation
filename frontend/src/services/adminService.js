@@ -109,6 +109,21 @@ const adminService = {
   },
 
   // System Notifications
+  getSystemNotifications: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/admin/notifications/system", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Failed to get system notifications",
+        }
+      );
+    }
+  },
+
   createSystemNotification: async (data) => {
     try {
       const response = await apiClient.post(
@@ -153,19 +168,22 @@ const adminService = {
     }
   },
 
-  deleteUser: async (id) => {
+  deleteUser: async (id, reason = "") => {
     try {
-      const response = await apiClient.delete(`/admin/users/${id}`);
+      const response = await apiClient.delete(`/admin/users/${id}`, {
+        data: { reason },
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: "Failed to delete user" };
     }
   },
 
-  toggleUserStatus: async (id) => {
+  toggleUserStatus: async (id, reason = "") => {
     try {
       const response = await apiClient.patch(
-        `/admin/users/${id}/toggle-status`
+        `/admin/users/${id}/toggle-status`,
+        { reason }
       );
       return response.data;
     } catch (error) {

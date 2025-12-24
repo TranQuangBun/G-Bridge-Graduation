@@ -117,16 +117,16 @@ class AIService {
         throw new Error("No valid interpreter profiles could be transformed");
       }
 
-      const requestBody = {
+    const requestBody = {
         job: transformedJob,
         interpreters: transformedInterpreters,
-        max_results: maxResults,
-      };
+      max_results: maxResults,
+    };
 
-      return await this._request("/api/v1/match/job", {
-        method: "POST",
-        body: JSON.stringify(requestBody),
-      });
+    return await this._request("/api/v1/match/job", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
     } catch (error) {
       throw new Error(`AI Service matchJobToInterpreters failed: ${error.message}`);
     }
@@ -317,16 +317,16 @@ class AIService {
       if (interpreter.languages && Array.isArray(interpreter.languages)) {
         languages = interpreter.languages
           .map((lang) => {
-            // Handle both object format and array format
-            if (typeof lang === "string") {
+        // Handle both object format and array format
+        if (typeof lang === "string") {
               const langStr = String(lang).trim();
               if (langStr) {
-                return {
+          return {
                   language: langStr,
-                  level: "Unknown",
-                  certified: false,
-                };
-              }
+            level: "Unknown",
+            certified: false,
+          };
+        }
               return null;
             }
             const language = String(
@@ -356,7 +356,7 @@ class AIService {
               lang.level?.name || lang.level || lang.proficiency || "Unknown"
             ).trim();
             if (language) {
-              return {
+        return {
                 language: language,
                 level: level || "Unknown",
                 certified: Boolean(lang.certified),
@@ -398,7 +398,7 @@ class AIService {
           return specs
             .map((spec) => {
               let specialization = "";
-              if (typeof spec === "string") {
+            if (typeof spec === "string") {
                 specialization = String(spec).trim();
               } else {
                 specialization = String(
@@ -406,13 +406,13 @@ class AIService {
                 ).trim();
               }
               if (specialization) {
-                return {
+              return {
                   specialization: specialization,
                   experience_years:
                     spec.experienceYears || spec.experience_years
                       ? parseInt(spec.experienceYears || spec.experience_years)
                       : null,
-                };
+            };
               }
               return null;
             })
@@ -429,13 +429,13 @@ class AIService {
       certifications: (interpreter.certifications || [])
         .map((cert) => {
           let name = "";
-          if (typeof cert === "string") {
+        if (typeof cert === "string") {
             name = String(cert).trim();
           } else {
             name = String(cert.name || cert.certificate?.name || "").trim();
           }
           if (name) {
-            return {
+          return {
               name: name,
               issuer: cert.issuer || cert.issuingOrganization
                 ? String(cert.issuer || cert.issuingOrganization)
@@ -446,7 +446,7 @@ class AIService {
               expiry_date: cert.expiryDate || cert.expiry_date
                 ? String(cert.expiryDate || cert.expiry_date)
                 : null,
-            };
+        };
           }
           return null;
         })

@@ -5,9 +5,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../translet/LanguageContext";
 import alertService from "../../services/alertService";
 import adminService from "../../services/adminService";
-import organizationService from "../../services/organizationService";
 import { ROUTES } from "../../constants";
 import styles from "./OrganizationApprovalPage.module.css";
+import commonStyles from "../../styles/adminCommon.module.css";
+import { FaSpinner } from "react-icons/fa";
 
 const OrganizationApprovalPage = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -17,18 +18,29 @@ const OrganizationApprovalPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [detailOrg, setDetailOrg] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all"); // all, pending, approved, rejected
+  const [search, setSearch] = useState("");
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     total: 0,
     totalPages: 1,
   });
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -44,19 +56,35 @@ const OrganizationApprovalPage = () => {
         limit: pagination.limit,
       };
 
-      // Add approvalStatus filter if not "all"
+      // Add status filter - use "status" parameter for admin endpoint
+      // When "all", don't send status filter to get all organizations
       if (statusFilter !== "all") {
-        params.approvalStatus = statusFilter;
+        params.status = statusFilter;
       }
 
-      const response = await organizationService.getOrganizations(params);
-      if (response.success) {
-        // sendPaginated returns data as array directly, pagination as separate field
-        const organizationsData = Array.isArray(response.data) ? response.data : (response.data?.organizations || []);
-        const paginationData = response.pagination || response.data?.pagination;
+      // Add search parameter
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      // Use adminService instead of organizationService for admin page
+      // adminService.getOrganizations() returns response.data from axios
+      // sendPaginated format: { success: true, data: [...], pagination: {...} }
+      const response = await adminService.getOrganizations(params);
+      
+      if (response && response.success) {
+        // response.data is the array of organizations from sendPaginated
+        const organizationsData = Array.isArray(response.data) 
+          ? response.data 
+          : [];
+        const paginationData = response.pagination;
+        
         setOrganizations(organizationsData);
         if (paginationData) {
-          setPagination((prev) => paginationData || prev);
+          setPagination((prev) => ({
+            ...prev,
+            ...paginationData,
+          }));
         }
       } else {
         console.error("Response not successful:", response);
@@ -68,13 +96,16 @@ const OrganizationApprovalPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, statusFilter]);
+  }, [pagination.page, pagination.limit, statusFilter, search]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === "admin") {
-      fetchOrganizations();
+      const timeoutId = setTimeout(() => {
+        fetchOrganizations();
+      }, search ? 500 : 0);
+      return () => clearTimeout(timeoutId);
     }
-  }, [isAuthenticated, user, pagination.page, statusFilter, fetchOrganizations]);
+  }, [isAuthenticated, user, pagination.page, statusFilter, search, fetchOrganizations]);
 
   const handleApprove = async (id) => {
     setProcessing(id);
@@ -123,38 +154,77 @@ const OrganizationApprovalPage = () => {
     setShowModal(true);
   };
 
-  const openDetailModal = (org) => {
-    setDetailOrg(org);
-    setShowDetailModal(true);
-  };
-
   const getStatusBadge = (status) => {
     const statusMap = {
-      pending: { label: "Chờ duyệt", className: styles.statusPending },
-      approved: { label: "Đã duyệt", className: styles.statusApproved },
-      rejected: { label: "Từ chối", className: styles.statusRejected },
+      pending: { label: "Chờ duyệt", className: commonStyles.adminBadgePending },
+      approved: { label: "Đã duyệt", className: commonStyles.adminBadgeActive },
+      rejected: { label: "Từ chối", className: commonStyles.adminBadgeInactive },
     };
     const statusInfo = statusMap[status] || statusMap.pending;
     return (
-      <span className={`${styles.statusBadge} ${statusInfo.className}`}>
+      <span className={statusInfo.className}>
         {statusInfo.label}
       </span>
     );
   };
 
+  const toggleMenu = (orgId, e) => {
+    e.stopPropagation();
+
+    if (openMenuId === orgId) {
+      setOpenMenuId(null);
+      return;
+    }
+
+    // Calculate menu position
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 180;
+    const menuHeight = 150; // approximate
+
+    let top = rect.bottom + 4;
+    let left = rect.right - menuWidth;
+
+    // Adjust if menu would go off screen
+    if (left < 0) left = rect.left;
+    if (top + menuHeight > window.innerHeight) {
+      top = rect.top - menuHeight - 4;
+    }
+
+    setMenuPosition({ top, left });
+    setOpenMenuId(orgId);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+    };
+    if (openMenuId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuId]);
+
   return (
     <AdminLayout>
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1>Duyệt tổ chức</h1>
-          <p>Quản lý và duyệt tổ chức</p>
-        </div>
-
-        <div className={styles.filters}>
-          <label className={styles.filterLabel}>
-            Lọc theo trạng thái:
+      <div className={commonStyles.adminContainer}>
+        <div className={commonStyles.adminFilters}>
+          <div className={commonStyles.adminFilterGroup} style={{ flex: 1, minWidth: "300px" }}>
+            <input
+              type="text"
+              className={commonStyles.adminFilterInput}
+              placeholder="Tìm theo tên tổ chức hoặc email..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPagination((prev) => ({ ...prev, page: 1 }));
+              }}
+            />
+          </div>
+          <div className={commonStyles.adminFilterGroup}>
             <select
-              className={styles.filterSelect}
+              className={commonStyles.adminFilterSelect}
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
@@ -166,34 +236,39 @@ const OrganizationApprovalPage = () => {
               <option value="approved">Đã duyệt</option>
               <option value="rejected">Từ chối</option>
             </select>
-          </label>
+          </div>
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Đang tải...</div>
+          <div className={commonStyles.adminLoading}>
+            <FaSpinner className={commonStyles.adminSpinner} />
+            <p>Đang tải...</p>
+          </div>
         ) : organizations.length === 0 ? (
-          <div className={styles.empty}>
-            Không có tổ chức nào
+          <div className={commonStyles.adminEmpty}>
+            <p>Không có tổ chức nào</p>
           </div>
         ) : (
           <>
-            <div className={styles.tableContainer}>
-              <table className={styles.orgTable}>
+            <div className={commonStyles.adminTableContainer}>
+              <table className={commonStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Thứ tự</th>
                     <th>Tên tổ chức</th>
                     <th>Trạng thái</th>
                     <th>Email</th>
+                    <th>Website</th>
                     <th>Giấy phép KD</th>
                     <th>Chủ sở hữu</th>
+                    <th>Ngày gửi</th>
                     <th>Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {organizations.map((org) => (
+                  {organizations.map((org, index) => (
                     <tr key={org.id}>
-                      <td>{org.id}</td>
+                      <td>{(pagination.page - 1) * pagination.limit + index + 1}</td>
                       <td className={styles.orgNameCell}>
                         <div className={styles.orgNameWrap}>
                           {org.logo && (
@@ -204,12 +279,7 @@ const OrganizationApprovalPage = () => {
                             />
                           )}
                           <div>
-                            <button
-                              className={styles.orgNameBtn}
-                              onClick={() => openDetailModal(org)}
-                            >
-                              {org.name}
-                            </button>
+                            <span>{org.name}</span>
                           </div>
                         </div>
                       </td>
@@ -217,6 +287,22 @@ const OrganizationApprovalPage = () => {
                       <td className={styles.emailCell}>
                         {org.email ? (
                           <span title={org.email}>{org.email}</span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className={styles.websiteCell}>
+                        {org.website ? (
+                          <a
+                            href={org.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "#3b82f6", textDecoration: "none" }}
+                            onMouseEnter={(e) => e.target.style.textDecoration = "underline"}
+                            onMouseLeave={(e) => e.target.style.textDecoration = "none"}
+                          >
+                            {org.website.length > 30 ? `${org.website.substring(0, 30)}...` : org.website}
+                          </a>
                         ) : (
                           "—"
                         )}
@@ -241,31 +327,45 @@ const OrganizationApprovalPage = () => {
                           ? org.owner.fullName || org.owner.email
                           : "—"}
                       </td>
+                      <td>{formatDate(org.createdAt)}</td>
                       <td>
-                        <div className={styles.tableActions}>
-                          {org.approvalStatus === "pending" && (
-                            <>
+                        <div className={commonStyles.adminMenuContainer}>
+                          <button
+                            className={commonStyles.adminMenuButton}
+                            onClick={(e) => toggleMenu(org.id, e)}
+                            disabled={processing === org.id}
+                          >
+                            <span className={commonStyles.adminMenuDots}>⋮</span>
+                          </button>
+                          {openMenuId === org.id && (
+                            <div
+                              className={commonStyles.adminContextMenu}
+                              style={{
+                                top: `${menuPosition.top}px`,
+                                left: `${menuPosition.left}px`,
+                              }}
+                            >
                               <button
-                                className={styles.approveButton}
-                                onClick={() => openApprovalModal(org)}
-                                disabled={processing === org.id}
+                                className={commonStyles.adminMenuItem}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  openApprovalModal(org);
+                                }}
+                                disabled={processing === org.id || org.approvalStatus === "approved"}
                               >
                                 {processing === org.id ? "Đang xử lý..." : "Duyệt"}
                               </button>
                               <button
-                                className={styles.rejectButton}
-                                onClick={() => openRejectModal(org)}
-                                disabled={processing === org.id}
+                                className={`${commonStyles.adminMenuItem} ${commonStyles.adminMenuItemDanger}`}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  openRejectModal(org);
+                                }}
+                                disabled={processing === org.id || org.approvalStatus === "rejected"}
                               >
                                 Từ chối
                               </button>
-                            </>
-                          )}
-                          {org.approvalStatus === "approved" && (
-                            <span className={styles.noAction}>Đã duyệt</span>
-                          )}
-                          {org.approvalStatus === "rejected" && (
-                            <span className={styles.noAction}>Đã từ chối</span>
+                            </div>
                           )}
                         </div>
                       </td>
@@ -276,8 +376,9 @@ const OrganizationApprovalPage = () => {
             </div>
 
             {pagination.totalPages > 1 && (
-              <div className={styles.pagination}>
+              <div className={commonStyles.adminPagination}>
                 <button
+                  className={commonStyles.adminPaginationButton}
                   onClick={() =>
                     setPagination((p) => ({ ...p, page: p.page - 1 }))
                   }
@@ -285,10 +386,11 @@ const OrganizationApprovalPage = () => {
                 >
                   Trước
                 </button>
-                <span>
+                <span className={commonStyles.adminPaginationInfo}>
                   {t("admin.organizationApproval.page")} {pagination.page} / {pagination.totalPages} ({t("admin.organizationApproval.total")}: {pagination.total})
                 </span>
                 <button
+                  className={commonStyles.adminPaginationButton}
                   onClick={() =>
                     setPagination((p) => ({ ...p, page: p.page + 1 }))
                   }
@@ -301,151 +403,76 @@ const OrganizationApprovalPage = () => {
           </>
         )}
 
-        {showDetailModal && detailOrg && (
+        {showApprovalModal && selectedOrg && (
           <div
-            className={styles.modalOverlay}
-            onClick={() => setShowDetailModal(false)}
+            className={commonStyles.adminModalOverlay}
+            onClick={() => setShowApprovalModal(false)}
           >
             <div
-              className={styles.detailModal}
+              className={commonStyles.adminModal}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className={styles.modalHeader}>
-                <h3>Chi tiết tổ chức</h3>
+              <div className={commonStyles.adminModalHeader}>
+                <h3>Xác nhận duyệt tổ chức</h3>
                 <button
-                  className={styles.closeBtn}
-                  onClick={() => setShowDetailModal(false)}
+                  className={commonStyles.adminModalCloseBtn}
+                  onClick={() => {
+                    setShowApprovalModal(false);
+                    setSelectedOrg(null);
+                  }}
                 >
                   ×
                 </button>
               </div>
-              <div className={styles.detailContent}>
-                {detailOrg.logo && (
-                  <img
-                    src={detailOrg.logo}
-                    alt={detailOrg.name}
-                    className={styles.detailLogo}
-                  />
-                )}
-                <div className={styles.detailRow}>
-                  <strong>Tên tổ chức:</strong>
-                  <span>{detailOrg.name}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Email:</strong>
-                  <span>{detailOrg.email || "—"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Điện thoại:</strong>
-                  <span>{detailOrg.phone || "—"}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Website:</strong>
-                  {detailOrg.website ? (
-                    <a
-                      href={detailOrg.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {detailOrg.website}
-                    </a>
-                  ) : (
-                    <span>—</span>
-                  )}
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Địa chỉ:</strong>
-                  <span>
-                    {detailOrg.address || detailOrg.province
-                      ? [detailOrg.address, detailOrg.province]
-                          .filter(Boolean)
-                          .join(", ")
-                      : "—"}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <strong>Chủ sở hữu:</strong>
-                  <span>
-                    {detailOrg.owner
-                      ? detailOrg.owner.fullName || detailOrg.owner.email
-                      : "—"}
-                  </span>
-                </div>
-                {detailOrg.description && (
-                  <div className={styles.detailRow}>
-                    <strong>Mô tả:</strong>
-                    <p>{detailOrg.description}</p>
+              <div className={commonStyles.adminModalBody}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
+                  <div style={{ 
+                    width: "64px", 
+                    height: "64px", 
+                    borderRadius: "50%", 
+                    background: "#dcfce7", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center" 
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                      <path
+                        d="M20 24l4 4 8-8"
+                        stroke="#16a34a"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </div>
-                )}
-              </div>
-              <div className={styles.detailActions}>
-                <button
-                  className={styles.approveButton}
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    openApprovalModal(detailOrg);
-                  }}
-                  disabled={processing === detailOrg.id}
-                >
-                  {processing === detailOrg.id ? "Đang xử lý..." : "Duyệt"}
-                </button>
-                <button
-                  className={styles.rejectButton}
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    openRejectModal(detailOrg);
-                  }}
-                  disabled={processing === detailOrg.id}
-                >
-                  Từ chối
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showApprovalModal && selectedOrg && (
-          <div
-            className={styles.modalOverlay}
-            onClick={() => setShowApprovalModal(false)}
-          >
-            <div
-              className={styles.confirmModal}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={styles.confirmIcon}>
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <circle cx="24" cy="24" r="24" fill="#dcfce7" />
-                  <path
-                    d="M20 24l4 4 8-8"
-                    stroke="#16a34a"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <h3>Xác nhận duyệt tổ chức</h3>
-              <p className={styles.confirmText}>
-                Bạn đang chuẩn bị duyệt tổ chức{" "}
-                <strong>"{selectedOrg.name}"</strong>.
-              </p>
-              <div className={styles.warningBox}>
-                <p>
-                  <strong>Lưu ý quan trọng:</strong>
+                </div>
+                <p style={{ textAlign: "center", color: "#64748b", marginBottom: "1.5rem", lineHeight: "1.6" }}>
+                  Bạn đang chuẩn bị duyệt tổ chức{" "}
+                  <strong style={{ color: "#0f172a" }}>"{selectedOrg.name}"</strong>.
                 </p>
-                <ul>
-                  <li>
-                    Tổ chức sẽ được kích hoạt và có thể đăng tin tuyển dụng
-                  </li>
-                  <li>Chủ sở hữu sẽ nhận được thông báo về việc phê duyệt</li>
-                  <li>Tổ chức sẽ hiển thị công khai trên hệ thống</li>
-                  <li>Hành động này không thể hoàn tác</li>
-                </ul>
+                <div style={{
+                  background: "#fef3c7",
+                  border: "1px solid #fbbf24",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginTop: "1rem"
+                }}>
+                  <p style={{ marginBottom: "0.75rem", fontWeight: 600, color: "#92400e" }}>
+                    <strong>Lưu ý quan trọng:</strong>
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#78350f" }}>
+                    <li style={{ marginBottom: "0.5rem" }}>
+                      Tổ chức sẽ được kích hoạt và có thể đăng tin tuyển dụng
+                    </li>
+                    <li style={{ marginBottom: "0.5rem" }}>Chủ sở hữu sẽ nhận được thông báo về việc phê duyệt</li>
+                    <li style={{ marginBottom: "0.5rem" }}>Tổ chức sẽ hiển thị công khai trên hệ thống</li>
+                    <li>Hành động này không thể hoàn tác</li>
+                  </ul>
+                </div>
               </div>
-              <div className={styles.modalActions}>
+              <div className={commonStyles.adminModalActions}>
                 <button
-                  className={styles.cancelButton}
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSecondary}`}
                   onClick={() => {
                     setShowApprovalModal(false);
                     setSelectedOrg(null);
@@ -454,7 +481,7 @@ const OrganizationApprovalPage = () => {
                   Hủy
                 </button>
                 <button
-                  className={styles.confirmApproveButton}
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSuccess}`}
                   onClick={() => handleApprove(selectedOrg.id)}
                   disabled={processing === selectedOrg.id}
                 >
@@ -469,22 +496,37 @@ const OrganizationApprovalPage = () => {
 
         {showModal && selectedOrg && (
           <div
-            className={styles.modalOverlay}
+            className={commonStyles.adminModalOverlay}
             onClick={() => setShowModal(false)}
           >
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>Từ chối tổ chức</h3>
-              <p>Tổ chức: {selectedOrg.name}</p>
-              <textarea
-                className={styles.reasonInput}
-                placeholder="Nhập lý do từ chối..."
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                rows={4}
-              />
-              <div className={styles.modalActions}>
+            <div className={commonStyles.adminModal} onClick={(e) => e.stopPropagation()}>
+              <div className={commonStyles.adminModalHeader}>
+                <h3>Từ chối tổ chức</h3>
                 <button
-                  className={styles.cancelButton}
+                  className={commonStyles.adminModalCloseBtn}
+                  onClick={() => {
+                    setShowModal(false);
+                    setSelectedOrg(null);
+                    setRejectionReason("");
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={commonStyles.adminModalBody}>
+                <p style={{ marginBottom: "1rem", color: "#64748b" }}>Tổ chức: <strong>{selectedOrg.name}</strong></p>
+                <textarea
+                  className={commonStyles.adminFilterInput}
+                  placeholder="Nhập lý do từ chối..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                  style={{ width: "100%", resize: "vertical", minHeight: "100px" }}
+                />
+              </div>
+              <div className={commonStyles.adminModalActions}>
+                <button
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonSecondary}`}
                   onClick={() => {
                     setShowModal(false);
                     setSelectedOrg(null);
@@ -494,7 +536,7 @@ const OrganizationApprovalPage = () => {
                   Hủy
                 </button>
                 <button
-                  className={styles.confirmRejectButton}
+                  className={`${commonStyles.adminButton} ${commonStyles.adminButtonDanger}`}
                   onClick={() => handleReject(selectedOrg.id)}
                   disabled={
                     !rejectionReason.trim() || processing === selectedOrg.id

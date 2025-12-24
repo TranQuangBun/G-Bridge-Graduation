@@ -216,7 +216,7 @@ const SavedJobs = () => {
           .filter((match) => match.suitability_score) // Only include jobs with scores
           .sort((a, b) => {
             // Sort by score from high to low
-            return b.suitability_score.overall_score - a.suitability_score.overall_score;
+              return b.suitability_score.overall_score - a.suitability_score.overall_score;
           });
         
         console.log("AI ranked matches:", matches.length);

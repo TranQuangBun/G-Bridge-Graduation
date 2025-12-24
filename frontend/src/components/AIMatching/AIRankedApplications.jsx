@@ -52,20 +52,20 @@ export default function AIRankedApplications({
           .filter((ranked) => applicationIds.includes(ranked.application_id))
           .map((ranked) => {
             const original = newest10Apps.find(
-              (app) => app.id === ranked.application_id || app.interpreterId === ranked.interpreter_id
-            );
+            (app) => app.id === ranked.application_id || app.interpreterId === ranked.interpreter_id
+          );
             if (!original) return null;
-            return {
-              ...original,
-              aiScore: ranked.suitability_score,
-              aiRank: ranked.rank,
-            };
+          return {
+            ...original,
+            aiScore: ranked.suitability_score,
+            aiRank: ranked.rank,
+          };
           })
           .filter((app) => app !== null)
           .sort((a, b) => {
             // Sort by score from highest to lowest
             return b.aiScore.overall_score - a.aiScore.overall_score;
-          });
+        });
         setAiRankedApps(mappedApps);
         setHasFetchedAI(true);
       }
@@ -82,11 +82,11 @@ export default function AIRankedApplications({
   // Handle toggle change
   const handleToggleChange = async (value) => {
     if (value === "ai") {
-      // If not fetched yet, fetch now
-      if (!hasFetchedAI) {
-        await fetchAIRankedApplications();
-      }
-      setShowAIResults(true);
+    // If not fetched yet, fetch now
+    if (!hasFetchedAI) {
+      await fetchAIRankedApplications();
+    }
+    setShowAIResults(true);
     } else {
       setShowAIResults(false);
     }
@@ -125,20 +125,20 @@ export default function AIRankedApplications({
       </div>
 
       {/* Filter Controls - Only show when AI results are displayed, below toggle */}
-      {showAIResults && hasFetchedAI && (
+        {showAIResults && hasFetchedAI && (
         <div className={styles.filterSection}>
-          <select
-            value={filterLevel}
-            onChange={(e) => setFilterLevel(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Scores</option>
-            <option value="excellent">Excellent (90+)</option>
-            <option value="good">Good (70-89)</option>
-            <option value="fair">Fair (50-69)</option>
-          </select>
-        </div>
-      )}
+            <select
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Scores</option>
+              <option value="excellent">Excellent (90+)</option>
+              <option value="good">Good (70-89)</option>
+              <option value="fair">Fair (50-69)</option>
+            </select>
+          </div>
+        )}
 
       {/* Loading State */}
       {loading && (

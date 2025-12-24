@@ -7,6 +7,7 @@ import {
   getPendingOrganizations,
   approveOrganization,
   rejectOrganization,
+  getSystemNotifications,
   createSystemNotification,
   getDashboardStats,
   getAllUsers,
@@ -40,6 +41,7 @@ router.post("/organizations/:id/approve", approveOrganization);
 router.post("/organizations/:id/reject", rejectOrganization);
 
 // System Notifications
+router.get("/notifications/system", getSystemNotifications);
 router.post("/notifications/system", createSystemNotification);
 
 // User Management

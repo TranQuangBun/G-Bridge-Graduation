@@ -246,19 +246,19 @@ const NotificationsPage = () => {
                         <FaEnvelope /> {t("notificationsPage.goToMessages") || "Đi đến tin nhắn"}
                       </button>
                     )}
-                    {!notification.isRead && (
-                      <button
-                        className={styles.markReadBtn}
-                        onClick={() =>
-                          handleMarkNotificationRead(notification.id)
-                        }
-                        disabled={markingId === notification.id}
-                      >
-                        {markingId === notification.id
-                          ? t("common.loading") || "Loading..."
-                          : t("notificationsPage.markRead") || "Mark as read"}
-                      </button>
-                    )}
+                  {!notification.isRead && (
+                    <button
+                      className={styles.markReadBtn}
+                      onClick={() =>
+                        handleMarkNotificationRead(notification.id)
+                      }
+                      disabled={markingId === notification.id}
+                    >
+                      {markingId === notification.id
+                        ? t("common.loading") || "Loading..."
+                        : t("notificationsPage.markRead") || "Mark as read"}
+                    </button>
+                  )}
                   </div>
                 </div>
               ))}

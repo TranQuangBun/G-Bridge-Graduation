@@ -5,7 +5,7 @@ import notificationService from "../../services/notificationService";
 import messageService from "../../services/messageService";
 import { ROUTES } from "../../constants";
 import { useLanguage } from "../../translet/LanguageContext";
-import { FaBell, FaEnvelope, FaSpinner } from "react-icons/fa";
+import { FaBell, FaEnvelope } from "react-icons/fa";
 
 const NotificationDropdown = () => {
   const { t } = useLanguage();
