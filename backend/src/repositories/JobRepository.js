@@ -100,7 +100,18 @@ export class JobRepository extends BaseRepository {
   async findByIdWithRelations(id) {
     return await this.repository.findOne({
       where: { id: parseInt(id) },
-      relations: ["organization", "workingMode", "domains", "requiredLanguages", "requiredCertificates", "applications"],
+      relations: [
+        "organization", 
+        "workingMode", 
+        "domains", 
+        "domains.domain",
+        "requiredLanguages", 
+        "requiredLanguages.language",
+        "requiredLanguages.level",
+        "requiredCertificates", 
+        "requiredCertificates.certificate",
+        "applications"
+      ],
     });
   }
 }

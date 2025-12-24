@@ -209,6 +209,7 @@ export async function getJobById(req, res) {
       "organization",
       "workingMode",
       "domains",
+      "domains.domain",
       "requiredLanguages",
       "requiredLanguages.language",
       "requiredLanguages.level",
@@ -624,17 +625,23 @@ export async function updateJob(req, res) {
     await jobRepository.update(parsedJobId, updateData);
 
     if (domains !== undefined) {
+      // Delete existing domains first
       await jobDomainRepository.delete({ jobId: parsedJobId });
+      
       if (domains.length > 0) {
-        // Validate and filter domain IDs
-        const validDomainIds = domains
-          .map((domainId) => {
-            const parsed = Number(domainId);
-            return Number.isInteger(parsed) && parsed > 0 && !isNaN(parsed)
-              ? parsed
-              : null;
-          })
-          .filter((id) => id !== null);
+        // Validate and filter domain IDs, then remove duplicates
+        const validDomainIds = Array.from(
+          new Set(
+            domains
+              .map((domainId) => {
+                const parsed = Number(domainId);
+                return Number.isInteger(parsed) && parsed > 0 && !isNaN(parsed)
+                  ? parsed
+                  : null;
+              })
+              .filter((id) => id !== null)
+          )
+        );
 
         if (validDomainIds.length > 0) {
           const domainRecords = validDomainIds.map((domainId) =>

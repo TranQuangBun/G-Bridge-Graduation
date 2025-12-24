@@ -74,6 +74,8 @@
   font-weight: 600;
   font-size: 0.95rem;
   position: relative;
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .menuItem::before {
@@ -144,6 +146,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 1;
+  text-align: left;
 }
 
 /* Main Content */

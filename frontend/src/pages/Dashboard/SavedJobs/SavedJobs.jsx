@@ -6,8 +6,6 @@ import {
   FaBriefcase,
   FaDollarSign,
   FaClock,
-  FaFilter,
-  FaSortAmountDown,
   FaRegBookmark,
   FaEye,
   FaChartBar,
@@ -155,16 +153,13 @@ const SavedJobs = () => {
     console.log("Fetching AI ranked jobs, savedJobs count:", savedJobs.length);
     setLoadingAI(true);
     try {
-      // Get saved jobs and take 10 newest
-      const sortedByDate = [...savedJobs].sort((a, b) => {
-        const dateA = new Date(a.saved_at || a.savedDate || a.createdAt || 0);
-        const dateB = new Date(b.saved_at || b.savedDate || b.createdAt || 0);
-        return dateB - dateA;
-      });
-      const newest10Jobs = sortedByDate.slice(0, 10);
-      console.log("Newest 10 jobs:", newest10Jobs.length);
+      // Extract job data first
+      const allJobs = savedJobs.map((savedJob) => {
+        const jobData = savedJob.job || savedJob;
+        return jobData;
+      }).filter((job) => job && job.id);
 
-      if (newest10Jobs.length === 0) {
+      if (allJobs.length === 0) {
         console.log("No saved jobs found");
         setAiRankedJobs([]);
         setHasFetchedAI(true);
@@ -172,11 +167,16 @@ const SavedJobs = () => {
         return;
       }
 
-      // Extract job data - don't filter by status, show all
-      const jobs = newest10Jobs.map((savedJob) => {
-        const jobData = savedJob.job || savedJob;
-        return jobData;
-      }).filter((job) => job && job.id);
+      // Sort jobs by newest first (createdAt or createdDate of the job)
+      const sortedJobs = [...allJobs].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.createdDate || 0);
+        const dateB = new Date(b.createdAt || b.createdDate || 0);
+        return dateB - dateA; // Newest first
+      });
+
+      // Take top 10 newest jobs only
+      const jobs = sortedJobs.slice(0, 10);
+      console.log("Newest 10 jobs:", jobs.length);
       
       console.log("Extracted jobs:", jobs.length, jobs);
 
@@ -213,14 +213,10 @@ const SavedJobs = () => {
             job,
             suitability_score: scoreMap.get(job.id),
           }))
+          .filter((match) => match.suitability_score) // Only include jobs with scores
           .sort((a, b) => {
-            // Sort by score if available, otherwise keep original order
-            if (a.suitability_score && b.suitability_score) {
-              return b.suitability_score.overall_score - a.suitability_score.overall_score;
-            }
-            if (a.suitability_score) return -1;
-            if (b.suitability_score) return 1;
-            return 0;
+            // Sort by score from high to low
+            return b.suitability_score.overall_score - a.suitability_score.overall_score;
           });
         
         console.log("AI ranked matches:", matches.length);

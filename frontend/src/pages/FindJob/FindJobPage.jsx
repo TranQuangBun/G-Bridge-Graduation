@@ -10,6 +10,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import toastService from "../../services/toastService";
 import aiMatchingService from "../../services/aiMatchingService";
 import interpreterService from "../../services/interpreterService";
+import { AIToggle } from "../../components/AIMatching";
 
 import {
   FaMapMarkerAlt,
@@ -25,8 +26,6 @@ import {
   FaInfoCircle,
   FaBookmark,
   FaRegBookmark,
-  FaSpinner,
-  FaList,
 } from "react-icons/fa";
 
 const unique = (arr) => Array.from(new Set(arr));
@@ -111,6 +110,8 @@ export default function FindJobPage() {
   const [showAIResults, setShowAIResults] = useState(false);
   const [aiJobs, setAiJobs] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [hasFetchedAI, setHasFetchedAI] = useState(false); // Track if AI data has been fetched
+  const [filterLevel, setFilterLevel] = useState("all"); // "all" | "excellent" | "good" | "fair"
 
   // Reset AI state on mount to ensure AI is not called automatically
   useEffect(() => {
@@ -925,24 +926,35 @@ export default function FindJobPage() {
                       </div>
                     )}
                     
-                    {/* Sort Controls */}
-                    {!showAIResults && (
+                    {/* Sort Controls or AI Filter */}
+                    {showAIResults && hasFetchedAI && !loadingAI && aiJobs.length > 0 ? (
+                      <select
+                        value={filterLevel}
+                        onChange={(e) => setFilterLevel(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Scores</option>
+                        <option value="excellent">Excellent (90+)</option>
+                        <option value="good">Good (70-89)</option>
+                        <option value="fair">Fair (50-69)</option>
+                      </select>
+                    ) : !showAIResults ? (
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                         className={styles.sortSelect}
                       >
-                      <option value="createdAt">
-                        {t("findJob.sort.newest") || "Newest"}
-                      </option>
-                      <option value="title">
-                        {t("findJob.sort.title") || "Title"}
-                      </option>
-                      <option value="maxSalary">
-                        {t("findJob.sort.salary") || "Highest Salary"}
-                      </option>
+                        <option value="createdAt">
+                          {t("findJob.sort.newest") || "Newest"}
+                        </option>
+                        <option value="title">
+                          {t("findJob.sort.title") || "Title"}
+                        </option>
+                        <option value="maxSalary">
+                          {t("findJob.sort.salary") || "Highest Salary"}
+                        </option>
                       </select>
-                    )}
+                    ) : null}
                   </div>
                   
                   {/* Active Filters Tags */}
@@ -1015,138 +1027,138 @@ export default function FindJobPage() {
 
                 <div className={styles.toolbarActions}>
                 {isAuthenticated && user?.role === "interpreter" && (
-                  <button
-                    className={`${styles.aiButton} ${showAIResults ? styles.active : ""}`}
-                    onClick={async () => {
-                      if (showAIResults) {
-                        setShowAIResults(false);
-                        return;
-                      }
-                      setLoadingAI(true);
-                      setShowAIResults(true);
-                      try {
-                        // Use AISuggestedJobsSection logic
-                        const interpreterRes = await interpreterService.getInterpreterById(user.id);
-                        const interpreter = interpreterRes?.data || interpreterRes;
-                        if (!interpreter) throw new Error("Interpreter not found");
-                        
-                        const jobsRes = await jobService.getJobs({ status: "open", limit: 50 });
-                        const jobs = jobsRes?.data?.jobs || jobsRes?.data || [];
-                        
-                        if (jobs.length === 0) {
-                          setAiJobs([]);
-                          setLoadingAI(false);
-                          return;
-                        }
-                        
-                        const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || user.id;
-                        const jobsToScore = jobs.slice(0, 20);
-                        const jobIds = jobsToScore.map((job) => job.id);
-                        
-                        try {
-                          // Use batch scoring instead of individual calls
-                          const batchRes = await aiMatchingService.batchScoreSuitability(
-                            jobIds,
-                            profileId
-                          );
-                          
-                          // Handle both response formats: {success, data} or direct data
-                          const responseData = batchRes.data || batchRes;
-                          const jobScores = responseData.job_scores || [];
-                          
-                          if (jobScores.length > 0) {
-                            // Map scores back to jobs
-                            const scoreMap = new Map();
-                            jobScores.forEach((item) => {
-                              scoreMap.set(item.job_id, item.suitability_score);
+                  <AIToggle
+                      value={showAIResults ? "ai" : "all"}
+                      onChange={async (value) => {
+                      if (value === "ai") {
+                        // Show AI results immediately to display loading message
+                        setShowAIResults(true);
+                        // If not fetched yet, fetch now
+                        if (!hasFetchedAI) {
+                          setLoadingAI(true);
+                          try {
+                            // Use AISuggestedJobsSection logic
+                            const interpreterRes = await interpreterService.getInterpreterById(user.id);
+                            const interpreter = interpreterRes?.data || interpreterRes;
+                            if (!interpreter) throw new Error("Interpreter not found");
+                            
+                            const jobsRes = await jobService.getJobs({ status: "open", limit: 50 });
+                            const jobs = jobsRes?.data?.jobs || jobsRes?.data || [];
+                            
+                            if (jobs.length === 0) {
+                              setAiJobs([]);
+                              setHasFetchedAI(true);
+                              setLoadingAI(false);
+                              return;
+                            }
+                            
+                            // Sort jobs by newest first (createdAt or createdDate)
+                            const sortedJobs = [...jobs].sort((a, b) => {
+                              const dateA = new Date(a.createdAt || a.createdDate || 0);
+                              const dateB = new Date(b.createdAt || b.createdDate || 0);
+                              return dateB - dateA; // Newest first
                             });
                             
-                            const matches = jobsToScore
-                              .map((job) => {
-                                const score = scoreMap.get(job.id);
-                                if (!score) return null;
-                                
-                                // Transform to match normal job format
-                                return {
-                                  id: job.id,
-                                  title: job.title,
-                                  company: job.organization?.name || job.company || "Company",
-                                  location: job.province || job.address || job.location || "Location TBD",
-                                  category: job.domains?.[0]?.name || job.domains?.[0]?.nameVi || job.category || "General",
-                                  level: job.requiredLanguages?.[0]?.level?.name || job.level || "Mid",
-                                  type: job.workingMode?.name || job.type || "Full-time",
-                                  salary: job.minSalary && job.maxSalary
-                                    ? `$${job.minSalary}-${job.maxSalary}`
-                                    : job.minSalary
-                                    ? `$${job.minSalary}+`
-                                    : job.salary || "Negotiable",
-                                  tags: [
-                                    ...(job.requiredLanguages?.map((rl) => rl.language?.name || "") || []),
-                                    ...(job.domains?.map((d) => d.name || d.nameVi || "") || []),
-                                    ...(job.tags || []),
-                                  ].filter(Boolean),
-                                  desc: job.description || job.desc || "",
-                                  fullDesc: job.description || job.fullDesc || "",
-                                  requirements: job.requiredLanguages?.map(
-                                    (rl) => `${rl.language?.name} - ${rl.level?.name}`
-                                  ) || job.requirements || [],
-                                  benefits: job.benefits || [],
-                                  contact: {
-                                    email: job.organization?.email || job.contact?.email || "",
-                                    phone: job.organization?.phone || job.contact?.phone || "",
-                                    address: job.address || job.province || job.contact?.address || "",
-                                  },
-                                  reviewStatus: job.reviewStatus || "pending",
-                                  reviewNotes: job.reviewNotes || "",
-                                  suitability_score: score, // Keep AI score for ranking tag
-                                };
-                              })
-                              .filter((job) => job !== null) // Only include jobs with scores
-                              .sort(
-                                (a, b) =>
-                                  b.suitability_score.overall_score -
-                                  a.suitability_score.overall_score
-                              );
+                            // Take top 10 newest jobs only
+                            const jobsToScore = sortedJobs.slice(0, 10);
                             
-                            setAiJobs(matches.slice(0, 10));
-                          } else {
-                            console.warn("No job scores returned from AI service");
+                            const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || user.id;
+                            const jobIds = jobsToScore.map((job) => job.id);
+                            
+                            try {
+                              // Use batch scoring instead of individual calls
+                              const batchRes = await aiMatchingService.batchScoreSuitability(
+                                jobIds,
+                                profileId
+                              );
+                              
+                              // Handle both response formats: {success, data} or direct data
+                              const responseData = batchRes.data || batchRes;
+                              const jobScores = responseData.job_scores || [];
+                              
+                              if (jobScores.length > 0) {
+                                // Map scores back to jobs
+                                const scoreMap = new Map();
+                                jobScores.forEach((item) => {
+                                  scoreMap.set(item.job_id, item.suitability_score);
+                                });
+                                
+                                const matches = jobsToScore
+                                  .map((job) => {
+                                    const score = scoreMap.get(job.id);
+                                    if (!score) return null;
+                                    
+                                    // Transform to match normal job format
+                                    return {
+                                      id: job.id,
+                                      title: job.title,
+                                      company: job.organization?.name || job.company || "Company",
+                                      location: job.province || job.address || job.location || "Location TBD",
+                                      category: job.domains?.[0]?.name || job.domains?.[0]?.nameVi || job.category || "General",
+                                      level: job.requiredLanguages?.[0]?.level?.name || job.level || "Mid",
+                                      type: job.workingMode?.name || job.type || "Full-time",
+                                      salary: job.minSalary && job.maxSalary
+                                        ? `$${job.minSalary}-${job.maxSalary}`
+                                        : job.minSalary
+                                        ? `$${job.minSalary}+`
+                                        : job.salary || "Negotiable",
+                                      tags: [
+                                        ...(job.requiredLanguages?.map((rl) => rl.language?.name || "") || []),
+                                        ...(job.domains?.map((d) => d.name || d.nameVi || "") || []),
+                                        ...(job.tags || []),
+                                      ].filter(Boolean),
+                                      desc: job.description || job.desc || "",
+                                      fullDesc: job.description || job.fullDesc || "",
+                                      requirements: job.requiredLanguages?.map(
+                                        (rl) => `${rl.language?.name} - ${rl.level?.name}`
+                                      ) || job.requirements || [],
+                                      benefits: job.benefits || [],
+                                      contact: {
+                                        email: job.organization?.email || job.contact?.email || "",
+                                        phone: job.organization?.phone || job.contact?.phone || "",
+                                        address: job.address || job.province || job.contact?.address || "",
+                                      },
+                                      reviewStatus: job.reviewStatus || "pending",
+                                      reviewNotes: job.reviewNotes || "",
+                                      suitability_score: score, // Keep AI score for ranking tag
+                                    };
+                                  })
+                                  .filter((job) => job !== null) // Only include jobs with scores
+                                  .sort(
+                                    (a, b) =>
+                                      b.suitability_score.overall_score -
+                                      a.suitability_score.overall_score
+                                  ); // Sort from highest to lowest score
+                                
+                                setAiJobs(matches); // Cache AI results
+                                setHasFetchedAI(true);
+                              } else {
+                                console.warn("No job scores returned from AI service");
+                                setAiJobs([]);
+                                setHasFetchedAI(true);
+                              }
+                            } catch (err) {
+                              console.error("Error batch scoring jobs:", err);
+                              console.error("Error details:", err.response?.data || err.message);
+                              // Fallback to empty array on error
+                              setAiJobs([]);
+                              setHasFetchedAI(true);
+                            }
+                          } catch (error) {
+                            console.error("Error fetching AI suggestions:", error);
+                            toastService.error(t("findJob.saveJob.aiRecommendationsFailed"));
                             setAiJobs([]);
+                            setHasFetchedAI(true);
+                          } finally {
+                            setLoadingAI(false);
                           }
-                        } catch (err) {
-                          console.error("Error batch scoring jobs:", err);
-                          console.error("Error details:", err.response?.data || err.message);
-                          // Fallback to empty array on error
-                          setAiJobs([]);
                         }
-                      } catch (error) {
-                        console.error("Error fetching AI suggestions:", error);
-                        toastService.error(t("findJob.saveJob.aiRecommendationsFailed"));
+                      } else {
                         setShowAIResults(false);
-                      } finally {
-                        setLoadingAI(false);
                       }
                     }}
-                    disabled={loadingAI}
-                  >
-                    {loadingAI ? (
-                      <FaSpinner className={styles.spinningIcon} />
-                    ) : showAIResults ? (
-                      <FaList />
-                    ) : (
-                      <svg 
-                        stroke="currentColor" 
-                        fill="currentColor" 
-                        strokeWidth="0" 
-                        viewBox="0 0 512 512" 
-                        height="24px" 
-                        width="24px" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
-                      </svg>
-                    )}
-                  </button>
+                    loading={loadingAI}
+                  />
                 )}
               </div>
               </div>
@@ -1160,12 +1172,26 @@ export default function FindJobPage() {
                     <div className={styles.loadingSpinner}></div>
                     <p>{t("findJob.loading") || "AI is analyzing jobs..."}</p>
                   </div>
-                ) : aiJobs.length === 0 ? (
-                  <div className={styles.empty}>
-                    {t("findJob.noAIJobs") || "No AI recommendations available"}
-                  </div>
-                ) : (
-                  aiJobs.map((job) => (
+                ) : (() => {
+                  // Filter jobs by score level
+                  const getFilteredJobs = () => {
+                    if (filterLevel === "all") return aiJobs;
+                    return aiJobs.filter((job) => {
+                      const level = job.suitability_score?.score_level;
+                      return level === filterLevel;
+                    });
+                  };
+                  const filteredJobs = getFilteredJobs();
+                  
+                  if (filteredJobs.length === 0) {
+                    return (
+                      <div className={styles.empty}>
+                        {t("findJob.noAIJobs") || "No AI recommendations available"}
+                      </div>
+                    );
+                  }
+                  
+                  return filteredJobs.map((job) => (
                     <div key={job.id} className={styles.jobCard}>
                       {job.suitability_score && (
                         <div className={styles.aiCornerTag}>
@@ -1266,8 +1292,8 @@ export default function FindJobPage() {
                         </button>
                       </div>
                     </div>
-                  ))
-                )}
+                  ));
+                })()}
               </div>
             ) : (
               /* Normal Jobs Grid */

@@ -699,6 +699,8 @@ const vi = {
     unread: "Chưa đọc",
     message: "Nội dung",
     details: "Chi tiết bổ sung",
+    goToMessages: "Đi đến tin nhắn",
+    messageError: "Không thể mở tin nhắn",
   },
   myJobs: {
     subtitle: "Quản lý các công việc bạn đã đăng",
@@ -1600,6 +1602,10 @@ const vi = {
     rejectSuccess: "Từ chối đơn ứng tuyển thành công",
     acceptError: "Lỗi khi chấp nhận đơn ứng tuyển",
     rejectError: "Lỗi khi từ chối đơn ứng tuyển",
+    aiRecommendations: "Gợi ý Thông dịch viên từ AI",
+    aiSuitability: "Điểm Phù Hợp AI",
+    checkSuitability: "Kiểm Tra Độ Phù Hợp",
+    aiSuitabilityPrompt: "Nhấn nút bên dưới để xem hồ sơ của bạn phù hợp với công việc này như thế nào.",
     apply: {
       success: "Ứng tuyển thành công!",
       errors: {
