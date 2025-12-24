@@ -2,14 +2,22 @@
   width: 100%;
 }
 
-.controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Toggle Section - Full Width */
+.toggleSection {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.toggleSection > * {
+  width: 100%;
+}
+
+/* Filter Section - Below Toggle */
+.filterSection {
+  width: 100%;
   margin-bottom: 20px;
-  gap: 16px;
-  flex-wrap: wrap;
-  flex-direction: row;
+  display: flex;
+  justify-content: flex-start;
 }
 
 /* AI Button - Similar to FindJobPage */
@@ -141,15 +149,6 @@
   cursor: not-allowed;
 }
 
-.filterControls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 0;
-  margin-right: auto;
-  order: 1;
-}
-
 .filterSelect {
   padding: 8px 12px;
   border: 1px solid #e5e7eb;
@@ -157,6 +156,7 @@
   background: white;
   font-size: 0.9em;
   cursor: pointer;
+  min-width: 150px;
 }
 
 .loadingState,

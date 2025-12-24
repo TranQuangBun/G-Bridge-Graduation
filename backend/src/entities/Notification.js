@@ -15,6 +15,7 @@ export const NotificationType = {
   ORGANIZATION_APPROVED: "organization_approved",
   ORGANIZATION_REJECTED: "organization_rejected",
   SYSTEM_NOTIFICATION: "system_notification",
+  CONNECTION_REQUEST: "connection_request",
 };
 
 export class Notification {

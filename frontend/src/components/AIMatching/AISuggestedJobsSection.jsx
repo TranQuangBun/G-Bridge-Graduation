@@ -48,9 +48,18 @@ export default function AISuggestedJobsSection({ interpreterId, autoFetch = fals
         return;
       }
 
+      // Sort jobs by newest first (createdAt or createdDate)
+      const sortedJobs = [...jobs].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.createdDate || 0);
+        const dateB = new Date(b.createdAt || b.createdDate || 0);
+        return dateB - dateA; // Newest first
+      });
+
+      // Take top 10 newest jobs only
+      const jobsToScore = sortedJobs.slice(0, 10);
+
       // Call AI service to match - use interpreter profile ID if available
       const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || interpreterId;
-      const jobsToScore = jobs.slice(0, 20); // Limit to 20 jobs for performance
       const jobIds = jobsToScore.map((job) => job.id);
       
       try {

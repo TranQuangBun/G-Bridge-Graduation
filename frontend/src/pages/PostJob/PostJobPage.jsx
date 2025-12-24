@@ -7,8 +7,6 @@ import { ROUTES } from "../../constants";
 import jobService from "../../services/jobService";
 import organizationService from "../../services/organizationService";
 import languageService from "../../services/languageService";
-import aiMatchingService from "../../services/aiMatchingService";
-import { MatchReasonsCard } from "../../components/AIMatching";
 import toastService from "../../services/toastService";
 import styles from "./PostJobPage.module.css";
 
@@ -147,12 +145,6 @@ const PostJobPage = () => {
   const [jobData, setJobData] = useState(defaultJobData);
   const [languageRequirements, setLanguageRequirements] = useState([]);
   
-  // AI Matching states
-  const [aiMatches, setAiMatches] = useState([]);
-  const [selectedMatchDetails, setSelectedMatchDetails] = useState(null);
-  const [loadingAISuggestions, setLoadingAISuggestions] = useState(false);
-  const [createdJobId, setCreatedJobId] = useState(null); // Store job ID after creation
-  const [aiSuggestionsFetched, setAiSuggestionsFetched] = useState(false); // Track if AI suggestions have been fetched
   
   // License confirmation states
   const [showLicenseConfirmation, setShowLicenseConfirmation] = useState(false);
@@ -332,7 +324,11 @@ const PostJobPage = () => {
             contactPhone:
               job.contactPhone || job.organization?.phone || user?.phone || "",
             domainIds:
-              job.domains?.map((d) => String(d.domainId || d.id)) || [],
+              job.domains?.map((d) => {
+                // Handle different data structures: d.domainId, d.id, or d.domain?.id
+                const domainId = d.domainId || d.id || d.domain?.id;
+                return domainId ? String(domainId) : null;
+              }).filter((id) => id !== null) || [],
             statusOpenStop: job.statusOpenStop || "open",
           });
 
@@ -423,12 +419,15 @@ const PostJobPage = () => {
 
   const toggleDomainSelection = (domainId) => {
     setJobData((prev) => {
-      const exists = prev.domainIds.includes(domainId);
+      // Convert domainId to string for consistency
+      const domainIdStr = String(domainId);
+      // Check if exists (handle both string and number types)
+      const exists = prev.domainIds.includes(domainIdStr) || prev.domainIds.includes(domainId);
       return {
         ...prev,
         domainIds: exists
-          ? prev.domainIds.filter((id) => id !== domainId)
-          : [...prev.domainIds, domainId],
+          ? prev.domainIds.filter((id) => String(id) !== domainIdStr && id !== domainId)
+          : [...prev.domainIds, domainIdStr],
       };
     });
   };
@@ -755,13 +754,68 @@ const PostJobPage = () => {
         response = await jobService.updateJob(editJobId, payload);
         if (response?.success) {
           toastService.success(t("postJob.messages.updateSuccess"));
-          // Store job ID for AI suggestions (user can click button to fetch)
-          if (response.data?.id) {
-            setCreatedJobId(response.data.id);
-            setAiSuggestionsFetched(false); // Reset so user can fetch again
-            setAiMatches([]); // Clear old results
+          
+          // Reload job data from API to reflect all changes
+          try {
+              const jobResponse = await jobService.getJobById(editJobId);
+              if (jobResponse && (jobResponse.success || jobResponse.data)) {
+                const job = jobResponse.data?.job || jobResponse.data || {};
+                
+                // Update jobData with fresh data from API
+                setJobData({
+                  organizationId: String(job.organizationId || ""),
+                  workingModeId: String(job.workingModeId || ""),
+                  title: job.title || "",
+                  province: job.province || "",
+                  commune: job.commune || "",
+                  address: job.address || "",
+                  expirationDate: job.expirationDate
+                    ? new Date(job.expirationDate).toISOString().split("T")[0]
+                    : "",
+                  quantity: job.quantity || 1,
+                  descriptions: job.descriptions || "",
+                  responsibility: job.responsibility || "",
+                  benefits: job.benefits || "",
+                  salaryType: job.salaryType || "NEGOTIABLE",
+                  minSalary: job.minSalary ? String(job.minSalary) : "",
+                  maxSalary: job.maxSalary ? String(job.maxSalary) : "",
+                  contactEmail:
+                    job.contactEmail || job.organization?.email || user?.email || "",
+                  contactPhone:
+                    job.contactPhone || job.organization?.phone || user?.phone || "",
+                  domainIds:
+                    job.domains?.map((d) => {
+                      const domainId = d.domainId || d.id || d.domain?.id;
+                      return domainId ? String(domainId) : null;
+                    }).filter((id) => id !== null) || [],
+                  statusOpenStop: job.statusOpenStop || "open",
+                });
+                
+                // Update language requirements
+                if (job.requiredLanguages && job.requiredLanguages.length > 0) {
+                  const langReqs = job.requiredLanguages.map((rl) => ({
+                    languageId: "",
+                    levelId: String(rl.levelId || ""),
+                    isSourceLanguage: rl.isSourceLanguage || false,
+                    languageName: rl.language?.name || "",
+                  }));
+                  setLanguageRequirements(langReqs);
+                } else {
+                  setLanguageRequirements([]);
+                }
+              }
+          } catch (error) {
+            console.error("Error reloading job data:", error);
+            // If reload fails, at least update domainIds from response
+            if (response.data) {
+              const updatedJob = response.data;
+              setJobData((prev) => ({
+                ...prev,
+                domainIds: updatedJob.domains?.map((d) => String(d.domainId || d.id || d.domain?.id)) || prev.domainIds,
+              }));
+            }
           }
-          navigate(ROUTES.MY_JOBS);
+          // Don't navigate, stay on the page to show updated data
         } else {
           throw new Error(response?.message || "Unable to update job");
         }
@@ -771,13 +825,7 @@ const PostJobPage = () => {
         if (response?.success) {
           toastService.success(t("postJob.messages.success"));
           
-          // Store job ID for AI suggestions (user can click button to fetch)
-          const jobId = response.data?.id || response.data?.job?.id;
-          if (jobId) {
-            setCreatedJobId(jobId);
-            setAiSuggestionsFetched(false); // Reset so user can fetch
-            setAiMatches([]); // Clear any old results
-          }
+          // Job created successfully
           
           // Don't navigate away, stay on page so user can click AI button if they want
         } else {
@@ -814,31 +862,6 @@ const PostJobPage = () => {
     return tomorrow.toISOString().split("T")[0];
   }, []);
 
-  // Fetch AI suggested interpreters - user must click button
-  const handleFetchAISuggestions = async () => {
-    const jobId = createdJobId || editJobId;
-    if (!jobId) {
-      toastService.error(t("postJob.messages.saveFirst"));
-      return;
-    }
-
-    setLoadingAISuggestions(true);
-    try {
-      const aiResponse = await aiMatchingService.matchJobToInterpreters(jobId, 10); // Fetch top 10
-      if (aiResponse.success && aiResponse.data?.matched_interpreters) {
-        setAiMatches(aiResponse.data.matched_interpreters);
-        setAiSuggestionsFetched(true);
-        toastService.success(t("postJob.messages.aiFound").replace("{count}", aiResponse.data.matched_interpreters.length));
-      } else {
-        toastService.error(t("postJob.messages.aiNotFound"));
-      }
-    } catch (error) {
-      console.error("Error fetching AI suggestions:", error);
-      toastService.error(t("postJob.messages.aiFailed"));
-    } finally {
-      setLoadingAISuggestions(false);
-    }
-  };
 
   // Show loading state while fetching job data for edit
   if (isEditMode && loadingJobData) {
@@ -1359,7 +1382,7 @@ const PostJobPage = () => {
                           <input
                             type="checkbox"
                             value={domain.id}
-                            checked={jobData.domainIds.includes(domain.id)}
+                            checked={jobData.domainIds.includes(String(domain.id)) || jobData.domainIds.includes(domain.id)}
                             onChange={() => toggleDomainSelection(domain.id)}
                           />
                           {displayName}
@@ -1683,120 +1706,10 @@ const PostJobPage = () => {
                 )}
               </div>
 
-              {/* AI Suggested Interpreters Section - Replaces preview when active */}
-              {createdJobId || editJobId ? (
-                <div className={styles.previewSection}>
-                  <div className={styles.aiSectionHeader}>
-                    <h4>
-                      <span className={styles.aiBadge}>AI</span>{" "}
-                      {t("postJob.preview.aiSuggestions") || "Suggested Interpreters"}
-                    </h4>
-                    {!aiSuggestionsFetched && !loadingAISuggestions && (
-                      <button
-                        className={styles.aiFetchButton}
-                        onClick={handleFetchAISuggestions}
-                        disabled={loadingAISuggestions}
-                      >
-                        🤖 Get AI Suggestions
-                      </button>
-                    )}
-                  </div>
-                  {loadingAISuggestions ? (
-                    <div className={styles.aiLoadingState}>
-                      <p>AI is analyzing and finding the best interpreters...</p>
-                    </div>
-                  ) : aiMatches.length > 0 ? (
-                    <div className={styles.aiMatchesList}>
-                      {aiMatches.map((match) => (
-                        <div
-                          key={match.interpreter_id || match.id}
-                          className={styles.aiMatchCard}
-                          onClick={() => {
-                            setSelectedMatchDetails(match);
-                          }}
-                        >
-                          <div className={styles.aiMatchHeader}>
-                            <span className={styles.aiMatchName}>
-                              {match.interpreter?.user?.name ||
-                                match.interpreter?.fullName ||
-                                match.interpreter?.name ||
-                                "Interpreter"}
-                            </span>
-                            {match.suitability_score && (
-                              <span
-                                className={`${styles.aiMatchScore} ${
-                                  match.suitability_score.overall_score >= 80
-                                    ? styles.excellent
-                                    : match.suitability_score.overall_score >= 60
-                                    ? styles.good
-                                    : styles.fair
-                                }`}
-                              >
-                                {Math.round(match.suitability_score.overall_score)}%
-                              </span>
-                            )}
-                          </div>
-                          {match.suitability_score?.recommendation && (
-                            <p className={styles.aiMatchReason}>
-                              {match.suitability_score.recommendation.substring(0, 100)}
-                              {match.suitability_score.recommendation.length > 100 ? "..." : ""}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : aiSuggestionsFetched && !loadingAISuggestions ? (
-                    <div className={styles.noSuggestions}>
-                      <p>No AI suggestions available at this time.</p>
-                      <button
-                        className={styles.aiFetchButton}
-                        onClick={handleFetchAISuggestions}
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  ) : (
-                    <div className={styles.aiPrompt}>
-                      <p>Click the button above to get AI-powered interpreter suggestions for this job.</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className={styles.previewSection}>
-                  <div className={styles.aiSectionHeader}>
-                    <h4>
-                      <span className={styles.aiBadge}>AI</span>{" "}
-                      {t("postJob.preview.aiSuggestions") || "Suggested Interpreters"}
-                    </h4>
-                  </div>
-                  <div className={styles.aiPrompt}>
-                    <p>Save the job first to get AI-powered interpreter suggestions.</p>
-                  </div>
-                </div>
-              )}
             </div>
           </aside>
         </div>
       </div>
-
-      {/* Match Details Modal - Only show details, not full list */}
-      {selectedMatchDetails && selectedMatchDetails.suitability_score && (
-        <div className={styles.matchDetailsOverlay} onClick={() => setSelectedMatchDetails(null)}>
-          <div className={styles.matchDetailsModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.matchDetailsHeader}>
-              <h2>AI Match Analysis</h2>
-              <button onClick={() => setSelectedMatchDetails(null)}>×</button>
-            </div>
-            <div className={styles.matchDetailsContent}>
-              <MatchReasonsCard
-                suitabilityScore={selectedMatchDetails.suitability_score}
-                expandable={false}
-                defaultExpanded={true}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* License Confirmation Modal */}
       {showLicenseConfirmation && (

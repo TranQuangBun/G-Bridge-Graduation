@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { FaSpinner } from "react-icons/fa";
-import { SuitabilityScoreBadge, MatchReasonsCard } from "./";
+import { SuitabilityScoreBadge, MatchReasonsCard, AIToggle } from "./";
 import aiMatchingService from "../../services/aiMatchingService";
 import styles from "./AIRankedApplications.module.css";
 
@@ -33,20 +33,39 @@ export default function AIRankedApplications({
     setLoading(true);
     setError(null);
     try {
+      // Sort applications by newest first (applicationDate or createdAt)
+      const sortedApps = [...applications].sort((a, b) => {
+        const dateA = new Date(a.applicationDate || a.createdAt || 0);
+        const dateB = new Date(b.applicationDate || b.createdAt || 0);
+        return dateB - dateA; // Newest first
+      });
+
+      // Take top 10 newest applications only
+      const newest10Apps = sortedApps.slice(0, 10);
+      const applicationIds = newest10Apps.map((app) => app.id);
+
       const response = await aiMatchingService.filterApplications(jobId, 50, 50);
       if (response.success && response.data) {
         const rankedApps = response.data.filtered_applications || [];
-        // Map AI results back to original applications
-        const mappedApps = rankedApps.map((ranked) => {
-          const original = applications.find(
-            (app) => app.id === ranked.application_id || app.interpreterId === ranked.interpreter_id
-          );
-          return {
-            ...original,
-            aiScore: ranked.suitability_score,
-            aiRank: ranked.rank,
-          };
-        });
+        // Map AI results back to original applications (only from top 10)
+        const mappedApps = rankedApps
+          .filter((ranked) => applicationIds.includes(ranked.application_id))
+          .map((ranked) => {
+            const original = newest10Apps.find(
+              (app) => app.id === ranked.application_id || app.interpreterId === ranked.interpreter_id
+            );
+            if (!original) return null;
+            return {
+              ...original,
+              aiScore: ranked.suitability_score,
+              aiRank: ranked.rank,
+            };
+          })
+          .filter((app) => app !== null)
+          .sort((a, b) => {
+            // Sort by score from highest to lowest
+            return b.aiScore.overall_score - a.aiScore.overall_score;
+          });
         setAiRankedApps(mappedApps);
         setHasFetchedAI(true);
       }
@@ -60,20 +79,17 @@ export default function AIRankedApplications({
     }
   }, [jobId, applications]);
 
-  // Handle AI button click
-  const handleAIClick = async () => {
-    if (showAIResults) {
-      // If already showing AI results, hide them
+  // Handle toggle change
+  const handleToggleChange = async (value) => {
+    if (value === "ai") {
+      // If not fetched yet, fetch now
+      if (!hasFetchedAI) {
+        await fetchAIRankedApplications();
+      }
+      setShowAIResults(true);
+    } else {
       setShowAIResults(false);
-      return;
     }
-    
-    // If not fetched yet, fetch now
-    if (!hasFetchedAI) {
-      await fetchAIRankedApplications();
-    }
-    
-    setShowAIResults(true);
   };
 
   const getFilteredApps = () => {
@@ -96,60 +112,33 @@ export default function AIRankedApplications({
 
   return (
     <div className={styles.container}>
-      {/* Controls */}
-      <div className={styles.controls}>
-        {/* Filter Controls - Only show when AI results are displayed */}
-        {showAIResults && hasFetchedAI && (
-          <div className={styles.filterControls}>
-            <select
-              value={filterLevel}
-              onChange={(e) => setFilterLevel(e.target.value)}
-              className={styles.filterSelect}
-            >
-              <option value="all">All Scores</option>
-              <option value="excellent">Excellent (90+)</option>
-              <option value="good">Good (70-89)</option>
-              <option value="fair">Fair (50-69)</option>
-            </select>
-          </div>
-        )}
-
-        {/* AI Button */}
-        <button
-          className={`${styles.aiButton} ${showAIResults ? styles.active : ""}`}
-          onClick={handleAIClick}
-          disabled={loading || !jobId || applications.length === 0}
-          title={loading ? "AI Analyzing..." : showAIResults ? "Show All Applications" : "Get AI Rankings"}
-        >
-          {loading ? (
-            <FaSpinner className={styles.spinningIcon} />
-          ) : showAIResults ? (
-            <svg 
-              stroke="currentColor" 
-              fill="currentColor" 
-              strokeWidth="0" 
-              viewBox="0 0 512 512" 
-              height="1em" 
-              width="1em" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
-            </svg>
-          ) : (
-            <svg 
-              stroke="currentColor" 
-              fill="currentColor" 
-              strokeWidth="0" 
-              viewBox="0 0 512 512" 
-              height="1em" 
-              width="1em" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M224 96l16-32 32-16-32-16-16-32-16 32-32 16 32 16 16 32zM80 160l26.66-53.33L160 80l-53.34-26.67L80 0 53.34 53.33 0 80l53.34 26.67L80 160zm352 128l-26.66 53.33L352 368l53.34 26.67L432 448l26.66-53.33L512 368l-53.34-26.67L432 288zm70.62-193.77L417.77 9.38C411.53 3.12 403.34 0 395.15 0c-8.19 0-16.38 3.12-22.63 9.38L9.38 372.52c-12.5 12.5-12.5 32.76 0 45.25l84.85 84.85c6.25 6.25 14.44 9.37 22.62 9.37 8.19 0 16.38-3.12 22.63-9.37l363.14-363.15c12.5-12.48 12.5-32.75 0-45.24zM359.45 203.46l-50.91-50.91 86.6-86.6 50.91 50.91-86.6 86.6z"></path>
-            </svg>
-          )}
-        </button>
+      {/* Toggle - Full Width */}
+      <div className={styles.toggleSection}>
+        <AIToggle
+          value={showAIResults ? "ai" : "all"}
+          onChange={handleToggleChange}
+          loading={loading}
+          disabled={!jobId || applications.length === 0}
+          aiLabel="AI"
+          allLabel="All"
+        />
       </div>
+
+      {/* Filter Controls - Only show when AI results are displayed, below toggle */}
+      {showAIResults && hasFetchedAI && (
+        <div className={styles.filterSection}>
+          <select
+            value={filterLevel}
+            onChange={(e) => setFilterLevel(e.target.value)}
+            className={styles.filterSelect}
+          >
+            <option value="all">All Scores</option>
+            <option value="excellent">Excellent (90+)</option>
+            <option value="good">Good (70-89)</option>
+            <option value="fair">Fair (50-69)</option>
+          </select>
+        </div>
+      )}
 
       {/* Loading State */}
       {loading && (

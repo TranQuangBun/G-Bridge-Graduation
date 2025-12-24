@@ -35,6 +35,21 @@ const notificationService = {
       throw new Error(getErrorMessage(error));
     }
   },
+
+  sendConnectionRequest: async (interpreterId, message, jobId = null, jobTitle = null) => {
+    try {
+      const response = await apiClient.post("/notifications/connection-request", {
+        interpreterId,
+        message,
+        jobId,
+        jobTitle,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 export default notificationService;

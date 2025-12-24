@@ -2,9 +2,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./NotificationDropdown.module.css";
 import notificationService from "../../services/notificationService";
+import messageService from "../../services/messageService";
 import { ROUTES } from "../../constants";
 import { useLanguage } from "../../translet/LanguageContext";
-import { FaBell } from "react-icons/fa";
+import { FaBell, FaEnvelope, FaSpinner } from "react-icons/fa";
 
 const NotificationDropdown = () => {
   const { t } = useLanguage();
@@ -320,6 +321,35 @@ const NotificationDropdown = () => {
                 <div className={styles.modalMessage}>
                   <h4>{t("notificationsPage.message") || "Message"}</h4>
                   <p>{translateNotification(selectedNotification).message}</p>
+                </div>
+              )}
+
+              {/* Action buttons for connection request */}
+              {selectedNotification.type === "connection_request" && selectedNotification.actorId && (
+                <div className={styles.modalActions}>
+                  <button
+                    className={styles.messageButton}
+                    onClick={async () => {
+                      try {
+                        // Create or get conversation with the actor (person who sent the request)
+                        const response = await messageService.createOrGetConversation(
+                          selectedNotification.actorId
+                        );
+                        const conversationId = response.data?.id || response.data?.conversationId;
+                        if (conversationId) {
+                          setShowModal(false);
+                          navigate(`${ROUTES.MESSAGES}?conversation=${conversationId}`);
+                        } else {
+                          console.error("No conversation ID returned");
+                        }
+                      } catch (error) {
+                        console.error("Error creating conversation:", error);
+                        alert(t("notificationsPage.messageError") || "Không thể mở tin nhắn");
+                      }
+                    }}
+                  >
+                    <FaEnvelope /> {t("notificationsPage.goToMessages") || "Đi đến tin nhắn"}
+                  </button>
                 </div>
               )}
 

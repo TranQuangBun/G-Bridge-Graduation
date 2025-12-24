@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useLanguage } from "../../translet/LanguageContext";
 import notificationService from "../../services/notificationService";
+import messageService from "../../services/messageService";
+import { FaEnvelope } from "react-icons/fa";
 
 const NotificationsPage = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -218,19 +220,46 @@ const NotificationsPage = () => {
                       />
                     )}
                   </div>
-                  {!notification.isRead && (
-                    <button
-                      className={styles.markReadBtn}
-                      onClick={() =>
-                        handleMarkNotificationRead(notification.id)
-                      }
-                      disabled={markingId === notification.id}
-                    >
-                      {markingId === notification.id
-                        ? t("common.loading") || "Loading..."
-                        : t("notificationsPage.markRead") || "Mark as read"}
-                    </button>
-                  )}
+                  <div className={styles.notificationActions}>
+                    {notification.type === "connection_request" && notification.actorId && (
+                      <button
+                        className={styles.messageButton}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            // Create or get conversation with the actor (person who sent the request)
+                            const response = await messageService.createOrGetConversation(
+                              notification.actorId
+                            );
+                            const conversationId = response.data?.id || response.data?.conversationId;
+                            if (conversationId) {
+                              navigate(`${ROUTES.MESSAGES}?conversation=${conversationId}`);
+                            } else {
+                              console.error("No conversation ID returned");
+                            }
+                          } catch (error) {
+                            console.error("Error creating conversation:", error);
+                            alert(t("notificationsPage.messageError") || "Không thể mở tin nhắn");
+                          }
+                        }}
+                      >
+                        <FaEnvelope /> {t("notificationsPage.goToMessages") || "Đi đến tin nhắn"}
+                      </button>
+                    )}
+                    {!notification.isRead && (
+                      <button
+                        className={styles.markReadBtn}
+                        onClick={() =>
+                          handleMarkNotificationRead(notification.id)
+                        }
+                        disabled={markingId === notification.id}
+                      >
+                        {markingId === notification.id
+                          ? t("common.loading") || "Loading..."
+                          : t("notificationsPage.markRead") || "Mark as read"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
               {pagination.page < pagination.totalPages && (

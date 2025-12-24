@@ -693,6 +693,8 @@ const en = {
     unread: "Unread",
     message: "Message",
     details: "Additional Details",
+    goToMessages: "Go to Messages",
+    messageError: "Unable to open messages",
   },
   myJobs: {
     subtitle: "Manage your posted jobs",
@@ -1582,6 +1584,10 @@ const en = {
     rejectSuccess: "Application rejected successfully",
     acceptError: "Error accepting application",
     rejectError: "Error rejecting application",
+    aiRecommendations: "AI Recommended Interpreters",
+    aiSuitability: "AI Suitability Score",
+    checkSuitability: "Check My Suitability",
+    aiSuitabilityPrompt: "Click the button below to see how well your profile matches this job.",
     apply: {
       success: "Application submitted successfully!",
       errors: {

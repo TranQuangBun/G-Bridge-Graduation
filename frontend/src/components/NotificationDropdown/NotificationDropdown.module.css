@@ -404,6 +404,39 @@
   word-wrap: break-word;
 }
 
+.modalActions {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.messageButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0369a1, #0ea5e9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.messageButton:hover {
+  background: linear-gradient(135deg, #0c4a6e, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.messageButton:active {
+  transform: translateY(0);
+}
+
 .modalFooter {
   padding: 16px 24px;
   border-top: 1px solid #e5e7eb;

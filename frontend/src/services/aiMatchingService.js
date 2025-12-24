@@ -6,12 +6,14 @@ const aiMatchingService = {
    * Match a job to multiple interpreters using AI
    * @param {number} jobId - Job ID
    * @param {number} maxResults - Maximum number of results (default: 10)
+   * @param {boolean} skipAI - If true, only return pre-filtered interpreters without AI scoring (default: false)
    * @returns {Promise<Object>} Matching results
    */
-  matchJobToInterpreters: async (jobId, maxResults = 10) => {
+  matchJobToInterpreters: async (jobId, maxResults = 10, skipAI = false) => {
     try {
+      const skipAIParam = skipAI ? "&skipAI=true" : "";
       const response = await apiClient.get(
-        `/ai-match/job/${jobId}/match?maxResults=${maxResults}`
+        `/ai-match/job/${jobId}/match?maxResults=${maxResults}${skipAIParam}`
       );
       return response.data;
     } catch (error) {

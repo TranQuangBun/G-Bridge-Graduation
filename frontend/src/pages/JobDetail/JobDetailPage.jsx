@@ -5,8 +5,12 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { ROUTES } from "../../constants/enums";
 import jobService from "../../services/jobService.js";
-import { AIRankedApplications } from "../../components/AIMatching";
+import interpreterService from "../../services/interpreterService.js";
+import aiMatchingService from "../../services/aiMatchingService";
+import notificationService from "../../services/notificationService";
+import { AIRankedApplications, MatchReasonsCard, SuitabilityScoreBadge, AIToggle } from "../../components/AIMatching";
 import { getErrorMessage } from "../../utils/errors";
+import toastService from "../../services/toastService";
 import styles from "./JobDetailPage.module.css";
 import {
   FaMapMarkerAlt,
@@ -26,6 +30,10 @@ import {
   FaCheckCircle,
   FaEdit,
   FaFileAlt,
+  FaUserPlus,
+  FaEye,
+  FaSpinner,
+  FaUserCheck,
 } from "react-icons/fa";
 
 export default function JobDetailPage() {
@@ -55,6 +63,25 @@ export default function JobDetailPage() {
     introduction: "",
     profileLink: "",
   });
+
+  // AI Matching states for client role (recommended interpreters)
+  const [aiMatches, setAiMatches] = useState([]);
+  const [preFilteredInterpreters, setPreFilteredInterpreters] = useState([]); // Top 10 interpreters before AI
+  const [selectedMatchDetails, setSelectedMatchDetails] = useState(null);
+  const [loadingAISuggestions, setLoadingAISuggestions] = useState(false);
+  const [aiSuggestionsFetched, setAiSuggestionsFetched] = useState(false);
+  const [showAIView, setShowAIView] = useState(false); // Toggle between AI and All views
+  
+  // Connection request states
+  const [connectionModalOpen, setConnectionModalOpen] = useState(false);
+  const [selectedInterpreter, setSelectedInterpreter] = useState(null);
+  const [connectionMessage, setConnectionMessage] = useState("");
+  const [sendingConnection, setSendingConnection] = useState(false);
+
+  // AI Matching states for interpreter role (suitability score)
+  const [interpreterSuitabilityScore, setInterpreterSuitabilityScore] = useState(null);
+  const [loadingInterpreterScore, setLoadingInterpreterScore] = useState(false);
+  const [interpreterScoreFetched, setInterpreterScoreFetched] = useState(false);
 
   const hasPremium = user?.isPremium || false;
 
@@ -119,10 +146,19 @@ export default function JobDetailPage() {
             category:
               jobData.domains?.[0]?.domain?.name ||
               jobData.domains?.[0]?.name ||
+              jobData.domains?.[0]?.domain?.nameVi ||
+              jobData.domains?.[0]?.nameVi ||
               "General",
             allDomains:
               jobData.domains
-                ?.map((d) => d.domain?.name || d.name || "")
+                ?.map((d) => {
+                  // Handle different data structures
+                  if (d.domain?.name) return d.domain.name;
+                  if (d.name) return d.name;
+                  if (d.domain?.nameVi) return d.domain.nameVi;
+                  if (d.nameVi) return d.nameVi;
+                  return "";
+                })
                 .filter(Boolean) || [],
             level: jobData.requiredLanguages?.[0]?.level?.name || "Mid",
             type: jobData.workingMode?.name || "Full-time",
@@ -143,8 +179,13 @@ export default function JobDetailPage() {
               ...(jobData.requiredLanguages?.map(
                 (rl) => rl.language?.name || ""
               ) || []),
-              ...(jobData.domains?.map((d) => d.domain?.name || d.name || "") ||
-                []),
+              ...(jobData.domains?.map((d) => {
+                if (d.domain?.name) return d.domain.name;
+                if (d.name) return d.name;
+                if (d.domain?.nameVi) return d.domain.nameVi;
+                if (d.nameVi) return d.nameVi;
+                return "";
+              }).filter(Boolean) || []),
             ].filter(Boolean),
             desc: jobData.descriptions || "",
             fullDesc: jobData.descriptions || "",
@@ -462,6 +503,180 @@ export default function JobDetailPage() {
   // Check if current user is the owner of this job (via organization)
   const isJobOwner = user?.role === "client" && job?.organization?.ownerUserId === user?.id;
 
+  // Fetch AI suggested interpreters for client role
+  // Fetch pre-filtered interpreters only (without AI)
+  const handleFetchPreFilteredInterpreters = async () => {
+    if (!job?.id) {
+      toastService.error("Job ID is required");
+      return;
+    }
+
+    if (loadingAISuggestions) {
+      console.log("Already loading, skipping...");
+      return;
+    }
+
+    console.log("Fetching pre-filtered interpreters for job:", job.id);
+    setLoadingAISuggestions(true);
+    try {
+      const response = await aiMatchingService.matchJobToInterpreters(job.id, 10, true); // skipAI = true
+      const responseData = response.data || response;
+      
+      if (response.success && responseData) {
+        if (responseData.pre_filtered_interpreters) {
+          console.log("✓ Found pre_filtered_interpreters:", responseData.pre_filtered_interpreters.length);
+          setPreFilteredInterpreters(responseData.pre_filtered_interpreters);
+        }
+        toastService.success(`Found ${responseData.pre_filtered_interpreters?.length || 0} pre-filtered interpreters`);
+      }
+    } catch (error) {
+      console.error("Error fetching pre-filtered interpreters:", error);
+      toastService.error(getErrorMessage(error) || "Failed to fetch interpreters");
+    } finally {
+      setLoadingAISuggestions(false);
+    }
+  };
+
+  // Fetch AI-matched interpreters (with AI scoring)
+  const handleFetchAISuggestions = async () => {
+    if (!job?.id) {
+      toastService.error("Job ID is required");
+      return;
+    }
+
+    if (loadingAISuggestions) {
+      console.log("Already loading AI suggestions, skipping...");
+      return; // Prevent multiple simultaneous requests
+    }
+
+    console.log("Fetching AI suggestions for job:", job.id);
+    setLoadingAISuggestions(true);
+    try {
+      const aiResponse = await aiMatchingService.matchJobToInterpreters(job.id, 10, false); // skipAI = false
+      console.log("=== AI Response Structure ===");
+      console.log("Full response:", aiResponse);
+      console.log("Response keys:", Object.keys(aiResponse || {}));
+      console.log("aiResponse.data:", aiResponse.data);
+      console.log("aiResponse.data keys:", aiResponse.data ? Object.keys(aiResponse.data) : "no data");
+      
+      // Handle both response structures: {success, data} or direct data
+      const responseData = aiResponse.data || aiResponse;
+      
+      if (aiResponse.success && responseData) {
+        // Set AI-matched interpreters
+        if (responseData.matched_interpreters) {
+          setAiMatches(responseData.matched_interpreters);
+          console.log("✓ Set AI matches:", responseData.matched_interpreters.length);
+        }
+        // Set pre-filtered interpreters (top 10 before AI)
+        if (responseData.pre_filtered_interpreters) {
+          console.log("✓ Found pre_filtered_interpreters:", responseData.pre_filtered_interpreters.length);
+          console.log("✓ Pre-filtered data sample:", responseData.pre_filtered_interpreters[0]);
+          setPreFilteredInterpreters(responseData.pre_filtered_interpreters);
+          console.log("✓ State updated with", responseData.pre_filtered_interpreters.length, "pre-filtered interpreters");
+        } else {
+          console.warn("✗ No pre_filtered_interpreters in response");
+          console.warn("Available keys in data:", Object.keys(responseData || {}));
+          // Try alternative key names
+          if (responseData.preFilteredInterpreters) {
+            console.log("Found preFilteredInterpreters (camelCase)");
+            setPreFilteredInterpreters(responseData.preFilteredInterpreters);
+          } else if (responseData.preFiltered) {
+            console.log("Found preFiltered");
+            setPreFilteredInterpreters(responseData.preFiltered);
+          } else {
+            // Last resort: check if it's in a nested structure
+            console.warn("Checking nested structures...");
+            console.warn("Full responseData:", JSON.stringify(responseData, null, 2));
+          }
+        }
+        setAiSuggestionsFetched(true);
+        const matchCount = aiResponse.data.matched_interpreters?.length || 0;
+        const preFilteredCount = aiResponse.data.pre_filtered_interpreters?.length || aiResponse.data.preFilteredInterpreters?.length || 0;
+        toastService.success(`Found ${matchCount} AI-matched interpreters and ${preFilteredCount} pre-filtered interpreters`);
+      } else {
+        console.log("AI response not successful:", aiResponse);
+        toastService.error("No AI suggestions available");
+      }
+    } catch (error) {
+      console.error("Error fetching AI suggestions:", error);
+      toastService.error(getErrorMessage(error) || "Failed to fetch AI suggestions");
+    } finally {
+      setLoadingAISuggestions(false);
+    }
+  };
+
+  // Fetch AI suitability score for interpreter role
+  const handleFetchInterpreterScore = async () => {
+    if (!job?.id || !user?.id || user?.role !== "interpreter") {
+      return;
+    }
+
+    setLoadingInterpreterScore(true);
+    try {
+      // Get interpreter profile ID
+      const interpreterRes = await interpreterService.getInterpreterById(user.id);
+      const interpreter = interpreterRes?.data || interpreterRes;
+      const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || user.id;
+
+      const scoreResponse = await aiMatchingService.scoreSuitability(job.id, profileId);
+      if (scoreResponse.success && scoreResponse.data?.suitability_score) {
+        setInterpreterSuitabilityScore(scoreResponse.data.suitability_score);
+        setInterpreterScoreFetched(true);
+      } else {
+        toastService.error("Unable to calculate suitability score");
+      }
+    } catch (error) {
+      console.error("Error fetching interpreter score:", error);
+      toastService.error(getErrorMessage(error) || "Failed to calculate suitability score");
+    } finally {
+      setLoadingInterpreterScore(false);
+    }
+  };
+
+  // Handle connection request
+  const handleOpenConnectionModal = (interpreter) => {
+    setSelectedInterpreter(interpreter);
+    setConnectionMessage("");
+    setConnectionModalOpen(true);
+  };
+
+  const handleCloseConnectionModal = () => {
+    setConnectionModalOpen(false);
+    setSelectedInterpreter(null);
+    setConnectionMessage("");
+  };
+
+  const handleSendConnectionRequest = async () => {
+    if (!selectedInterpreter) return;
+
+    const interpreterId = selectedInterpreter.interpreter?.id || 
+                          selectedInterpreter.id || 
+                          selectedInterpreter.userId;
+    
+    if (!interpreterId) {
+      toastService.error("Interpreter ID not found");
+      return;
+    }
+
+    setSendingConnection(true);
+    try {
+      await notificationService.sendConnectionRequest(
+        interpreterId,
+        connectionMessage,
+        job?.id || null,
+        job?.title || null
+      );
+      toastService.success("Connection request sent successfully!");
+      handleCloseConnectionModal();
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+      toastService.error(getErrorMessage(error) || "Failed to send connection request");
+    } finally {
+      setSendingConnection(false);
+    }
+  };
+
   // Fetch applications for this job if user is owner
   useEffect(() => {
     const fetchApplications = async () => {
@@ -485,6 +700,23 @@ export default function JobDetailPage() {
 
     fetchApplications();
   }, [isJobOwner, job?.id, normalizeApplication]);
+
+  // Auto-fetch pre-filtered interpreters when job is loaded (for "All" tab)
+  useEffect(() => {
+    // When job loads and we're in "All" tab (default), fetch pre-filtered interpreters only (no AI)
+    if (job?.id && user?.role === "client" && isJobOwner && !showAIView && preFilteredInterpreters.length === 0 && !loadingAISuggestions) {
+      console.log("Auto-fetching pre-filtered interpreters for All tab on mount");
+      handleFetchPreFilteredInterpreters().catch((error) => {
+        console.error("Error in auto-fetch:", error);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, user?.role, isJobOwner]);
+
+  // Debug: Log when preFilteredInterpreters changes
+  useEffect(() => {
+    console.log("preFilteredInterpreters state changed:", preFilteredInterpreters.length, preFilteredInterpreters);
+  }, [preFilteredInterpreters]);
 
   if (loading) {
     return (
@@ -685,6 +917,204 @@ export default function JobDetailPage() {
                     <div className={styles.emptyApplications}>
                       <p>{t("jobDetail.noApplications")}</p>
                     </div>
+                  )}
+                </div>
+
+                {/* AI Recommended Interpreters Section - For Client Role */}
+                <div className={styles.section}>
+                  <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>
+                      {t("jobDetail.aiRecommendations") || "AI Recommended Interpreters"}
+                    </h2>
+                  </div>
+                  
+                  {/* Toggle Section */}
+                  <div className={styles.toggleSection}>
+                    <AIToggle
+                      value={showAIView ? "ai" : "all"}
+                      onChange={async (value) => {
+                        console.log("Toggle onChange - value:", value, "current showAIView:", showAIView);
+                        if (value === "ai") {
+                          setShowAIView(true);
+                          // When switching to AI tab, fetch AI-matched interpreters
+                          if (!aiSuggestionsFetched && !loadingAISuggestions) {
+                            console.log("Fetching AI-matched interpreters for AI tab");
+                            await handleFetchAISuggestions();
+                          }
+                        } else {
+                          setShowAIView(false);
+                          // For "All" tab, fetch pre-filtered interpreters if we don't have them
+                          if (preFilteredInterpreters.length === 0 && !loadingAISuggestions) {
+                            console.log("Fetching pre-filtered interpreters for All tab");
+                            await handleFetchPreFilteredInterpreters();
+                          }
+                        }
+                      }}
+                      loading={loadingAISuggestions}
+                      disabled={loadingAISuggestions}
+                    />
+                  </div>
+
+                  {/* Content based on toggle state */}
+                  {showAIView ? (
+                    <>
+                      {loadingAISuggestions ? (
+                        <div className={styles.aiLoadingState}>
+                          <p>AI is analyzing and finding the best interpreters...</p>
+                        </div>
+                      ) : aiMatches.length > 0 ? (
+                        <div className={styles.aiMatchesList}>
+                          {aiMatches.map((match) => (
+                            <div
+                              key={match.interpreter_id || match.id}
+                              className={styles.aiMatchCard}
+                            >
+                              <div 
+                                style={{ flex: 1, cursor: "pointer" }}
+                                onClick={() => {
+                                  setSelectedMatchDetails(match);
+                                }}
+                              >
+                                <div className={styles.aiMatchHeader}>
+                                  <span className={styles.aiMatchName}>
+                                    {match.fullName ||
+                                      match.name ||
+                                      match.interpreter?.fullName ||
+                                      match.interpreter?.name ||
+                                      match.interpreter?.user?.fullName ||
+                                      match.interpreter?.user?.name ||
+                                      "Interpreter"}
+                                  </span>
+                                  {match.suitability_score && (
+                                    <SuitabilityScoreBadge
+                                      score={match.suitability_score.overall_score}
+                                      level={match.suitability_score.score_level}
+                                      size="small"
+                                    />
+                                  )}
+                                </div>
+                                {match.suitability_score?.recommendation && (
+                                  <p className={styles.aiMatchReason}>
+                                    {match.suitability_score.recommendation.substring(0, 100)}
+                                    {match.suitability_score.recommendation.length > 100 ? "..." : ""}
+                                  </p>
+                                )}
+                              </div>
+                              <div style={{ marginTop: "12px", width: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
+                                {match.suitability_score && (
+                                  <button
+                                    className={styles.viewDetailsButton}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMatchDetails(match);
+                                    }}
+                                    title={t("common.viewDetails") || "Xem phân tích chi tiết"}
+                                    style={{ width: "100%" }}
+                                  >
+                                    <FaEye /> {t("common.viewDetails") || "Xem phân tích chi tiết"}
+                                  </button>
+                                )}
+                                <button
+                                  className={styles.connectButton}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenConnectionModal(match);
+                                  }}
+                                  title="Connect with this interpreter"
+                                  style={{ width: "100%" }}
+                                >
+                                  <FaUserPlus /> Connect
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : aiSuggestionsFetched && !loadingAISuggestions ? (
+                        <div className={styles.noSuggestions}>
+                          <p>No AI suggestions available at this time.</p>
+                        </div>
+                      ) : (
+                        <div className={styles.aiPrompt}>
+                          <p>Toggle to AI to get AI-powered interpreter suggestions for this job.</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {(() => {
+                        console.log("=== Rendering All Tab ===");
+                        console.log("loadingAISuggestions:", loadingAISuggestions);
+                        console.log("preFilteredInterpreters.length:", preFilteredInterpreters.length);
+                        console.log("preFilteredInterpreters:", preFilteredInterpreters);
+                        console.log("aiSuggestionsFetched:", aiSuggestionsFetched);
+                        return null;
+                      })()}
+                      {loadingAISuggestions ? (
+                        <div className={styles.aiLoadingState}>
+                          <p>Loading interpreters...</p>
+                        </div>
+                      ) : preFilteredInterpreters.length > 0 ? (
+                        <div className={styles.aiMatchesList}>
+                          <p className={styles.sectionSubtitle} style={{ marginBottom: "16px", color: "#6b7280", fontSize: "0.875rem" }}>
+                            Top {preFilteredInterpreters.length} interpreters selected before AI analysis
+                          </p>
+                          {console.log("Rendering preFilteredInterpreters:", preFilteredInterpreters.length, preFilteredInterpreters)}
+                          {preFilteredInterpreters.map((interpreter) => {
+                            const profile = interpreter.interpreterProfile || interpreter;
+                            // Get name from various possible locations (prioritize user.fullName)
+                            const name = interpreter.user?.fullName ||
+                                        interpreter.user?.name ||
+                                        interpreter.fullName || 
+                                        interpreter.name || 
+                                        profile?.fullName || 
+                                        profile?.name ||
+                                        "Interpreter";
+                            return (
+                              <div
+                                key={interpreter.id || interpreter.userId}
+                                className={styles.aiMatchCard}
+                              >
+                                <div style={{ flex: 1 }}>
+                                  <div className={styles.aiMatchHeader}>
+                                    <span className={styles.aiMatchName}>{name}</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "12px", marginTop: "8px", flexWrap: "wrap" }}>
+                                    {profile?.experience && (
+                                      <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                                        {profile.experience} years experience
+                                      </span>
+                                    )}
+                                    {profile?.hourlyRate && (
+                                      <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                                        ${profile.hourlyRate}/hr
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: "12px", width: "100%" }}>
+                                  <button
+                                    className={styles.connectButton}
+                                    onClick={() => handleOpenConnectionModal(interpreter)}
+                                    title="Connect with this interpreter"
+                                    style={{ width: "100%" }}
+                                  >
+                                    <FaUserPlus /> Connect
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : aiSuggestionsFetched ? (
+                        <div className={styles.aiPrompt}>
+                          <p>No pre-filtered interpreters available.</p>
+                        </div>
+                      ) : (
+                        <div className={styles.aiPrompt}>
+                          <p>Click toggle to load interpreters for this job.</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </>
@@ -918,9 +1348,91 @@ export default function JobDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* AI Suitability Score Section - For Interpreter Role */}
+            {user?.role === "interpreter" && (
+              <div className={styles.section}>
+                {loadingInterpreterScore ? (
+                  <div className={styles.aiSuitabilityContent}>
+                    <div className={styles.aiLoadingState}>
+                      <FaSpinner className={styles.spinner} />
+                      <p>AI is analyzing your profile against this job...</p>
+                    </div>
+                  </div>
+                ) : interpreterSuitabilityScore ? (
+                  <div className={styles.aiSuitabilityContent}>
+                    <div className={styles.aiSuitabilityCard}>
+                      <div className={styles.aiSuitabilityHeader}>
+                        <SuitabilityScoreBadge
+                          score={interpreterSuitabilityScore.overall_score}
+                          level={interpreterSuitabilityScore.score_level}
+                          size="large"
+                        />
+                        {interpreterSuitabilityScore.recommendation && (
+                          <p className={styles.aiRecommendation}>
+                            {interpreterSuitabilityScore.recommendation}
+                          </p>
+                        )}
+                      </div>
+                      <MatchReasonsCard
+                        suitabilityScore={interpreterSuitabilityScore}
+                        expandable={true}
+                        defaultExpanded={false}
+                      />
+                    </div>
+                  </div>
+                ) : interpreterScoreFetched && !loadingInterpreterScore ? (
+                  <div className={styles.aiSuitabilityContent}>
+                    <div className={styles.aiErrorState}>
+                      <p>Unable to calculate suitability score.</p>
+                      <button
+                        className={styles.aiFetchButton}
+                        onClick={handleFetchInterpreterScore}
+                      >
+                        <FaSpinner /> Try Again
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.aiSuitabilityContent}>
+                    <div className={styles.aiPromptCard}>
+                      <p className={styles.aiPromptText}>
+                        {t("jobDetail.aiSuitabilityPrompt") || "Click the button below to see how well your profile matches this job."}
+                      </p>
+                      <button
+                        className={styles.aiFetchButton}
+                        onClick={handleFetchInterpreterScore}
+                        disabled={loadingInterpreterScore}
+                      >
+                        <FaUserCheck /> {t("jobDetail.checkSuitability") || "Check My Suitability"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* AI Match Details Modal - For Client Role */}
+      {selectedMatchDetails && selectedMatchDetails.suitability_score && (
+        <div className={styles.matchDetailsOverlay} onClick={() => setSelectedMatchDetails(null)}>
+          <div className={styles.matchDetailsModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.matchDetailsHeader}>
+              <h2>AI Match Analysis</h2>
+              <button onClick={() => setSelectedMatchDetails(null)}>×</button>
+            </div>
+            <div className={styles.matchDetailsContent}>
+              <MatchReasonsCard
+                suitabilityScore={selectedMatchDetails.suitability_score}
+                expandable={false}
+                defaultExpanded={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Application Detail Modal */}
       {applicationModalOpen && selectedApplication && (
@@ -1270,6 +1782,111 @@ export default function JobDetailPage() {
                     : t("findJob.applicationModal.submit") || "Gửi đơn"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Connection Request Modal */}
+      {connectionModalOpen && selectedInterpreter && (
+        <div className={styles.connectionModalOverlay} onClick={handleCloseConnectionModal}>
+          <div className={styles.connectionModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.connectionModalHeader}>
+              <h2>{t("jobDetail.connectWithInterpreter") || "Connect with Interpreter"}</h2>
+              <button
+                className={styles.connectionModalCloseBtn}
+                onClick={handleCloseConnectionModal}
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.connectionModalBody}>
+              {/* Interpreter Info Section */}
+              <div className={styles.interpreterInfoSection}>
+                {(() => {
+                  // Get interpreter data from various possible structures
+                  const interpreterData = selectedInterpreter.interpreter || selectedInterpreter;
+                  const userData = interpreterData?.user || interpreterData;
+                  const profileData = interpreterData?.interpreterProfile || selectedInterpreter.interpreterProfile;
+                  
+                  const name = userData?.fullName || 
+                               userData?.name ||
+                               interpreterData?.fullName || 
+                               interpreterData?.name ||
+                               selectedInterpreter.fullName ||
+                               selectedInterpreter.name ||
+                               "Interpreter";
+                  
+                  const avatar = userData?.avatar || 
+                                interpreterData?.avatar || 
+                                selectedInterpreter.avatar ||
+                                null;
+                  
+                  return (
+                    <div className={styles.interpreterInfoCard}>
+                      {avatar ? (
+                        <img 
+                          src={avatar} 
+                          alt={name}
+                          className={styles.interpreterAvatar}
+                        />
+                      ) : (
+                        <div className={styles.interpreterAvatarPlaceholder}>
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className={styles.interpreterInfoDetails}>
+                        <h3 className={styles.interpreterName}>{name}</h3>
+                        {profileData?.rating && (
+                          <div className={styles.interpreterRating}>
+                            <FaStar style={{ color: "#fbbf24", fontSize: "0.875rem" }} />
+                            <span>{parseFloat(profileData.rating).toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+              
+              {/* Message Field */}
+              <div className={styles.connectionFormField}>
+                <label className={styles.connectionFieldLabel}>
+                  {t("jobDetail.message") || "Message"} <span style={{ color: "#9ca3af", fontWeight: "normal" }}>({t("common.optional") || "Optional"})</span>
+                </label>
+                <textarea
+                  value={connectionMessage}
+                  onChange={(e) => setConnectionMessage(e.target.value)}
+                  placeholder={t("jobDetail.connectionMessagePlaceholder") || "Add a personal message to your connection request..."}
+                  rows={5}
+                  className={styles.connectionMessageInput}
+                />
+              </div>
+            </div>
+            <div className={styles.connectionModalActions}>
+              <button
+                className={styles.connectionCancelBtn}
+                onClick={handleCloseConnectionModal}
+                disabled={sendingConnection}
+              >
+                {t("common.cancel") || "Cancel"}
+              </button>
+              <button
+                className={styles.connectionSubmitBtn}
+                onClick={handleSendConnectionRequest}
+                disabled={sendingConnection}
+              >
+                {sendingConnection ? (
+                  <>
+                    <FaSpinner className={styles.spinner} /> {t("common.sending") || "Sending..."}
+                  </>
+                ) : (
+                  <>
+                    <FaEnvelope /> {t("jobDetail.sendRequest") || "Send Request"}
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

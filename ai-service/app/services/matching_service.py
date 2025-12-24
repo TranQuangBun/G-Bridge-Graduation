@@ -36,23 +36,30 @@ class MatchingService:
             raise ValidationException("At least one interpreter profile is required")
 
         # Score each interpreter
-        matches: List[JobInterpreterMatch] = []
+        # Store as dict first to avoid validation error (match_priority must be >= 1)
+        matches_data: List[dict] = []
         for interpreter in request.interpreters:
             suitability_score = await self.openai_service.score_suitability(
                 request.job, interpreter
             )
-            matches.append(
-                JobInterpreterMatch(
-                    interpreter_id=interpreter.id,
-                    suitability_score=suitability_score,
-                    match_priority=0,  # Will be set after sorting
-                )
-            )
+            matches_data.append({
+                "interpreter_id": interpreter.id,
+                "suitability_score": suitability_score,
+            })
 
         # Sort by score (descending) and assign priority
-        matches.sort(key=lambda x: x.suitability_score.overall_score, reverse=True)
-        for idx, match in enumerate(matches, start=1):
-            match.match_priority = idx
+        matches_data.sort(key=lambda x: x["suitability_score"].overall_score, reverse=True)
+        
+        # Create JobInterpreterMatch objects with correct priority
+        matches: List[JobInterpreterMatch] = []
+        for idx, match_data in enumerate(matches_data, start=1):
+            matches.append(
+                JobInterpreterMatch(
+                    interpreter_id=match_data["interpreter_id"],
+                    suitability_score=match_data["suitability_score"],
+                    match_priority=idx,  # Set priority based on sorted order
+                )
+            )
 
         # Limit results
         matched_interpreters = matches[: request.max_results]

@@ -7,6 +7,7 @@ import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
 import notificationService from "../../services/notificationService.js";
+import messageService from "../../services/messageService.js";
 import paymentService from "../../services/paymentService.js";
 import organizationService from "../../services/organizationService.js";
 import {
@@ -1280,6 +1281,35 @@ function DashboardPage() {
                   <div className={styles.notificationModalMessage}>
                     <h4>{t("notificationsPage.message") || "Message"}</h4>
                     <p>{selectedNotification.message}</p>
+                  </div>
+                )}
+
+                {/* Action buttons for connection request */}
+                {selectedNotification.type === "connection_request" && selectedNotification.actorId && (
+                  <div className={styles.notificationModalActions}>
+                    <button
+                      className={styles.messageButton}
+                      onClick={async () => {
+                        try {
+                          // Create or get conversation with the actor (person who sent the request)
+                          const response = await messageService.createOrGetConversation(
+                            selectedNotification.actorId
+                          );
+                          const conversationId = response.data?.id || response.data?.conversationId;
+                          if (conversationId) {
+                            setSelectedNotification(null);
+                            navigate(`${ROUTES.MESSAGES}?conversation=${conversationId}`);
+                          } else {
+                            console.error("No conversation ID returned");
+                          }
+                        } catch (error) {
+                          console.error("Error creating conversation:", error);
+                          alert(t("notificationsPage.messageError") || "Không thể mở tin nhắn");
+                        }
+                      }}
+                    >
+                      <FaEnvelope /> {t("notificationsPage.goToMessages") || "Đi đến tin nhắn"}
+                    </button>
                   </div>
                 )}
 
