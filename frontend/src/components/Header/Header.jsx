@@ -239,8 +239,27 @@ const Header = () => {
                 <span>{t("common.home")}</span>
               </Link>
 
-              {/* Show Find Interpreter for Company, Find Job for Interpreter */}
-              {user?.role === "client" ? (
+              {/* Show Find Interpreter for Company, Find Job for Interpreter, both for non-logged-in users */}
+              {!isAuthenticated ? (
+                <>
+                  <Link
+                    to={ROUTES.FIND_JOB}
+                    className={`nav-item ${
+                      isActiveRoute(ROUTES.FIND_JOB) ? "active" : ""
+                    }`}
+                  >
+                    <span>{t("common.findJob")}</span>
+                  </Link>
+                  <Link
+                    to={ROUTES.FIND_INTERPRETER}
+                    className={`nav-item ${
+                      isActiveRoute(ROUTES.FIND_INTERPRETER) ? "active" : ""
+                    }`}
+                  >
+                    <span>{t("common.findInterpreter")}</span>
+                  </Link>
+                </>
+              ) : user?.role === "client" ? (
                 <Link
                   to={ROUTES.FIND_INTERPRETER}
                   className={`nav-item ${
@@ -850,24 +869,61 @@ const Header = () => {
               >
                 {t("common.home")}
               </Link>
-              <Link
-                to={ROUTES.FIND_JOB}
-                className={`mobile-nav-item ${
-                  isActiveRoute(ROUTES.FIND_JOB) ? "active" : ""
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {t("common.findJob")}
-              </Link>
-              <Link
-                to={ROUTES.DASHBOARD}
-                className={`mobile-nav-item ${
-                  isActiveRoute(ROUTES.DASHBOARD) ? "active" : ""
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {t("common.dashboard")}
-              </Link>
+              {!isAuthenticated ? (
+                <>
+                  <Link
+                    to={ROUTES.FIND_JOB}
+                    className={`mobile-nav-item ${
+                      isActiveRoute(ROUTES.FIND_JOB) ? "active" : ""
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {t("common.findJob")}
+                  </Link>
+                  <Link
+                    to={ROUTES.FIND_INTERPRETER}
+                    className={`mobile-nav-item ${
+                      isActiveRoute(ROUTES.FIND_INTERPRETER) ? "active" : ""
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {t("common.findInterpreter")}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  {user?.role === "client" ? (
+                    <Link
+                      to={ROUTES.FIND_INTERPRETER}
+                      className={`mobile-nav-item ${
+                        isActiveRoute(ROUTES.FIND_INTERPRETER) ? "active" : ""
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {t("common.findInterpreter")}
+                    </Link>
+                  ) : (
+                    <Link
+                      to={ROUTES.FIND_JOB}
+                      className={`mobile-nav-item ${
+                        isActiveRoute(ROUTES.FIND_JOB) ? "active" : ""
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {t("common.findJob")}
+                    </Link>
+                  )}
+                  <Link
+                    to={ROUTES.DASHBOARD}
+                    className={`mobile-nav-item ${
+                      isActiveRoute(ROUTES.DASHBOARD) ? "active" : ""
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {t("common.dashboard")}
+                  </Link>
+                </>
+              )}
               <Link
                 to="/pricing"
                 className={`mobile-nav-item ${

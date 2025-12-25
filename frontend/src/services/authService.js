@@ -166,10 +166,10 @@ const authService = {
 
   /**
    * Đăng xuất
+   * Note: This function only clears storage. Navigation should be handled by the component.
    */
   logout: () => {
     authStorage.clearAll();
-    window.location.href = "/login";
   },
 
   /**

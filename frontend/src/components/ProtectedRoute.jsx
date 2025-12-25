@@ -53,15 +53,27 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     }} replace />;
   }
 
+  // Block admin from accessing interpreter/client-only pages
+  if (user?.role === "admin") {
+    // If no allowedRoles specified, this is an interpreter/client page - block admin
+    if (allowedRoles.length === 0) {
+      return <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />;
+    }
+    // If allowedRoles doesn't include "admin", block admin access
+    if (!allowedRoles.includes("admin")) {
+      return <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />;
+    }
+  }
+
   // If roles are specified, check if user has required role
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
     // Redirect to appropriate dashboard based on role
     if (user?.role === "interpreter") {
       return <Navigate to={ROUTES.DASHBOARD} replace />;
     } else if (user?.role === "client") {
-      return <Navigate to="/company/dashboard" replace />;
+      return <Navigate to={ROUTES.DASHBOARD} replace />;
     } else if (user?.role === "admin") {
-      return <Navigate to="/admin/dashboard" replace />;
+      return <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />;
     }
     return <Navigate to={ROUTES.HOME} replace />;
   }

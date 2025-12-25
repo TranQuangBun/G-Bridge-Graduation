@@ -17,7 +17,7 @@ import { FaGlobe, FaBolt, FaBriefcase, FaBriefcase as FaBriefcaseIcon, FaLanguag
 
 const HomePage = () => {
   const { lang, t } = useLanguage();
-  const { user } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [jobsData, setJobsData] = useState([]);
@@ -30,6 +30,13 @@ const HomePage = () => {
     successRate: 98,
   });
   const [statsLoading, setStatsLoading] = useState(true);
+
+  // Redirect admin to admin dashboard when accessing home page
+  useEffect(() => {
+    if (!loading && isAuthenticated && user?.role === "admin") {
+      navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+    }
+  }, [loading, isAuthenticated, user?.role, navigate]);
 
   // Anim refs
   const heroRef = useScrollAnimation("animate-on-scroll");
