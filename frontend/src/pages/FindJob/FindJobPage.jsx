@@ -4,6 +4,7 @@ import styles from "./FindJobPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { ROUTES } from "../../constants/enums";
+import { useSubscription } from "../../hooks/useSubscription";
 import jobService from "../../services/jobService.js";
 import savedJobService from "../../services/savedJobService.js";
 import { useAuth } from "../../contexts/AuthContext";
@@ -96,6 +97,7 @@ export default function FindJobPage() {
 
   // Auth state
   const { user, isAuthenticated } = useAuth();
+  const { hasActiveSubscription } = useSubscription();
   const hasPremium = user?.isPremium || false;
 
   // Redirect client to Find Interpreter page
@@ -892,7 +894,17 @@ export default function FindJobPage() {
             {/* Advanced Filters Button */}
             <button
               className={styles.advancedFiltersBtn}
-              onClick={() => setShowAdvancedFilter(true)}
+              onClick={() => {
+                // Check subscription requirement
+                if (!hasActiveSubscription) {
+                  toastService.error("Vui lòng đăng ký gói để sử dụng tính năng tìm kiếm nâng cao");
+                  navigate(ROUTES.PRICING);
+                  return;
+                }
+                setShowAdvancedFilter(true);
+              }}
+              disabled={!hasActiveSubscription}
+              title={!hasActiveSubscription ? "Đăng ký gói để sử dụng tính năng tìm kiếm nâng cao" : ""}
             >
               {t("findJob.filters.advancedFilters") || "Advanced Filters"}
             </button>
@@ -1031,6 +1043,12 @@ export default function FindJobPage() {
                       value={showAIResults ? "ai" : "all"}
                       onChange={async (value) => {
                       if (value === "ai") {
+                        // Check subscription requirement
+                        if (!hasActiveSubscription) {
+                          toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                          navigate(ROUTES.PRICING);
+                          return;
+                        }
                         // Show AI results immediately to display loading message
                       setShowAIResults(true);
                         // If not fetched yet, fetch now
@@ -1158,6 +1176,12 @@ export default function FindJobPage() {
                       }
                     }}
                     loading={loadingAI}
+                    requiresSubscription={true}
+                    hasActiveSubscription={hasActiveSubscription}
+                    onSubscriptionRequired={() => {
+                      toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                      navigate(ROUTES.PRICING);
+                    }}
                   />
                 )}
               </div>
@@ -1896,6 +1920,13 @@ export default function FindJobPage() {
                   <button
                     type="button"
                     onClick={() => {
+                      // Check subscription requirement
+                      if (!hasActiveSubscription) {
+                        toastService.error("Vui lòng đăng ký gói để sử dụng tính năng tìm kiếm nâng cao");
+                        setShowAdvancedFilter(false);
+                        navigate(ROUTES.PRICING);
+                        return;
+                      }
                       // Apply temp filters to actual filters
                       setAdvancedFilters({ ...tempAdvancedFilters });
                       setShowAdvancedFilter(false);

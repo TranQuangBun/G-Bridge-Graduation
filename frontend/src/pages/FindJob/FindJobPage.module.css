@@ -188,9 +188,15 @@
   margin-bottom: 16px;
 }
 
-.advancedFiltersBtn:hover {
+.advancedFiltersBtn:hover:not(:disabled) {
   background: #edf2f7;
   border-color: #cbd5e0;
+}
+
+.advancedFiltersBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f7fafc;
 }
 
 .applyBtn {

@@ -4,6 +4,7 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ROUTES } from "../../constants/enums";
+import { useSubscription } from "../../hooks/useSubscription";
 import interpreterService from "../../services/interpreterService";
 import savedInterpreterService from "../../services/savedInterpreterService";
 import aiMatchingService from "../../services/aiMatchingService";
@@ -28,6 +29,7 @@ const FindInterpreterPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const jobId = searchParams.get("jobId"); // Optional: if coming from a job context
+  const { hasActiveSubscription } = useSubscription();
 
   // Redirect interpreter to Find Job page
   useEffect(() => {
@@ -112,6 +114,13 @@ const FindInterpreterPage = () => {
 
   // Fetch AI recommended interpreters (only when user clicks button)
   const handleFetchAIRecommended = async () => {
+    // Check subscription requirement
+    if (!hasActiveSubscription) {
+      toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+      navigate(ROUTES.PRICING);
+      return;
+    }
+
     if (!jobId) {
       toastService.error(t("findInterpreter.errors.jobIdRequired"));
       return;
@@ -308,6 +317,13 @@ const FindInterpreterPage = () => {
 
   // Open advanced filters modal and sync temp filters
   const handleOpenAdvancedFilters = () => {
+    // Check subscription requirement
+    if (!hasActiveSubscription) {
+      toastService.error("Vui lòng đăng ký gói để sử dụng tính năng tìm kiếm nâng cao");
+      navigate(ROUTES.PRICING);
+      return;
+    }
+
     setTempFilters({
       location: filters.location,
       languages: filters.languages,
@@ -402,15 +418,16 @@ const FindInterpreterPage = () => {
         {jobId && (
           <div className={styles.aiToolbarSection}>
             <button
-              className={`${styles.aiFetchButton} ${showAIResults ? styles.active : ""}`}
+              className={`${styles.aiFetchButton} ${showAIResults ? styles.active : ""} ${!hasActiveSubscription ? styles.subscriptionRequired : ""}`}
               onClick={showAIResults ? () => setShowAIResults(false) : handleFetchAIRecommended}
-              disabled={loadingAIRecommended}
+              disabled={loadingAIRecommended || !hasActiveSubscription}
+              title={!hasActiveSubscription ? "Đăng ký gói để sử dụng tính năng AI" : ""}
             >
               {loadingAIRecommended 
                 ? "AI Analyzing..." 
                 : showAIResults 
                 ? "Show All Interpreters" 
-                : "🤖 Get AI Recommendations"
+                : "Get AI Recommendations"
               }
             </button>
           </div>
@@ -715,6 +732,8 @@ const FindInterpreterPage = () => {
             <button
               className={styles.advancedToggle}
               onClick={handleOpenAdvancedFilters}
+              disabled={!hasActiveSubscription}
+              title={!hasActiveSubscription ? "Đăng ký gói để sử dụng tính năng tìm kiếm nâng cao" : ""}
             >
               {t("findInterpreter.filters.advanced")}
             </button>
