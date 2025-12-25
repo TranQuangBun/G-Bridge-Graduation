@@ -334,9 +334,15 @@
   margin-bottom: 16px;
 }
 
-.advancedToggle:hover {
+.advancedToggle:hover:not(:disabled) {
   background: #edf2f7;
   border-color: #cbd5e0;
+}
+
+.advancedToggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f7fafc;
 }
 
 .applyBtn {

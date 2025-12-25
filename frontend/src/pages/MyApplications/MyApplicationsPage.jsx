@@ -5,8 +5,10 @@ import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSubscription } from "../../hooks/useSubscription";
 import jobService from "../../services/jobService.js";
 import messageService from "../../services/messageService.js";
+import toastService from "../../services/toastService";
 import { AIRankedApplications } from "../../components/AIMatching";
 import {
   FaBuilding,
@@ -83,6 +85,7 @@ function MyApplicationsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { hasActiveSubscription } = useSubscription();
 
   // Get sidebar menu based on user role
   const SIDEBAR_MENU =
@@ -720,8 +723,18 @@ function MyApplicationsPage() {
                   <button
                     className={`${styles.viewModeButton} ${
                       viewMode === "aiRanked" ? styles.active : ""
-                    }`}
-                    onClick={() => setViewMode("aiRanked")}
+                    } ${!hasActiveSubscription ? styles.disabled : ""}`}
+                    onClick={() => {
+                      // Check subscription requirement
+                      if (!hasActiveSubscription) {
+                        toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                        navigate(ROUTES.PRICING);
+                        return;
+                      }
+                      setViewMode("aiRanked");
+                    }}
+                    disabled={!hasActiveSubscription}
+                    title={!hasActiveSubscription ? "Đăng ký gói để sử dụng tính năng AI" : ""}
                   >
                     {t("applications.viewMode.aiRanked") || "AI Ranked"}
                   </button>
@@ -805,6 +818,12 @@ function MyApplicationsPage() {
                         jobId={parseInt(jobId)}
                         applications={jobApplications}
                         onApplicationClick={handleViewDetails}
+                        requiresSubscription={true}
+                        hasActiveSubscription={hasActiveSubscription}
+                        onSubscriptionRequired={() => {
+                          toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                          navigate(ROUTES.PRICING);
+                        }}
                       />
                     </div>
                   );

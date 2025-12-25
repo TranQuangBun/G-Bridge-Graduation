@@ -43,6 +43,10 @@
   cursor: not-allowed;
 }
 
+.toggleOption.subscriptionRequired {
+  position: relative;
+}
+
 .toggleOption.loading {
   pointer-events: none;
 }

@@ -366,7 +366,6 @@ function MyJobsPage() {
           <section className={styles.controlsSection}>
             <div className={styles.controls}>
               <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Status:</label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => {
@@ -383,7 +382,6 @@ function MyJobsPage() {
               </div>
 
               <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Review Status:</label>
                 <select
                   value={selectedReviewStatus}
                   onChange={(e) => {
@@ -400,7 +398,6 @@ function MyJobsPage() {
               </div>
 
               <div className={styles.filterGroup}>
-                <label className={styles.filterLabel}>Sort By:</label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}

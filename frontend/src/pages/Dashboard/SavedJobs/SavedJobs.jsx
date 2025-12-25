@@ -17,10 +17,12 @@ import {
 import { MainLayout } from "../../../layouts";
 import { useLanguage } from "../../../translet/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useSubscription } from "../../../hooks/useSubscription";
 import { ROUTES } from "../../../constants";
 import savedJobService from "../../../services/savedJobService";
 import interpreterService from "../../../services/interpreterService.js";
 import aiMatchingService from "../../../services/aiMatchingService.js";
+import toastService from "../../../services/toastService";
 import styles from "./SavedJobs.module.css";
 
 // Sidebar menu for Interpreter role
@@ -78,6 +80,7 @@ const SavedJobs = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { hasActiveSubscription } = useSubscription();
   const [savedJobs, setSavedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -147,6 +150,15 @@ const SavedJobs = () => {
   const fetchAIRankedJobs = useCallback(async () => {
     if (!user?.id || user?.role !== "interpreter") {
       console.log("Cannot fetch AI: user not interpreter or no user id");
+      return;
+    }
+
+    // Check subscription requirement
+    if (!hasActiveSubscription) {
+      console.log("Cannot fetch AI: subscription required");
+      toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+      setViewMode("all");
+      navigate(ROUTES.PRICING);
       return;
     }
     
@@ -249,7 +261,7 @@ const SavedJobs = () => {
     } finally {
       setLoadingAI(false);
     }
-  }, [user?.id, user?.role, savedJobs]);
+  }, [user?.id, user?.role, savedJobs, hasActiveSubscription, navigate]);
 
   // Fetch AI ranked jobs when viewMode changes to ai - only fetch if not already fetched
   useEffect(() => {
@@ -514,8 +526,18 @@ const SavedJobs = () => {
                   <button
                     className={`${styles.viewModeButton} ${
                       viewMode === "ai" ? styles.active : ""
-                    }`}
-                    onClick={() => setViewMode("ai")}
+                    } ${!hasActiveSubscription ? styles.disabled : ""}`}
+                    onClick={() => {
+                      // Check subscription requirement
+                      if (!hasActiveSubscription) {
+                        toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                        navigate(ROUTES.PRICING);
+                        return;
+                      }
+                      setViewMode("ai");
+                    }}
+                    disabled={!hasActiveSubscription}
+                    title={!hasActiveSubscription ? "Đăng ký gói để sử dụng tính năng AI" : ""}
                   >
                     {t("savedJobs.viewMode.ai") || "AI Ranked"}
                   </button>

@@ -11,11 +11,17 @@ import styles from "./AIRankedApplications.module.css";
  * @param {number} jobId - Job ID
  * @param {Array} applications - Original applications array
  * @param {Function} onApplicationClick - Handler for application click
+ * @param {boolean} requiresSubscription - Whether AI feature requires subscription
+ * @param {boolean} hasActiveSubscription - Whether user has active subscription
+ * @param {Function} onSubscriptionRequired - Callback when user tries to use AI without subscription
  */
 export default function AIRankedApplications({
   jobId,
   applications = [],
   onApplicationClick,
+  requiresSubscription = false,
+  hasActiveSubscription = false,
+  onSubscriptionRequired,
 }) {
   const [aiRankedApps, setAiRankedApps] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,6 +33,14 @@ export default function AIRankedApplications({
 
   const fetchAIRankedApplications = useCallback(async () => {
     if (!jobId || applications.length === 0) {
+      return;
+    }
+
+    // Check subscription requirement
+    if (requiresSubscription && !hasActiveSubscription) {
+      if (onSubscriptionRequired) {
+        onSubscriptionRequired();
+      }
       return;
     }
 
@@ -77,16 +91,23 @@ export default function AIRankedApplications({
     } finally {
       setLoading(false);
     }
-  }, [jobId, applications]);
+  }, [jobId, applications, requiresSubscription, hasActiveSubscription, onSubscriptionRequired]);
 
   // Handle toggle change
   const handleToggleChange = async (value) => {
     if (value === "ai") {
-    // If not fetched yet, fetch now
-    if (!hasFetchedAI) {
-      await fetchAIRankedApplications();
-    }
-    setShowAIResults(true);
+      // Check subscription requirement
+      if (requiresSubscription && !hasActiveSubscription) {
+        if (onSubscriptionRequired) {
+          onSubscriptionRequired();
+        }
+        return;
+      }
+      // If not fetched yet, fetch now
+      if (!hasFetchedAI) {
+        await fetchAIRankedApplications();
+      }
+      setShowAIResults(true);
     } else {
       setShowAIResults(false);
     }
@@ -121,6 +142,9 @@ export default function AIRankedApplications({
           disabled={!jobId || applications.length === 0}
           aiLabel="AI"
           allLabel="All"
+          requiresSubscription={requiresSubscription}
+          hasActiveSubscription={hasActiveSubscription}
+          onSubscriptionRequired={onSubscriptionRequired}
         />
       </div>
 

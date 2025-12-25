@@ -248,7 +248,7 @@
   white-space: nowrap;
 }
 
-.viewModeButton:hover {
+.viewModeButton:hover:not(:disabled) {
   color: #475569;
 }
 
@@ -256,6 +256,12 @@
   background: white;
   color: #1e3a8a;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.viewModeButton:disabled,
+.viewModeButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .filterSelect {

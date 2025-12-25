@@ -188,7 +188,7 @@ export default function AISuggestedJobsSection({ interpreterId, autoFetch = fals
             className={styles.fetchButton}
             onClick={fetchAISuggestions}
           >
-            🤖 Get AI Recommendations
+            Get AI Recommendations
           </button>
         )}
       </div>

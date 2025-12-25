@@ -4,6 +4,7 @@ import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { ROUTES } from "../../constants/enums";
+import { useSubscription } from "../../hooks/useSubscription";
 import jobService from "../../services/jobService.js";
 import interpreterService from "../../services/interpreterService.js";
 import aiMatchingService from "../../services/aiMatchingService";
@@ -41,6 +42,7 @@ export default function JobDetailPage() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user, isAuthenticated } = useAuth();
+  const { hasActiveSubscription } = useSubscription();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savedJobIds, setSavedJobIds] = useState(new Set());
@@ -912,6 +914,12 @@ export default function JobDetailPage() {
                       jobId={job?.id}
                       applications={applications}
                       onApplicationClick={handleApplicationClick}
+                      requiresSubscription={true}
+                      hasActiveSubscription={hasActiveSubscription}
+                      onSubscriptionRequired={() => {
+                        toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                        navigate(ROUTES.PRICING);
+                      }}
                     />
                   ) : (
                     <div className={styles.emptyApplications}>
@@ -952,6 +960,12 @@ export default function JobDetailPage() {
                       }}
                       loading={loadingAISuggestions}
                       disabled={loadingAISuggestions}
+                      requiresSubscription={true}
+                      hasActiveSubscription={hasActiveSubscription}
+                      onSubscriptionRequired={() => {
+                        toastService.error("Vui lòng đăng ký gói để sử dụng tính năng AI");
+                        navigate(ROUTES.PRICING);
+                      }}
                     />
                   </div>
 
