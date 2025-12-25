@@ -13,11 +13,24 @@ const AdminHeader = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const userDropdownRef = useRef(null);
+  const logoutButtonRef = useRef(null);
   const langMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+      // Don't close if clicking on logout button
+      if (logoutButtonRef.current && logoutButtonRef.current.contains(event.target)) {
+        return;
+      }
+      
+      // Check if click is outside user menu (both toggle and dropdown)
+      if (
+        userMenuRef.current &&
+        userDropdownRef.current &&
+        !userMenuRef.current.contains(event.target) &&
+        !userDropdownRef.current.contains(event.target)
+      ) {
         setIsUserMenuOpen(false);
       }
       if (langMenuRef.current && !langMenuRef.current.contains(event.target)) {
@@ -29,9 +42,12 @@ const AdminHeader = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsUserMenuOpen(false);
     logout();
-    navigate(ROUTES.LOGIN);
+    navigate(ROUTES.LOGIN, { replace: true });
   };
 
   const handleLanguageChange = (newLang) => {
@@ -91,13 +107,15 @@ const AdminHeader = () => {
           </div>
 
           {isUserMenuOpen && (
-            <div className="admin-user-dropdown">
+            <div className="admin-user-dropdown" ref={userDropdownRef}>
               <div className="admin-user-dropdown-header">
                 <div className="admin-user-dropdown-name">{user?.fullName || "Admin"}</div>
                 <div className="admin-user-dropdown-email">{user?.email}</div>
               </div>
               <div className="admin-user-dropdown-divider"></div>
               <button
+                ref={logoutButtonRef}
+                type="button"
                 className="admin-user-dropdown-item"
                 onClick={handleLogout}
               >

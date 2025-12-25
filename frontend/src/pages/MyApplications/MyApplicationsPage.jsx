@@ -7,9 +7,6 @@ import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import jobService from "../../services/jobService.js";
 import messageService from "../../services/messageService.js";
-import interpreterService from "../../services/interpreterService.js";
-import aiMatchingService from "../../services/aiMatchingService.js";
-import savedJobService from "../../services/savedJobService.js";
 import { AIRankedApplications } from "../../components/AIMatching";
 import {
   FaBuilding,
@@ -102,10 +99,6 @@ function MyApplicationsPage() {
   const [viewMode, setViewMode] = useState("all");
   // Only use viewMode for client role (AI Ranked), not for interpreter
   const [applications, setApplications] = useState([]);
-  // AI suggested jobs for interpreter
-  const [aiSuggestedJobs, setAiSuggestedJobs] = useState([]);
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [hasFetchedAI, setHasFetchedAI] = useState(false);
   const [processingApplication, setProcessingApplication] = useState(null);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [selectedResumeUrl, setSelectedResumeUrl] = useState(null);
@@ -377,82 +370,6 @@ function MyApplicationsPage() {
   const closeModal = () => {
     setSelectedApplication(null);
   };
-
-  // Fetch AI suggested jobs for interpreter - only from saved jobs
-  const fetchAISuggestedJobs = async () => {
-    if (!user?.id || user?.role !== "interpreter" || hasFetchedAI) return;
-    
-    setLoadingAI(true);
-    try {
-      // First, get saved jobs
-      const savedJobsRes = await savedJobService.getAllSavedJobs();
-      const savedJobs = savedJobsRes.success ? (savedJobsRes.data || []) : [];
-
-      if (savedJobs.length === 0) {
-        setAiSuggestedJobs([]);
-        setHasFetchedAI(true);
-        setLoadingAI(false);
-        return;
-      }
-
-      // Extract job data from saved jobs (saved jobs may have job object nested)
-      const jobs = savedJobs.map((savedJob) => 
-        savedJob.job || savedJob
-      ).filter((job) => job && job.status === "open");
-
-      if (jobs.length === 0) {
-        setAiSuggestedJobs([]);
-        setHasFetchedAI(true);
-        setLoadingAI(false);
-        return;
-      }
-
-      const interpreterRes = await interpreterService.getInterpreterById(user.id);
-      const interpreter = interpreterRes?.data || interpreterRes;
-      
-      if (!interpreter) {
-        throw new Error("Interpreter not found");
-      }
-
-      const profileId = interpreter?.interpreterProfile?.id || interpreter?.profile?.id || user.id;
-      const jobsToScore = jobs.slice(0, 20); // Limit to 20 for performance
-      const jobIds = jobsToScore.map((job) => job.id);
-      
-      const batchRes = await aiMatchingService.batchScoreSuitability(jobIds, profileId);
-      
-      if (batchRes.success && batchRes.data?.job_scores) {
-        const scoreMap = new Map();
-        batchRes.data.job_scores.forEach((item) => {
-          scoreMap.set(item.job_id, item.suitability_score);
-        });
-        
-        const matches = jobsToScore
-          .map((job) => ({
-            job,
-            suitability_score: scoreMap.get(job.id),
-          }))
-          .filter((match) => match.suitability_score)
-          .sort(
-            (a, b) =>
-              b.suitability_score.overall_score -
-              a.suitability_score.overall_score
-          );
-        
-        setAiSuggestedJobs(matches);
-      } else {
-        // If AI fails, still show saved jobs without scores
-        setAiSuggestedJobs(jobsToScore.map((job) => ({ job, suitability_score: null })));
-      }
-      setHasFetchedAI(true);
-    } catch (err) {
-      console.error("Error fetching AI suggested jobs:", err);
-      setAiSuggestedJobs([]);
-    } finally {
-      setLoadingAI(false);
-    }
-  };
-
-  // Removed: AI suggested jobs fetch for interpreter (toggle removed)
 
   const openResumeModal = (resumeUrl) => {
     setSelectedResumeUrl(resumeUrl);
