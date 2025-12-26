@@ -1,0 +1,865 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: #666;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.searchBar {
+  flex: 1;
+  min-width: 300px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.statusFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.statusFilter label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.statusSelect {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  min-width: 150px;
+}
+
+.statusSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
+}
+
+.certTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.idButton {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0.25rem 0;
+  font-size: 0.95rem;
+}
+
+.idButton:hover {
+  color: #1d4ed8;
+}
+
+.certTable thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.certTable th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  z-index: 10;
+}
+
+.certTable td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.certTable tbody tr:hover {
+  background: #f9fafb;
+}
+
+.certTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.certName {
+  font-weight: 500;
+  color: #111827;
+}
+
+.descriptionCell {
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+.imageLink {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.imageLink:hover {
+  text-decoration: underline;
+}
+
+.actionsCell {
+  white-space: nowrap;
+  position: relative;
+}
+
+.noAction {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.actionsCell {
+  position: relative;
+}
+
+.menuContainer {
+  position: static;
+  display: inline-block;
+}
+
+.menuButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  color: #6b7280;
+}
+
+.menuButton:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.menuButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menuDots {
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: bold;
+  color: #6b7280;
+  display: inline-block;
+  transform: rotate(90deg);
+  letter-spacing: -0.2em;
+}
+
+.menuButton:hover .menuDots {
+  color: #374151;
+}
+
+.contextMenu {
+  position: fixed;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.menuItem {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menuItem:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.menuItem:last-child {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.menuItem:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.menuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menuItem:first-child {
+  color: #059669;
+}
+
+.menuItem:first-child:hover:not(:disabled) {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.menuItem:last-child {
+  color: #dc2626;
+}
+
+.menuItem:last-child:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusPending,
+.statusApproved,
+.statusRejected,
+.statusDraft,
+.statusDefault {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.statusPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusApproved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusRejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusDraft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.statusDefault {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.certActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.actionsCell {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.approveButton,
+.rejectButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.approveButton {
+  background: #10b981;
+  color: white;
+}
+
+.approveButton:hover:not(:disabled) {
+  background: #059669;
+}
+
+.rejectButton {
+  background: #ef4444;
+  color: white;
+}
+
+.rejectButton:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.approveButton:disabled,
+.rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+}
+
+.modal h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.reasonInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  margin-top: 1rem;
+  resize: vertical;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.cancelButton,
+.confirmRejectButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.cancelButton {
+  background: #f3f4f6;
+  color: #333;
+}
+
+.cancelButton:hover {
+  background: #e5e7eb;
+}
+
+.confirmRejectButton {
+  background: #ef4444;
+  color: white;
+}
+
+.confirmRejectButton:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.confirmRejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* View Modal Styles */
+.viewModal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.viewModalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.viewModalContent {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.viewSection {
+  margin-bottom: 2rem;
+}
+
+.viewSection h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.viewSection h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.statusBadgeContainer {
+  margin-top: 0.5rem;
+}
+
+.viewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.viewItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.viewLabel {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.viewValue {
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.viewLink {
+  color: #3b82f6;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.viewDescription {
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.certImageContainer {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.certImage {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* PDF Viewer Styles */
+.pdfContainer {
+  margin-top: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.pdfViewer {
+  width: 100%;
+  height: 600px;
+  border: none;
+  display: block;
+}
+
+.pdfActions {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  justify-content: center;
+}
+
+.pdfDownloadButton,
+.pdfOpenButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pdfDownloadButton {
+  background: #3b82f6;
+  color: white;
+}
+
+.pdfDownloadButton:hover {
+  background: #2563eb;
+}
+
+.pdfOpenButton {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.pdfOpenButton:hover {
+  background: #e5e7eb;
+}
+
+.noFileMessage {
+  padding: 2rem;
+  text-align: center;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  color: #92400e;
+}
+
+/* Detail Modal */
+.detailModal {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.detailContent {
+  padding: 2rem;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.detailRow strong {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.detailRow span,
+.detailRow p {
+  color: #111827;
+  margin: 0;
+  word-break: break-word;
+}
+
+.detailRow a {
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.detailRow a:hover {
+  text-decoration: underline;
+}
+
+.detailActions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 16px 16px;
+  position: sticky;
+  bottom: 0;
+}
+
+.detailActions .approveButton,
+.detailActions .rejectButton {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.detailActions .approveButton {
+  background: #10b981;
+  color: white;
+}
+
+.detailActions .approveButton:hover:not(:disabled) {
+  background: #059669;
+}
+
+.detailActions .rejectButton {
+  background: #ef4444;
+  color: white;
+}
+
+.detailActions .rejectButton:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.detailActions .approveButton:disabled,
+.detailActions .rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.noFileMessage p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.noFileSubtext {
+  font-size: 0.875rem !important;
+  color: #78350f !important;
+  opacity: 0.8;
+}
+
+/* Confirmation Modal Styles */
+.confirmModal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1001;
+}
+
+.confirmModal h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.confirmModal p {
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirmButton {
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #10b981;
+  color: white;
+}
+
+.confirmButton:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}

@@ -1,0 +1,141 @@
+.completionWidget {
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  color: white;
+}
+
+.completedBanner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.checkIcon {
+  font-size: 2.5rem;
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+.completedBanner h4 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.completedBanner p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.pendingRequest {
+  display: flex;
+  gap: 16px;
+}
+
+.pendingIcon {
+  font-size: 2rem;
+  color: #fbbf24;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pendingContent h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pendingContent p {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirmBtn,
+.cancelBtn,
+.requestBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirmBtn {
+  background: #4ade80;
+  color: #064e3b;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: #22c55e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.cancelBtn {
+  background: #f87171;
+  color: white;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #ef4444;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
+}
+
+.requestSection {
+  text-align: center;
+}
+
+.requestBtn {
+  background: white;
+  color: #667eea;
+  width: 100%;
+  justify-content: center;
+  font-size: 1rem;
+  padding: 12px 24px;
+}
+
+.requestBtn:hover:not(:disabled) {
+  background: #f3f4f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.confirmBtn:disabled,
+.cancelBtn:disabled,
+.requestBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hint {
+  margin: 12px 0 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+  font-style: italic;
+}

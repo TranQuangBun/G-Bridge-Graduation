@@ -1,0 +1,50 @@
+/* Form Group */
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+}
+
+.helpText {
+  display: block;
+  margin-top: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.editorWrapper {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.editor {
+  min-height: 200px;
+  padding: 0.75rem;
+  font-size: 1rem;
+}
+
+.editorWrapper :global(.rdw-editor-toolbar) {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  background: #f9fafb;
+}
+
+.editorWrapper :global(.rdw-editor-main) {
+  min-height: 200px;
+  padding: 0.75rem;
+}

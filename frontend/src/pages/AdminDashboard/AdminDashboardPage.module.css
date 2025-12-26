@@ -1,0 +1,304 @@
+/* Admin Dashboard - Modern Design */
+.container {
+  width: 100%;
+  padding: 2rem;
+  background: linear-gradient(to bottom, #f8fafc, #ffffff);
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Header Section */
+.header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header p {
+  color: #64748b;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.statsGrid::-webkit-scrollbar {
+  height: 6px;
+}
+
+.statsGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.statsGrid::-webkit-scrollbar-thumb {
+  background: rgba(30, 58, 138, 0.2);
+  border-radius: 3px;
+}
+
+.statsGrid::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 58, 138, 0.3);
+}
+
+/* Stat Card Base */
+.statCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-width: 280px;
+  flex-shrink: 0;
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
+  border-color: transparent;
+}
+
+.statCard:hover::before {
+  opacity: 1;
+}
+
+/* Stat Card Variants */
+.statCardUsers {
+  --card-color: #6366f1;
+}
+
+.statCardUsers::before {
+  background: linear-gradient(90deg, transparent, #6366f1, transparent);
+}
+
+.statCardPending {
+  --card-color: #f59e0b;
+}
+
+.statCardPending::before {
+  background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+}
+
+.statCardCertificates {
+  --card-color: #10b981;
+}
+
+.statCardCertificates::before {
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+}
+
+.statCardOrganizations {
+  --card-color: #8b5cf6;
+}
+
+.statCardOrganizations::before {
+  background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+}
+
+/* Stat Icon Wrapper */
+.statIconWrapper {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.statCardUsers .statIconWrapper {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: white;
+}
+
+.statCardPending .statIconWrapper {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: white;
+}
+
+.statCardCertificates .statIconWrapper {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: white;
+}
+
+.statCardOrganizations .statIconWrapper {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: white;
+}
+
+.statIcon {
+  font-size: 1.75rem;
+  z-index: 1;
+}
+
+/* Stat Content */
+.statContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.statTitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0.5rem 0;
+  line-height: 1;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.statDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.statDetailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.statDetailLabel {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.statDetailValue {
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+/* Stat Card Jobs */
+.statCardJobs {
+  --card-color: #3b82f6;
+}
+
+.statCardJobs::before {
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+}
+
+.statCardJobs .statIconWrapper {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1.5rem;
+}
+
+.loading p {
+  font-size: 1.125rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.spinner {
+  font-size: 2rem;
+  color: #3b82f6;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .statsGrid {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .statCard {
+    min-width: 100%;
+  }
+
+}
+
+@media (max-width: 480px) {
+  .statCard {
+    padding: 1.25rem;
+  }
+
+  .statValue {
+    font-size: 2rem;
+  }
+
+  .actionButton {
+    padding: 1.5rem 1.25rem;
+  }
+}

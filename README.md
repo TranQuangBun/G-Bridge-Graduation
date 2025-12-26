@@ -1,247 +1,298 @@
-# 🚀 G-Bridge - Quick Start Guide
+# G-Bridge Platform
 
-Hướng dẫn nhanh để chạy dự án trong vài bước đơn giản!
+> Platform kết nối phiên dịch viên và doanh nghiệp - Graduation Project
 
-## 📋 Yêu cầu
+![Status](https://img.shields.io/badge/status-active-success)
+![License](https://img.shields.io/badge/license-ISC-blue)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
+![React](https://img.shields.io/badge/react-19.1.1-blue)
 
-- Node.js v18+ đã cài đặt
-- MySQL đã cài đặt và đang chạy
-- Git (optional)
+---
 
-## ⚡ Cài đặt nhanh
+## Tổng quan
 
-### 1. Clone/Download dự án
+G-Bridge là một platform cho phép:
+
+- **Phiên dịch viên** đăng ký, quản lý profile và tìm việc
+- **Doanh nghiệp** tìm kiếm và thuê phiên dịch viên
+- **Admin** quản lý hệ thống, duyệt tổ chức, chứng chỉ và công việc
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+| Requirement | Version | Notes |
+|------------|---------|-------|
+| Docker & Docker Compose | v20.10+ | Khuyến nghị |
+| Node.js | v18.0.0+ | Nếu chạy local |
+| MySQL | 8.0+ | Nếu chạy local |
+
+### Docker Compose (Khuyến nghị)
 
 ```bash
+# 1. Clone repository
 git clone <repository-url>
 cd G-Bridge-Graduation
+
+# 2. Cấu hình Admin (tùy chọn)
+# Tạo file docker-compose.override.yml hoặc set trong .env
+# ADMIN_EMAIL=admin@gbridge.com
+# ADMIN_PASSWORD=YourSecurePassword123!
+
+# 3. Khởi động tất cả services
+docker-compose up --build
+
+# 4. Truy cập ứng dụng
+# Frontend: http://localhost:3333
+# Backend: http://localhost:4000
+# Swagger UI: http://localhost:4000/api-docs
 ```
 
-### 2. Cài đặt tất cả dependencies (Frontend + Backend)
+> **Note:** Lần đầu chạy, hệ thống sẽ tự động:
+> - Tạo database và seed reference data
+> - Tạo admin user (nếu có ENV variables)
+> - Seed demo data (users, jobs, applications, etc.)
+
+### Local Development
+
+Xem chi tiết: [SETUP.md](./SETUP.md#local-development-setup)
 
 ```bash
-npm run install:all
-```
-
-Hoặc cài riêng từng phần:
-
-```bash
-# Frontend
-npm install
-
-# Backend
-cd backend
-npm install
-cd ..
-```
-
-### 3. Setup Database
-
-#### Tạo database trong MySQL:
-
-```sql
+# 1. Setup Database
+mysql -u root -p
 CREATE DATABASE gbridge_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
 
-#### Cấu hình Backend (.env):
-
-```bash
+# 2. Backend
 cd backend
-```
-
-Sửa file `backend/.env` (đã có sẵn):
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=gbridge_db
-DB_USER=root
-DB_PASSWORD=your_mysql_password_here
-
-JWT_SECRET=gbridge-super-secret-jwt-key-2025-change-in-production
-PORT=4000
-NODE_ENV=development
-```
-
-**Quan trọng**: Sửa `DB_PASSWORD` thành password MySQL của bạn!
-
-### 4. Chạy dự án
-
-#### 🎯 Cách 1: Chạy cả Frontend + Backend cùng lúc (Khuyên dùng)
-
-```bash
+npm install
+cp .env.example .env
+# Sửa .env với thông tin database và admin credentials
 npm run dev
-```
 
-hoặc
-
-```bash
-npm run start:all
-```
-
-#### 🔧 Cách 2: Chạy riêng từng phần
-
-**Terminal 1 - Backend:**
-
-```bash
-npm run start:backend
-```
-
-**Terminal 2 - Frontend:**
-
-```bash
-npm run start:frontend
-```
-
-### 5. Truy cập ứng dụng
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:4000
-- **API Health Check**: http://localhost:4000/
-
-## 📚 Available Scripts
-
-```bash
-# Chạy cả Frontend + Backend
-npm run dev
-npm run start:all
-
-# Chỉ chạy Frontend
+# 3. Frontend (terminal mới)
+cd frontend
+npm install
 npm start
-npm run start:frontend
-
-# Chỉ chạy Backend
-npm run start:backend
-
-# Build Frontend
-npm run build
-
-# Cài đặt dependencies
-npm run install:all      # Cài cả FE + BE
-npm install              # Chỉ FE
-npm run install:backend  # Chỉ BE
 ```
 
-## 🗂️ Cấu trúc dự án
+---
 
-```
-G-Bridge-Graduation/
-├── backend/                 # Backend API (Node.js + Express)
-│   ├── src/
-│   │   ├── config/         # Database config
-│   │   ├── controllers/    # Business logic
-│   │   ├── middleware/     # Auth middleware
-│   │   ├── models/         # Database models
-│   │   ├── routes/         # API routes
-│   │   └── server.js       # Entry point
-│   ├── .env               # Backend environment variables
-│   └── package.json
-│
-├── src/                    # Frontend React app
-│   ├── components/        # Reusable components
-│   ├── contexts/          # React contexts (Auth, etc.)
-│   ├── pages/             # Page components
-│   ├── services/          # API services
-│   ├── assets/            # Images, fonts, etc.
-│   └── App.jsx            # Main app component
-│
-├── .env                   # Frontend environment variables
-├── package.json           # Frontend package.json
-├── INTEGRATION_GUIDE.md   # Chi tiết tích hợp FE-BE
-└── README.md              # File này
-```
+## Đăng nhập và sử dụng
 
-## 🔐 Test Authentication
+### Tài khoản mặc định (Demo Accounts)
 
-### 1. Đăng ký tài khoản
+Sau khi chạy Docker lần đầu hoặc seed demo data, bạn có thể sử dụng các tài khoản sau để đăng nhập:
 
-#### Phiên dịch viên:
+#### Tổng hợp tài khoản Demo
 
-```
-URL: http://localhost:3000/register
-- Họ tên: Nguyễn Văn A
-- Email: interpreter@test.com
-- Password: 123456
-- Role: Phiên dịch viên
-```
+| Role | Email | Password | Ghi chú |
+|------|-------|----------|---------|
+| **Admin** | `admin@gbridge.com` | `Admin123!` | Từ docker-compose.yml (nếu đã set) |
+| **Admin** | `admin@demo.com` | `Demo123!` | Từ seed-demo-data.js |
+| **Client** | `client1@demo.com` | `Demo123!` | Demo account 1 |
+| **Client** | `client2@demo.com` | `Demo123!` | Demo account 2 |
+| **Client** | `client3@demo.com` | `Demo123!` | Demo account 3 |
+| **Interpreter** | `interpreter1@demo.com` | `Demo123!` | Demo account 1 |
+| **Interpreter** | `interpreter2@demo.com` | `Demo123!` | Demo account 2 |
+| **Interpreter** | `interpreter3@demo.com` | `Demo123!` | Demo account 3 |
+| **Interpreter** | `interpreter4@demo.com` | `Demo123!` | Demo account 4 |
+| **Interpreter** | `interpreter5@demo.com` | `Demo123!` | Demo account 5 |
+| **Interpreter** | `interpreter6@demo.com` | `Demo123!` | Demo account 6 |
+| **Interpreter** | `interpreter7@demo.com` | `Demo123!` | Demo account 7 |
+| **Interpreter** | `interpreter8@demo.com` | `Demo123!` | Demo account 8 |
 
-#### Doanh nghiệp:
+#### Hướng dẫn đăng nhập
 
-```
-URL: http://localhost:3000/register
-- Họ tên: Nguyễn Thị B
-- Email: client@test.com
-- Password: 123456
-- Role: Doanh nghiệp
-- Tên công ty: ABC Company
-- Loại hình: Corporation
-```
+1. **Truy cập trang đăng nhập:**
+   - Docker: `http://localhost:3333/login`
+   - Local: `http://localhost:3000/login`
 
-### 2. Đăng nhập
+2. **Nhập thông tin đăng nhập:**
+   - Email: Sử dụng email từ bảng trên
+   - Password: Sử dụng password tương ứng
 
-```
-URL: http://localhost:3000/login
-Email: interpreter@test.com (hoặc client@test.com)
-Password: 123456
-```
+3. **Sau khi đăng nhập:**
+   - **Admin**: Tự động redirect đến `/admin/dashboard`
+   - **Client**: Tự động redirect đến `/dashboard`
+   - **Interpreter**: Tự động redirect đến `/dashboard`
 
-## 🗄️ Kiểm tra Database
+> **Lưu ý:**
+> - Tất cả tài khoản demo đều có password: `Demo123!`
+> - Admin account từ `docker-compose.yml` có password: `Admin123!` (nếu đã cấu hình)
+> - Các tài khoản này chỉ dùng cho mục đích demo/testing
 
-Mở MySQL Workbench hoặc phpMyAdmin và chạy:
+---
 
-```sql
--- Xem users
-SELECT * FROM users;
+### Tài khoản Admin
 
--- Xem interpreter profiles
-SELECT * FROM interpreter_profiles;
+#### Cách tạo
 
--- Xem client profiles
-SELECT * FROM client_profiles;
-```
+| Method | Description |
+|--------|-------------|
+| **Environment Variables** | Set `ADMIN_EMAIL` và `ADMIN_PASSWORD` trong `.env` hoặc `docker-compose.yml` |
+| **Script** | Chạy `npm run create-admin` (trong backend) |
+| **Database** | Tạo trực tiếp trong database (xem [SETUP.md](./SETUP.md#admin-setup)) |
 
-## ❓ Troubleshooting
+#### Đăng nhập Admin
 
-### Backend không kết nối được MySQL
+1. Truy cập: `http://localhost:3333/login` (Docker) hoặc `http://localhost:3000/login` (Local)
+2. Nhập email và password:
+   - Nếu dùng `docker-compose.yml`: `admin@gbridge.com` / `Admin123!`
+   - Nếu dùng seed-demo-data.js: `admin@demo.com` / `Demo123!`
+3. Sau khi đăng nhập, tự động redirect đến `/admin/dashboard`
 
-```
-Error: Access denied for user 'root'@'localhost'
-```
+#### Chức năng Admin
 
-**Fix**: Check lại `DB_PASSWORD` trong `backend/.env`
+| Feature | Route | Description |
+|---------|-------|-------------|
+| Dashboard | `/admin/dashboard` | Tổng quan hệ thống |
+| Duyệt tổ chức | `/admin/organizations` | Duyệt và quản lý organizations |
+| Duyệt chứng chỉ | `/admin/certifications` | Duyệt và quản lý certifications |
+| Duyệt công việc | `/admin/jobs/moderation` | Duyệt và quản lý jobs |
+| Quản lý người dùng | `/admin/users` | Quản lý users |
+| Quản lý doanh thu | `/admin/revenue` | Xem doanh thu |
+| Thông báo | `/admin/notifications` | Tạo thông báo hệ thống |
 
-### Port 3000 hoặc 4000 đã được sử dụng
+> **Warning:** KHÔNG có trang đăng ký admin công khai - chỉ tạo qua ENV hoặc database
 
-```
-Error: Port 3000 is already in use
-```
+---
 
-**Fix**:
+### Tài khoản Client (Doanh nghiệp)
 
-- Tắt process đang dùng port đó
-- Hoặc đổi port trong `.env` files
+#### Cách tạo
 
-### CORS Error
+1. Truy cập: `http://localhost:3333/register` (Docker) hoặc `http://localhost:3000/register` (Local)
+2. Chọn role: **Client**
+3. Điền thông tin và đăng ký
+4. Tạo organization profile sau khi đăng ký
 
-```
-Access to XMLHttpRequest blocked by CORS policy
-```
+#### Đăng nhập
 
-**Fix**: Backend đã có CORS middleware, nhưng check lại `FRONTEND_URL` trong `backend/.env`
+1. Truy cập: `http://localhost:3333/login` (Docker) hoặc `http://localhost:3000/login` (Local)
+2. Nhập email và password đã đăng ký
 
-## 📖 Documentation
+#### Chức năng Client
 
-- **Chi tiết tích hợp**: Xem `INTEGRATION_GUIDE.md`
-- **Backend API**: Xem `backend/README.md`
-- **Animation Guide**: Xem `ANIMATION_GUIDE.md`
+| Feature | Route | Description |
+|---------|-------|-------------|
+| Đăng tin tuyển dụng | `/post-job` | Tạo job post mới |
+| Tìm phiên dịch viên | `/find-interpreter` | Tìm và filter interpreters |
+| Quản lý công việc | `/dashboard/my-jobs` | Xem và quản lý jobs đã đăng |
+| Đơn ứng tuyển | `/dashboard/applications` | Xem và quản lý applications |
+| Nhắn tin | `/messages` | Nhắn tin với interpreters |
+| Lưu interpreters | `/saved-interpreters` | Xem interpreters đã lưu |
 
-## 🎉 Done!
+#### Demo Accounts
 
-Bây giờ bạn có thể:
+Xem bảng tổng hợp ở [Tài khoản mặc định](#tài-khoản-mặc-định-demo-accounts) phía trên.
 
-- ✅ Đăng ký/Đăng nhập
-- ✅ Data được lưu vào MySQL
-- ✅ Chạy cả Frontend + Backend với 1 lệnh
-- ✅ Phát triển thêm features mới
+---
 
-Happy coding! 🚀
+### Tài khoản Interpreter (Phiên dịch viên)
+
+#### Cách tạo
+
+1. Truy cập: `http://localhost:3333/register` (Docker) hoặc `http://localhost:3000/register` (Local)
+2. Chọn role: **Interpreter**
+3. Điền thông tin và đăng ký
+4. Hoàn thiện profile (languages, certifications, experience)
+
+#### Đăng nhập
+
+1. Truy cập: `http://localhost:3333/login` (Docker) hoặc `http://localhost:3000/login` (Local)
+2. Nhập email và password đã đăng ký
+
+#### Chức năng Interpreter
+
+| Feature | Route | Description |
+|---------|-------|-------------|
+| Tìm việc | `/find-job` | Tìm và filter jobs |
+| AI Recommendations | `/find-job` | Xem jobs được AI gợi ý |
+| Ứng tuyển | `/find-job` | Apply cho các công việc phù hợp |
+| Quản lý đơn ứng tuyển | `/dashboard/applications` | Xem status applications |
+| Nhắn tin | `/messages` | Nhắn tin với clients |
+| Lưu jobs | `/saved-jobs` | Xem jobs đã lưu |
+| Quản lý profile | `/profile` | Quản lý languages, certifications |
+
+#### Demo Accounts
+
+Xem bảng tổng hợp ở [Tài khoản mặc định](#tài-khoản-mặc-định-demo-accounts) phía trên.
+
+---
+
+## Demo Data
+
+Sau khi chạy Docker lần đầu, hệ thống tự động seed demo data:
+
+| Type | Count | Details |
+|------|-------|---------|
+| **Admin** | 1 | `admin@demo.com` / `Demo123!` |
+| **Clients** | 3 | `client1@demo.com`, `client2@demo.com`, `client3@demo.com` / `Demo123!` |
+| **Interpreters** | 8 | `interpreter1@demo.com` đến `interpreter8@demo.com` / `Demo123!` |
+| **Organizations** | 3 | Đã được approve |
+| **Jobs** | 6 | Các công việc mẫu |
+| **Applications** | 10+ | Đơn ứng tuyển mẫu |
+
+---
+
+## Tài liệu
+
+| Document | Description |
+|----------|-------------|
+| **[SETUP.md](./SETUP.md)** | Hướng dẫn setup chi tiết (Docker, Local, Admin, Seeding, Email) |
+| **[DOCUMENTATION.md](./DOCUMENTATION.md)** | Tài liệu kỹ thuật đầy đủ (API, Database, Architecture) |
+| **[ai-service/README.md](./ai-service/README.md)** | AI Matching Service - Quick Start |
+| **[ai-service/DOCUMENTATION.md](./ai-service/DOCUMENTATION.md)** | AI Matching Service - Tài liệu chi tiết |
+
+---
+
+## Tech Stack
+
+### Frontend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 19.1.1 | UI Framework |
+| React Router | 7.8.0 | Routing |
+| Axios | 1.12.2 | HTTP Client |
+
+### Backend
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Node.js | v18+ | Runtime |
+| Express | 4.19.2 | Web Framework |
+| TypeORM | 0.3.27 | ORM |
+| MySQL2 | 3.15.3 | Database Driver |
+| JWT | - | Authentication |
+| Swagger UI | - | API Documentation |
+
+### AI Service
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Python | 3.11+ | Runtime |
+| FastAPI | - | Web Framework |
+| OpenAI GPT-4 | - | AI Matching |
+
+### Infrastructure
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Docker | v20.10+ | Containerization |
+| Docker Compose | v2.0+ | Orchestration |
+| MySQL | 8.0 | Database |
+
+---
+
+## License
+
+ISC
+
+---
+
+## Contributors
+
+G-Bridge Team
