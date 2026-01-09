@@ -12,7 +12,6 @@ import toastService from "../../services/toastService";
 import {
   FaChartBar,
   FaClipboardList,
-  FaStar,
   FaUser,
   FaCog,
   FaCamera,
@@ -26,6 +25,7 @@ import {
   FaFileImage,
   FaTimes,
 } from "react-icons/fa";
+import ReviewList from "../../components/Review/ReviewList";
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -370,6 +370,23 @@ const ProfilePage = () => {
   };
 
   const profileCompleteness = calculateProfileCompleteness();
+
+  // Format company size value to readable text
+  const formatCompanySize = (sizeValue) => {
+    if (!sizeValue) return t("profile.company.notProvided") || "Not provided";
+    
+    const sizeMap = {
+      "size_1_10": "1-10",
+      "size_11_50": "11-50",
+      "size_51_200": "51-200",
+      "size_201_500": "201-500",
+      "size_501_1000": "501-1000",
+      "size_1000_plus": "1001+",
+    };
+    
+    const sizeText = sizeMap[sizeValue] || sizeValue;
+    return `${sizeText} ${t("profile.company.employees") || "employees"}`;
+  };
 
   // Get missing fields for completeness alert
   const getMissingFields = () => {
@@ -2280,8 +2297,7 @@ const ProfilePage = () => {
                           {t("profile.company.companySize") || "Company Size"}
                         </label>
                         <p>
-                          {userProfile?.companySize ||
-                            (t("profile.company.notProvided") || "Not provided")}
+                          {formatCompanySize(userProfile?.companySize)}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
@@ -2753,46 +2769,20 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* Stats Card */}
-            {user.role === "interpreter" && (
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <h3 className={styles.cardTitle}>
-                    {t("profile.stats.title")}
-                  </h3>
-                </div>
-
-                <div className={styles.cardContent}>
-                  <div className={styles.statsGrid}>
-                    <div className={styles.statItem}>
-                      <div className={styles.statIcon}>
-                        <FaStar />
-                      </div>
-                      <div className={styles.statInfo}>
-                        <h4>{userProfile?.rating || "0.0"}</h4>
-                        <p>{t("profile.stats.rating")}</p>
-                      </div>
-                    </div>
-
-                    <div className={styles.statItem}>
-                      <div className={styles.statIcon}></div>
-                      <div className={styles.statInfo}>
-                        <h4>{userProfile?.completedJobs || 0}</h4>
-                        <p>{t("profile.stats.totalJobs")}</p>
-                      </div>
-                    </div>
-
-                    <div className={styles.statItem}>
-                      <div className={styles.statIcon}></div>
-                      <div className={styles.statInfo}>
-                        <h4>{userProfile?.totalReviews || 0}</h4>
-                        <p>{t("profile.stats.completionRate")}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Reviews Section */}
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>
+                  {t("reviews.title") || t("profile.reviews.title") || "Reviews"}
+                </h3>
               </div>
-            )}
+              <div className={styles.cardContent}>
+                <ReviewList
+                  revieweeId={user.id}
+                  showForm={false}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

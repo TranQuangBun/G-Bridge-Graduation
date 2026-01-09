@@ -715,8 +715,11 @@ export async function createMoMoPayment(req, res) {
     const orderInfo = `G-Bridge #${payment.id}`;
     const extraData = ""; // Can be used for additional data
 
-    // Always use payWithATM for ATM/Credit card payment (as per PHP setup)
-    const requestType = "payWithATM";
+    // Use payWithATM for ATM/Credit card payment
+    // In test environment, MoMo provides test card numbers that should work
+    // Allow client to specify requestType, default to payWithATM
+    const isTestEnvironment = momoConfig.environment === "sandbox" || momoConfig.apiUrl.includes("test-payment");
+    const requestType = req.body.requestType || "payWithATM";
 
     const requestData = {
       partnerCode: momoConfig.partnerCode,
@@ -824,7 +827,12 @@ export async function createMoMoPayment(req, res) {
         if (resultCodeNum === 1001) {
           userMessage = "Lỗi xác thực. Vui lòng kiểm tra lại cấu hình MoMo credentials.";
         } else if (resultCodeNum === 1002 || errorMessage.includes("rejected") || errorMessage.includes("issuers")) {
-          userMessage = "Giao dịch bị từ chối bởi ngân hàng phát hành thẻ. Nguyên nhân có thể: thông tin thẻ không đúng, thẻ bị khóa, hoặc không đủ số dư. Vui lòng kiểm tra lại thông tin thẻ hoặc thử thẻ khác.";
+          // Transaction rejected by issuers - provide helpful guidance
+          if (isTestEnvironment && requestType === "payWithATM") {
+            userMessage = "Giao dịch bị từ chối. Trong môi trường test, vui lòng đảm bảo bạn đang sử dụng đúng số thẻ test được cung cấp bởi MoMo. Kiểm tra lại: số thẻ, ngày hết hạn, CVV, và tên chủ thẻ. Nếu vẫn gặp lỗi, vui lòng liên hệ MoMo để xác nhận thông tin thẻ test hoặc thử lại sau.";
+          } else {
+            userMessage = "Giao dịch bị từ chối bởi ngân hàng phát hành thẻ. Nguyên nhân có thể: thông tin thẻ không đúng, thẻ bị khóa, hoặc không đủ số dư. Vui lòng kiểm tra lại thông tin thẻ hoặc thử thẻ khác.";
+          }
         } else if (resultCodeNum === 1003) {
           userMessage = "Yêu cầu không hợp lệ. Vui lòng thử lại sau.";
         } else if (resultCodeNum === 1004) {
@@ -923,11 +931,31 @@ export async function verifyMoMoPayment(req, res) {
     }
 
     // Update payment based on result code
-    // MoMo resultCode: 0 = success, others = failure
+    // MoMo resultCode: 0 = success, others = failure or processing
+    // Some resultCodes like 7002 indicate processing state, not failure
     const isSuccess = resultCode === "0" || resultCode === 0;
+    
+    // Check if resultCode indicates processing/pending state
+    // 7002: Transaction is being processed
+    const isProcessing = resultCode === "7002" || 
+                         (message && message.toLowerCase().includes("being processed") || 
+                          message?.toLowerCase().includes("processing"));
+    
+    // Determine payment status
+    let paymentStatus;
+    if (isSuccess) {
+      paymentStatus = PaymentStatus.COMPLETED;
+    } else if (isProcessing) {
+      // Keep as PROCESSING if already processing, otherwise set to PROCESSING
+      paymentStatus = payment.status === PaymentStatus.PROCESSING 
+        ? PaymentStatus.PROCESSING 
+        : PaymentStatus.PROCESSING;
+    } else {
+      paymentStatus = PaymentStatus.FAILED;
+    }
 
     const updateData = {
-      status: isSuccess ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
+      status: paymentStatus,
       momoTransId: transId || null,
       momoRequestId: requestId || null,
       momoOrderInfo: orderInfo || null,
@@ -943,7 +971,8 @@ export async function verifyMoMoPayment(req, res) {
     );
 
     // If payment successful, create subscription
-    if (isSuccess && payment.planId) {
+    // Only create subscription if payment is actually completed (not processing)
+    if (isSuccess && payment.planId && paymentStatus === PaymentStatus.COMPLETED) {
       try {
         const plan = await subscriptionPlanService.getSubscriptionPlanById(
           payment.planId
@@ -981,12 +1010,43 @@ export async function verifyMoMoPayment(req, res) {
       }
     }
 
+    // Log verification result for debugging
+    console.log("MoMo Payment Verification Result:", {
+      orderId,
+      resultCode,
+      isSuccess,
+      paymentStatus: updatedPayment.status,
+      message,
+    });
+
+    // Determine response message based on status
+    let responseMessage;
+    let redirectPath;
+    
+    if (isSuccess) {
+      responseMessage = "MoMo payment verified successfully";
+      redirectPath = "/pricing?success=true";
+    } else if (isProcessing) {
+      responseMessage = "Payment is being processed. Please wait for confirmation.";
+      redirectPath = "/pricing?processing=true";
+    } else {
+      responseMessage = "MoMo payment failed";
+      redirectPath = "/pricing?error=true";
+    }
+
     return sendSuccess(
       res,
-      { payment: updatedPayment, redirect: isSuccess ? "/pricing?success=true" : "/pricing?error=true" },
-      isSuccess ? "MoMo payment verified successfully" : "MoMo payment failed"
+      { 
+        payment: updatedPayment, 
+        redirect: redirectPath,
+        resultCode: resultCode?.toString(),
+        message: message || (isSuccess ? "Payment successful" : isProcessing ? "Payment is being processed" : "Payment failed"),
+        isProcessing: isProcessing,
+      },
+      responseMessage
     );
   } catch (error) {
+    console.error("Error verifying MoMo payment:", error);
     if (error instanceof AppError || error.message === "Payment not found") {
       return sendError(res, error.message, error.statusCode || 404);
     }

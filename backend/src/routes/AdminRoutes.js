@@ -17,6 +17,8 @@ import {
   toggleUserStatus,
   getRevenueStats,
   getAllPayments,
+  getProblematicPayments,
+  restorePayment,
 } from "../controllers/AdminController.js";
 import { authRequired, adminOnly } from "../middleware/auth.js";
 
@@ -54,5 +56,9 @@ router.patch("/users/:id/toggle-status", toggleUserStatus);
 // Revenue Management
 router.get("/revenue/stats", getRevenueStats);
 router.get("/revenue/payments", getAllPayments);
+
+// Payment Recovery
+router.get("/payments/problematic", getProblematicPayments);
+router.post("/payments/:id/restore", restorePayment);
 
 export default router;

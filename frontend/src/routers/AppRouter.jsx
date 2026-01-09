@@ -19,6 +19,7 @@ import {
   SystemNotificationsPage,
   UserManagementPage,
   RevenueManagementPage,
+  AdminPaymentRecoveryPage,
   PostJobPage,
   JobDetailPage,
   MessagesPage,
@@ -233,6 +234,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["admin"]}>
         <RevenueManagementPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: ROUTES.ADMIN_PAYMENT_RECOVERY,
+    element: (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <AdminPaymentRecoveryPage />
       </ProtectedRoute>
     ),
   },

@@ -54,12 +54,29 @@ export default function PaymentCallback() {
           return;
         }
 
+        // Log response for debugging
+        console.log("Payment verification response:", response);
+
         // Check if payment was successful
+        // MoMo returns resultCode: "0" for success
+        // resultCode "7002" means transaction is being processed
+        const paymentStatus = response.data?.payment?.status;
+        const resultCode = queryParams.get("resultCode") || response.data?.resultCode;
+        const isProcessing = response.data?.isProcessing || resultCode === "7002" || 
+                            (response.data?.message && response.data.message.toLowerCase().includes("being processed"));
         const isSuccess = response.success && (
-          response.data?.payment?.status === "completed" ||
-          response.data?.success === true ||
-          (response.data?.payment && response.data.payment.status !== "failed")
+          paymentStatus === "completed" ||
+          resultCode === "0" ||
+          (response.data?.payment && response.data.payment.status !== "failed" && resultCode === "0")
         );
+
+        console.log("Payment verification result:", {
+          isSuccess,
+          isProcessing,
+          paymentStatus,
+          resultCode,
+          responseSuccess: response.success,
+        });
 
         if (isSuccess) {
           setStatus("success");
@@ -71,10 +88,21 @@ export default function PaymentCallback() {
           setTimeout(() => {
             navigate(redirectPath);
           }, 3000);
+        } else if (isProcessing) {
+          // Payment is being processed - show processing state
+          setStatus("processing");
+          const processingMessage = response.data?.message || t("paymentCallback.processing") || "Giao dịch đang được xử lý. Vui lòng đợi xác nhận từ ngân hàng...";
+          setMessage(processingMessage);
+          toast.info(processingMessage);
+
+          // Redirect after delay or let user manually redirect
+          setTimeout(() => {
+            navigate("/pricing?processing=true");
+          }, 5000);
         } else {
           setStatus("failed");
           // Translate backend message if it's in English
-          const backendMessage = response.data?.message || response.data?.payment?.momoMessage;
+          const backendMessage = response.data?.message || response.data?.payment?.momoMessage || queryParams.get("message");
           let translatedMessage = t("paymentCallback.failed") || "Thanh toán thất bại";
           
           // Map common English error messages to translations
@@ -101,9 +129,17 @@ export default function PaymentCallback() {
         }
       } catch (error) {
         console.error("Payment verification error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
         setStatus("failed");
-        setMessage(error.message || t("paymentCallback.verificationError") || "Có lỗi xảy ra khi xác thực thanh toán");
-        toast.error(t("paymentCallback.verificationError") || "Lỗi xác thực thanh toán");
+        
+        // Extract error message from response if available
+        const errorMessage = error.response?.data?.message || error.message || t("paymentCallback.verificationError") || "Có lỗi xảy ra khi xác thực thanh toán";
+        setMessage(errorMessage);
+        toast.error(errorMessage);
       }
     };
 

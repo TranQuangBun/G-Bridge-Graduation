@@ -11,6 +11,7 @@ import {
   FaBell,
   FaUsers,
   FaDollarSign,
+  FaRedo,
 } from "react-icons/fa";
 import "./AdminLayout.css";
 
@@ -61,6 +62,13 @@ const AdminLayout = ({ children }) => {
       icon: FaDollarSign,
       labelKey: "admin.sidebar.revenue",
       label: "Quản lý doanh thu",
+    },
+    {
+      id: "payment-recovery",
+      path: ROUTES.ADMIN_PAYMENT_RECOVERY,
+      icon: FaRedo,
+      labelKey: "admin.sidebar.paymentRecovery",
+      label: "Khôi phục thanh toán",
     },
     {
       id: "notifications",

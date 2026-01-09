@@ -314,8 +314,17 @@
 }
 
 .adminBadgePending {
-  background: #fef3c7;
-  color: #92400e;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .adminBadgeApproved {

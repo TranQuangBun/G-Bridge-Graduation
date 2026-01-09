@@ -211,6 +211,29 @@ const adminService = {
       throw error.response?.data || { message: "Failed to get payments" };
     }
   },
+
+  // Payment Recovery
+  getProblematicPayments: async (params = {}) => {
+    try {
+      const response = await apiClient.get("/admin/payments/problematic", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to get problematic payments" };
+    }
+  },
+
+  restorePayment: async (id, reason = "") => {
+    try {
+      const response = await apiClient.post(`/admin/payments/${id}/restore`, {
+        reason,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to restore payment" };
+    }
+  },
 };
 
 export default adminService;

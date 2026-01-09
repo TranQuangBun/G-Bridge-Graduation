@@ -505,6 +505,12 @@ export default function JobDetailPage() {
   // Check if current user is the owner of this job (via organization)
   const isJobOwner = user?.role === "client" && job?.organization?.ownerUserId === user?.id;
 
+  // Check if user can view contact information
+  // - Job owner (client) can always view
+  // - Interpreter with active subscription can view
+  // - User with premium flag can view
+  const canViewContactInfo = isJobOwner || hasActiveSubscription || hasPremium;
+
   // Fetch AI suggested interpreters for client role
   // Fetch pre-filtered interpreters only (without AI)
   const handleFetchPreFilteredInterpreters = async () => {
@@ -614,6 +620,13 @@ export default function JobDetailPage() {
   // Fetch AI suitability score for interpreter role
   const handleFetchInterpreterScore = async () => {
     if (!job?.id || !user?.id || user?.role !== "interpreter") {
+      return;
+    }
+
+    // Check if user has active subscription
+    if (!hasActiveSubscription) {
+      toastService.error(t("jobDetail.subscriptionRequiredForAI") || "Please subscribe to a plan to use AI features");
+      navigate(ROUTES.PRICING);
       return;
     }
 
@@ -1143,7 +1156,7 @@ export default function JobDetailPage() {
               <div className={styles.contactInfo}>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
+                    !user || !canViewContactInfo ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}>
@@ -1155,7 +1168,7 @@ export default function JobDetailPage() {
                 </div>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
+                    !user || !canViewContactInfo ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}>
@@ -1167,7 +1180,7 @@ export default function JobDetailPage() {
                 </div>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
+                    !user || !canViewContactInfo ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}>
@@ -1179,7 +1192,7 @@ export default function JobDetailPage() {
                 </div>
               </div>
 
-              {(!user || (!hasPremium && !isJobOwner)) && (
+              {(!user || !canViewContactInfo) && (
                 <div className={styles.premiumNotice}>
                   <p>{t("jobDetail.premiumNotice")}</p>
                   <button
@@ -1416,12 +1429,20 @@ export default function JobDetailPage() {
                       <p className={styles.aiPromptText}>
                         {t("jobDetail.aiSuitabilityPrompt") || "Click the button below to see how well your profile matches this job."}
                       </p>
+                      {!hasActiveSubscription && (
+                        <p className={styles.aiSubscriptionRequired}>
+                          {t("jobDetail.subscriptionRequiredForAI") || "Please subscribe to a plan to use AI features"}
+                        </p>
+                      )}
                       <button
                         className={styles.aiFetchButton}
-                        onClick={handleFetchInterpreterScore}
-                        disabled={loadingInterpreterScore}
+                        onClick={hasActiveSubscription ? handleFetchInterpreterScore : () => navigate(ROUTES.PRICING)}
+                        disabled={loadingInterpreterScore || !hasActiveSubscription}
+                        style={!hasActiveSubscription ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                       >
-                        <FaUserCheck /> {t("jobDetail.checkSuitability") || "Check My Suitability"}
+                        <FaUserCheck /> {hasActiveSubscription 
+                          ? (t("jobDetail.checkSuitability") || "Check My Suitability")
+                          : (t("jobDetail.subscribeToUseAI") || "Subscribe to Use AI")}
                       </button>
                     </div>
                   </div>

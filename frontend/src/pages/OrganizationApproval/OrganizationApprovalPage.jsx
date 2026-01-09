@@ -413,7 +413,7 @@ const OrganizationApprovalPage = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className={commonStyles.adminModalHeader}>
-                <h3>Xác nhận duyệt tổ chức</h3>
+                <h3>{t("admin.organizationApproval.approveTitle") || "Xác nhận duyệt tổ chức"}</h3>
                 <button
                   className={commonStyles.adminModalCloseBtn}
                   onClick={() => {
