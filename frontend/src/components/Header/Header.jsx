@@ -2,17 +2,21 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSubscription } from "../../hooks/useSubscription";
 import "./Header.css";
 import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 import VNFlag from "../../assets/images/languages/VN.png";
 import USFlag from "../../assets/images/languages/US.png";
 import { useLanguage } from "../../translet/LanguageContext";
-import { FaEnvelope } from "react-icons/fa";
+import { FaEnvelope, FaStar } from "react-icons/fa";
 import messageService from "../../services/messageService";
+import authService from "../../services/authService";
+import toastService from "../../services/toastService";
 
 const Header = () => {
   const { lang, setLang, t } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
+  const { subscription, hasActiveSubscription } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,6 +25,9 @@ const Header = () => {
   const [isMessageDropdownOpen, setIsMessageDropdownOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadConversations, setUnreadConversations] = useState([]);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+  const [licenseFile, setLicenseFile] = useState(null);
+  const [uploadingLicense, setUploadingLicense] = useState(false);
   const userMenuRef = useRef(null);
   const messageDropdownRef = useRef(null);
 
@@ -205,6 +212,72 @@ const Header = () => {
   const handleProfileClick = () => {
     setIsUserMenuOpen(false);
     navigate(ROUTES.PROFILE);
+  };
+
+  const handleOpenLicenseModal = () => {
+    setIsUserMenuOpen(false);
+    setIsLicenseModalOpen(true);
+  };
+
+  const handleCloseLicenseModal = () => {
+    setIsLicenseModalOpen(false);
+    setLicenseFile(null);
+  };
+
+  const handleLicenseFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        toastService.error(
+          t("profile.company.licenseFileHint") || "File size must be less than 10MB"
+        );
+        return;
+      }
+      // Validate file type
+      const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+      if (!validTypes.includes(file.type)) {
+        toastService.error(
+          t("profile.company.licenseFileHint") || "Only PDF, JPG, PNG files are allowed"
+        );
+        return;
+      }
+      setLicenseFile(file);
+    }
+  };
+
+  const handleUploadLicense = async (e) => {
+    e.preventDefault();
+    if (!licenseFile) {
+      toastService.error(
+        t("profile.company.licenseRequired") || "Please select a file to upload"
+      );
+      return;
+    }
+
+    setUploadingLicense(true);
+    try {
+      const formData = new FormData();
+      formData.append("businessLicense", licenseFile);
+
+      await authService.uploadBusinessLicense(formData);
+      
+      // Refresh user data
+      window.location.reload(); // Simple refresh to update user data
+      
+      toastService.success(
+        t("profile.company.licenseUploaded") || "Business license uploaded successfully. Please wait for admin approval."
+      );
+      
+      handleCloseLicenseModal();
+    } catch (error) {
+      toastService.error(
+        error.message ||
+          t("profile.company.licenseUploadFailed") || "Failed to upload business license"
+      );
+    } finally {
+      setUploadingLicense(false);
+    }
   };
 
   // Function to check if a route is active
@@ -549,6 +622,12 @@ const Header = () => {
                                   ? t("header.roles.admin") || "Admin"
                                   : user?.role}
                               </span>
+                              {hasActiveSubscription && subscription?.plan && (
+                                <span className="user-subscription-badge">
+                                  <FaStar style={{ marginRight: "4px", fontSize: "12px" }} />
+                                  {subscription.plan.name || "Premium Plan"}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -737,6 +816,27 @@ const Header = () => {
                                 </svg>
                                 <span>
                                   {t("common.savedInterpreters") || "Saved Interpreters"}
+                                </span>
+                              </button>
+                              <button
+                                className="dropdown-item"
+                                onClick={handleOpenLicenseModal}
+                              >
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                  <polyline points="14 2 14 8 20 8"></polyline>
+                                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                                <span>
+                                  {t("profile.company.uploadLicense") || "Upload Business License"}
                                 </span>
                               </button>
                             </>
@@ -1105,6 +1205,73 @@ const Header = () => {
           </div>
         </div>
       </div>
+
+      {/* License Upload Modal */}
+      {isLicenseModalOpen && (
+        <div className="license-modal-overlay" onClick={handleCloseLicenseModal}>
+          <div className="license-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="license-modal-header">
+              <h3>{t("profile.company.uploadLicense") || "Upload Business License"}</h3>
+              <button
+                className="license-modal-close"
+                onClick={handleCloseLicenseModal}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleUploadLicense} className="license-modal-form">
+              <div className="license-modal-form-group">
+                <label>
+                  {t("profile.company.selectLicenseFile") || "Select Business License File"} *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleLicenseFileChange}
+                  required
+                />
+                {licenseFile && (
+                  <p className="license-file-info">
+                    {t("profile.company.selectedFile") || "Selected:"} {licenseFile.name} ({(licenseFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
+                <p className="license-file-hint">
+                  {t("profile.company.licenseFileHint") || "Accepted formats: PDF, JPG, PNG (Max 10MB)"}
+                </p>
+              </div>
+              <div className="license-modal-actions">
+                <button
+                  type="submit"
+                  className="license-upload-btn"
+                  disabled={uploadingLicense || !licenseFile}
+                >
+                  {uploadingLicense
+                    ? t("profile.company.uploading") || "Uploading..."
+                    : t("profile.company.upload") || "Upload"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseLicenseModal}
+                  className="license-cancel-btn"
+                  disabled={uploadingLicense}
+                >
+                  {t("profile.company.cancel") || "Cancel"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

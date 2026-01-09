@@ -833,44 +833,95 @@
 }
 
 .statusActive {
-  background: #dcfce7;
-  color: #166534;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #10b981;
+  color: #1e293b;
   border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusReview {
-  background: #fef3c7;
-  color: #92400e;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f59e0b;
+  color: #1e293b;
   border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusShortlisted {
-  background: #e9d5ff;
-  color: #6b21a8;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #8b5cf6;
+  color: #1e293b;
   border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusInterview {
-  background: #dbeafe;
-  color: #1e40af;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #3b82f6;
+  color: #1e293b;
   border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusApproved {
-  background: #dcfce7;
-  color: #166534;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #10b981;
+  color: #1e293b;
   border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusRejected {
-  background: #fee2e2;
-  color: #dc2626;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #ef4444;
+  color: #1e293b;
   border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusDefault {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   background: #f1f5f9;
   color: #64748b;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(100, 116, 139, 0.1);
+  letter-spacing: 0.02em;
   border: none;
 }
 

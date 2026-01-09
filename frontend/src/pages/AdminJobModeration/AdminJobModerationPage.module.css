@@ -153,18 +153,42 @@
 }
 
 .statusPending {
-  background: #fef3c7;
-  color: #92400e;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f59e0b;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusApproved {
-  background: #d1fae5;
-  color: #065f46;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #10b981;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusRejected {
-  background: #fee2e2;
-  color: #991b1b;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #ef4444;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .viewBtn {
@@ -353,33 +377,42 @@
 }
 
 .statusPending {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background: #fef3c7;
-  color: #92400e;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
   font-weight: 600;
+  background: #f59e0b;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusApproved {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background: #d1fae5;
-  color: #065f46;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
   font-weight: 600;
+  background: #10b981;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusRejected {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background: #fee2e2;
-  color: #991b1b;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
   font-weight: 600;
+  background: #ef4444;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .tagsList {

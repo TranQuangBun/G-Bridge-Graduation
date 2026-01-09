@@ -245,7 +245,7 @@ const authService = {
   },
 
   /**
-   * Toggle active status (only for interpreters)
+   * Toggle active status (only for interpreters) - Admin only
    * @returns {Promise} Response from API
    */
   toggleActiveStatus: async () => {
@@ -255,6 +255,21 @@ const authService = {
     } catch (error) {
       throw new Error(
         getErrorMessage(error) || "Không thể thay đổi trạng thái hoạt động"
+      );
+    }
+  },
+
+  /**
+   * Toggle profile visibility (public/private) - User can control
+   * @returns {Promise} Response from API
+   */
+  toggleProfileVisibility: async () => {
+    try {
+      const response = await apiClient.put("/auth/toggle-profile-visibility");
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        getErrorMessage(error) || "Không thể thay đổi chế độ hiển thị hồ sơ"
       );
     }
   },

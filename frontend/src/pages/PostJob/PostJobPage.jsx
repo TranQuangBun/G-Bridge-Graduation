@@ -150,6 +150,10 @@ const PostJobPage = () => {
   const [showLicenseConfirmation, setShowLicenseConfirmation] = useState(false);
   const [pendingOrgId, setPendingOrgId] = useState(null);
 
+  // Job submission confirmation state
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [pendingSubmitEvent, setPendingSubmitEvent] = useState(null);
+
   const isClientOrAdmin = user?.role === "client" || user?.role === "admin";
 
   useEffect(() => {
@@ -512,6 +516,16 @@ const PostJobPage = () => {
 
   const handleCreateOrganization = async (event) => {
     event.preventDefault();
+    
+    // Check if client already has an organization
+    if (!editingOrganizationId && organizations.length > 0) {
+      toastService.error(
+        t("postJob.organization.errors.oneOrganizationOnly") ||
+          "You can only represent one organization. Please use your existing organization."
+      );
+      return;
+    }
+    
     if (!organizationForm.name) {
       toastService.error(t("postJob.messages.organizationRequired"));
       return;
@@ -646,6 +660,16 @@ const PostJobPage = () => {
     if (!jobData.organizationId) {
       return t("postJob.messages.organizationRequired");
     }
+    
+    // Check if selected organization has business license
+    const selectedOrg = organizations.find(
+      (org) => String(org.id) === String(jobData.organizationId)
+    );
+    if (selectedOrg && !selectedOrg.businessLicense) {
+      return t("postJob.messages.businessLicenseRequired") || 
+        "The selected organization must have a business license. Please upload a business license for the organization first.";
+    }
+    
     if (!jobData.title) {
       return t("postJob.messages.titleRequired");
     }
@@ -694,6 +718,30 @@ const PostJobPage = () => {
       toastService.error(validationMessage);
       return;
     }
+
+    // Show confirmation modal before submitting
+    setPendingSubmitEvent(event);
+    setShowSubmitConfirmation(true);
+    return;
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowSubmitConfirmation(false);
+    const event = pendingSubmitEvent;
+    setPendingSubmitEvent(null);
+    
+    if (!event) return;
+    
+    // Continue with submission logic
+    await performJobSubmission();
+  };
+
+  const handleCancelSubmit = () => {
+    setShowSubmitConfirmation(false);
+    setPendingSubmitEvent(null);
+  };
+
+  const performJobSubmission = async () => {
 
     const payload = {
       organizationId: parseInt(jobData.organizationId),
@@ -825,9 +873,8 @@ const PostJobPage = () => {
         if (response?.success) {
           toastService.success(t("postJob.messages.success"));
           
-          // Job created successfully
-          
-          // Don't navigate away, stay on page so user can click AI button if they want
+          // Job created successfully - redirect to my jobs page
+          navigate(ROUTES.MY_JOBS);
         } else {
           throw new Error(response?.message || "Unable to submit job");
         }
@@ -914,15 +961,6 @@ const PostJobPage = () => {
                       {t("postJob.organization.description")}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className={styles.inlineButton}
-                    onClick={() => setShowOrganizationForm((prev) => !prev)}
-                  >
-                    {showOrganizationForm
-                      ? t("postJob.organization.cancel")
-                      : t("postJob.organization.add")}
-                  </button>
                 </div>
 
                 {organizations.length === 0 ? (
@@ -991,6 +1029,11 @@ const PostJobPage = () => {
                               )}
                             </div>
                             {org.province && <p>{org.province}</p>}
+                            {!org.businessLicense && (
+                              <p style={{ color: "#ef4444", fontSize: "0.875rem", marginTop: "4px" }}>
+                                <strong>{t("postJob.organization.noLicenseWarning") || "⚠️ Business license required"}</strong>
+                              </p>
+                            )}
                             {org.approvalStatus === "rejected" &&
                               org.rejectionReason && (
                                 <p className={styles.rejectionReason}>
@@ -1018,8 +1061,16 @@ const PostJobPage = () => {
                     <h3>
                       {editingOrganizationId
                         ? t("postJob.organization.editOrganization") || "Edit Organization"
-                        : t("postJob.organization.formTitle")}
+                        : organizations.length === 0
+                        ? t("postJob.organization.formTitle")
+                        : t("postJob.organization.editOrganization") || "Edit Organization"}
                     </h3>
+                    {organizations.length > 0 && !editingOrganizationId && (
+                      <p style={{ color: "#ef4444", marginBottom: "1rem", fontSize: "0.875rem" }}>
+                        {t("postJob.organization.errors.oneOrganizationOnly") ||
+                          "You can only represent one organization. Please edit your existing organization."}
+                      </p>
+                    )}
                     <div className={styles.fieldGrid}>
                       <div className={styles.field}>
                         <label>{t("postJob.organization.fields.name")}</label>
@@ -1152,7 +1203,7 @@ const PostJobPage = () => {
                         type="button"
                         className={styles.primaryButton}
                         onClick={handleCreateOrganization}
-                        disabled={savingOrganization}
+                        disabled={savingOrganization || (organizations.length > 0 && !editingOrganizationId)}
                       >
                         {savingOrganization
                           ? editingOrganizationId
@@ -1593,7 +1644,28 @@ const PostJobPage = () => {
                 <button
                   type="submit"
                   className={styles.primaryButton}
-                  disabled={submittingJob || lookupsLoading || loadingJobData}
+                  disabled={
+                    submittingJob ||
+                    lookupsLoading ||
+                    loadingJobData ||
+                    (() => {
+                      const selectedOrg = organizations.find(
+                        (org) => String(org.id) === String(jobData.organizationId)
+                      );
+                      return selectedOrg && !selectedOrg.businessLicense;
+                    })()
+                  }
+                  title={
+                    (() => {
+                      const selectedOrg = organizations.find(
+                        (org) => String(org.id) === String(jobData.organizationId)
+                      );
+                      return selectedOrg && !selectedOrg.businessLicense
+                        ? t("postJob.messages.businessLicenseRequired") ||
+                            "Business license is required for the selected organization"
+                        : "";
+                    })()
+                  }
                 >
                   {submittingJob
                     ? isEditMode
@@ -1730,6 +1802,46 @@ const PostJobPage = () => {
                 onClick={handleConfirmLicense}
               >
                 {t("postJob.organization.licenseConfirmation.understand")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Job Submission Confirmation Modal */}
+      {showSubmitConfirmation && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.confirmationModal}>
+            <h3>
+              {isEditMode
+                ? t("postJob.confirmation.updateTitle") || "Confirm Update Job"
+                : t("postJob.confirmation.submitTitle") || "Confirm Submit Job"}
+            </h3>
+            <p>
+              {isEditMode
+                ? t("postJob.confirmation.updateMessage") ||
+                  "Are you sure you want to update this job posting? The changes will be reviewed by admin before being published."
+                : t("postJob.confirmation.submitMessage") ||
+                  "Are you sure you want to submit this job posting? It will be reviewed by admin before being published."}
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.cancelButton}
+                onClick={handleCancelSubmit}
+                disabled={submittingJob}
+              >
+                {t("postJob.confirmation.cancel") || "Cancel"}
+              </button>
+              <button
+                className={styles.confirmButton}
+                onClick={handleConfirmSubmit}
+                disabled={submittingJob}
+              >
+                {submittingJob
+                  ? t("postJob.confirmation.processing") || "Processing..."
+                  : isEditMode
+                  ? t("postJob.confirmation.confirmUpdate") || "Update Job"
+                  : t("postJob.confirmation.confirmSubmit") || "Submit Job"}
               </button>
             </div>
           </div>

@@ -1444,7 +1444,7 @@ export default function FindJobPage() {
             )}
 
             {/* Pagination - Only show for normal jobs, not AI results */}
-            {!showAIResults && (
+            {!showAIResults && totalPages > 1 && (
               <div className={styles.pagination}>
               {Array.from({ length: totalPages }).map((_, i) => {
                 const p = i + 1;

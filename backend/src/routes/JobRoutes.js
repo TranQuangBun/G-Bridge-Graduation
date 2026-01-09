@@ -22,7 +22,7 @@ import {
   getFeaturedJobs,
 } from "../controllers/JobController.js";
 import { uploadResume } from "../middleware/Upload.js";
-import { authRequired, adminOnly } from "../middleware/auth.js";
+import { authRequired, adminOnly, optionalAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -200,7 +200,7 @@ router.get("/featured", getFeaturedJobs);
  *                     totalPages:
  *                       type: integer
  */
-router.get("/", getJobs);
+router.get("/", optionalAuth, getJobs);
 
 /**
  * @swagger

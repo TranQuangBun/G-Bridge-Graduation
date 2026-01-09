@@ -85,4 +85,10 @@ export class OrganizationRepository extends BaseRepository {
 
     return await queryBuilder.getManyAndCount();
   }
+
+  async findByOwnerUserId(ownerUserId) {
+    return await this.repository.find({
+      where: { ownerUserId: parseInt(ownerUserId) },
+    });
+  }
 }

@@ -90,6 +90,16 @@ export class JobService {
       throw new Error("Organization not found");
     }
 
+    // Check if organization is approved (required before posting jobs)
+    if (organization.approvalStatus !== "approved") {
+      throw new Error("Organization must be approved before posting jobs. Please wait for admin approval.");
+    }
+
+    // Check if organization is active
+    if (!organization.isActive) {
+      throw new Error("Organization is not active. Please contact support.");
+    }
+
     if (!workingMode) {
       throw new Error("Working mode not found");
     }

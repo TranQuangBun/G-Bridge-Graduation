@@ -8,6 +8,7 @@ import {
   uploadAvatar,
   uploadBusinessLicense,
   toggleActiveStatus,
+  toggleProfileVisibility,
   forgotPassword,
   resetPassword,
 } from "../controllers/AuthController.js";
@@ -37,6 +38,7 @@ router.post(
   uploadBusinessLicense
 );
 router.put("/toggle-active-status", authRequired, toggleActiveStatus);
+router.put("/toggle-profile-visibility", authRequired, toggleProfileVisibility);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 

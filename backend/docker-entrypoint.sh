@@ -31,6 +31,13 @@ npm run seed:demo || {
   echo "⚠️  Warning: Seed script failed or skipped, but continuing to start server..."
 }
 
+# Run subscription plans seed script
+echo "📋 Running subscription plans seed script..."
+echo "   (Script will automatically update existing plans or create new ones)"
+npm run seed:subscriptions || {
+  echo "⚠️  Warning: Subscription plans seed script failed, but continuing to start server..."
+}
+
 # Start the server
 echo "🚀 Starting backend server..."
 exec "$@"

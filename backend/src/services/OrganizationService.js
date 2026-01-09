@@ -76,6 +76,12 @@ export class OrganizationService {
           );
           payload.ownerUserId = null;
         } else {
+          // Check if user already has an organization
+          const existingOrganizations = await this.organizationRepository.findByOwnerUserId(ownerUserId);
+          if (existingOrganizations && existingOrganizations.length > 0) {
+            throw new Error("Client can only represent one organization. Please use your existing organization or contact support.");
+          }
+          
           payload.ownerUserId = ownerUserId;
         }
       }

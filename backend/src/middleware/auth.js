@@ -85,3 +85,28 @@ export const userOnly = requireRole("client", "interpreter");
 
 // Middleware for all authenticated users
 export const authenticatedOnly = authRequired;
+
+// Optional auth middleware - sets req.user if token is present, but doesn't require it
+export async function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith("Bearer ")) {
+    return next(); // No token, continue without setting req.user
+  }
+  const token = header.slice(7);
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Load user from database to check isActive status
+    const userRepository = new UserRepository();
+    const user = await userRepository.findById(payload.sub);
+    
+    if (user && user.isActive) {
+      req.user = payload;
+      req.userData = user; // Store full user data for convenience
+    }
+    next();
+  } catch (err) {
+    // Invalid token, continue without setting req.user
+    next();
+  }
+}

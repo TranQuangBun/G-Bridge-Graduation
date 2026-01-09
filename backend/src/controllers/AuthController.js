@@ -14,6 +14,7 @@ import {
   updateUserAvatar,
   updateClientProfileBusinessLicense,
   toggleUserActiveStatus,
+  toggleUserProfileVisibility,
 } from "../services/UserProfileService.js";
 import {
   validateRegistration,
@@ -217,6 +218,36 @@ export async function toggleActiveStatus(req, res) {
       return sendError(res, err.message, err.statusCode, err);
     }
     logger.error("Toggle active status failed", err);
+    return sendError(res, "Server error", 500, err);
+  }
+}
+
+export async function toggleProfileVisibility(req, res) {
+  try {
+    const userId = req.user.sub || req.user.id;
+
+    // Allow both interpreter and client to toggle their profile visibility
+    const currentUser = await getUserById(userId);
+    if (currentUser.role !== "interpreter" && currentUser.role !== "client") {
+      return sendError(
+        res,
+        "Only interpreters and clients can toggle profile visibility",
+        403
+      );
+    }
+
+    const user = await toggleUserProfileVisibility(userId);
+
+    return sendSuccess(
+      res,
+      { user },
+      `Profile visibility set to ${user.isPublic !== false ? "public" : "private"}`
+    );
+  } catch (err) {
+    if (err instanceof AppError) {
+      return sendError(res, err.message, err.statusCode, err);
+    }
+    logger.error("Toggle profile visibility failed", err);
     return sendError(res, "Server error", 500, err);
   }
 }

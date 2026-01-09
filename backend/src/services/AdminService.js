@@ -1,5 +1,6 @@
 import { CertificationRepository } from "../repositories/CertificationRepository.js";
 import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
+import { ClientProfileRepository } from "../repositories/ClientProfileRepository.js";
 import { NotificationService } from "./NotificationService.js";
 import { NotificationRepository } from "../repositories/NotificationRepository.js";
 import { UserRepository } from "../repositories/UserRepository.js";
@@ -16,6 +17,7 @@ export class AdminService {
   constructor() {
     this.certificationRepository = new CertificationRepository();
     this.organizationRepository = new OrganizationRepository();
+    this.clientProfileRepository = new ClientProfileRepository();
     this.notificationService = new NotificationService();
     this.notificationRepository = new NotificationRepository();
     this.userRepository = new UserRepository();
@@ -274,8 +276,16 @@ export class AdminService {
       organization
     );
 
-    // Send notification to owner if exists
+    // Also update client profile if exists
     if (organization.ownerUserId) {
+      const clientProfile = await this.clientProfileRepository.findByUserId(organization.ownerUserId);
+      if (clientProfile) {
+        clientProfile.licenseVerificationStatus = "approved";
+        clientProfile.accountStatus = "active";
+        await this.clientProfileRepository.repository.save(clientProfile);
+      }
+
+      // Send notification to owner if exists
       await this.notificationService.createNotification({
         recipientId: organization.ownerUserId,
         actorId: adminId,
@@ -309,8 +319,16 @@ export class AdminService {
       organization
     );
 
-    // Send notification to owner if exists
+    // Also update client profile if exists
     if (organization.ownerUserId) {
+      const clientProfile = await this.clientProfileRepository.findByUserId(organization.ownerUserId);
+      if (clientProfile) {
+        clientProfile.licenseVerificationStatus = "rejected";
+        clientProfile.accountStatus = "suspended";
+        await this.clientProfileRepository.repository.save(clientProfile);
+      }
+
+      // Send notification to owner if exists
       await this.notificationService.createNotification({
         recipientId: organization.ownerUserId,
         actorId: adminId,

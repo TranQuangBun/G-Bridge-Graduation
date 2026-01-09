@@ -287,27 +287,30 @@
 .statusRejected,
 .statusDraft,
 .statusDefault {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
   white-space: nowrap;
+  letter-spacing: 0.02em;
+  border: none;
 }
 
 .statusPending {
-  background: #fef3c7;
-  color: #92400e;
+  background: #f59e0b;
+  color: #1e293b;
 }
 
 .statusApproved {
-  background: #d1fae5;
-  color: #065f46;
+  background: #10b981;
+  color: #1e293b;
 }
 
 .statusRejected {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #ef4444;
+  color: #1e293b;
 }
 
 .statusDraft {
@@ -316,8 +319,16 @@
 }
 
 .statusDefault {
-  background: #f3f4f6;
-  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #9ca3af;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .certActions {

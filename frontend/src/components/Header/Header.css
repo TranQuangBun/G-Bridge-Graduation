@@ -1149,6 +1149,21 @@ body {
   font-weight: 600;
   text-transform: capitalize;
   color: white;
+  margin-top: 4px;
+}
+
+.user-subscription-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  margin-top: 6px;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
 }
 
 /* Dropdown Divider */
@@ -1393,4 +1408,164 @@ body {
 .mobile-menu-action.logout:hover {
   background: rgba(220, 38, 38, 0.05);
   border-color: #dc2626;
+}
+
+/* License Upload Modal */
+.license-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.license-modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.license-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.license-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.license-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: color 0.2s;
+  border-radius: 4px;
+}
+
+.license-modal-close:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+.license-modal-form {
+  padding: 1.5rem;
+}
+
+.license-modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.license-modal-form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.license-modal-form-group input[type="file"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: #ffffff;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.license-modal-form-group input[type="file"]:hover {
+  border-color: #94a3b8;
+}
+
+.license-modal-form-group input[type="file"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+.license-file-info {
+  font-size: 0.813rem;
+  color: #475569;
+  padding: 0.5rem 0.75rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  margin: 0;
+  word-break: break-all;
+}
+
+.license-file-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.license-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.license-upload-btn,
+.license-cancel-btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  min-width: 100px;
+}
+
+.license-upload-btn {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  color: white;
+}
+
+.license-upload-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #075985 0%, #0369a1 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.license-upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.license-cancel-btn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.license-cancel-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
 }
