@@ -1,25 +1,33 @@
 import { CertificationRepository } from "../repositories/CertificationRepository.js";
 import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
+import { ClientProfileRepository } from "../repositories/ClientProfileRepository.js";
 import { NotificationService } from "./NotificationService.js";
 import { NotificationRepository } from "../repositories/NotificationRepository.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { PaymentRepository } from "../repositories/PaymentRepository.js";
+import { UserSubscriptionService } from "./UserSubscriptionService.js";
+import { SubscriptionPlanService } from "./SubscriptionPlanService.js";
+import { PaymentService } from "./PaymentService.js";
 import { AppDataSource } from "../config/DataSource.js";
 import { User } from "../entities/User.js";
 import { CertificationStatus } from "../entities/Certification.js";
 import { OrganizationStatus } from "../entities/Organization.js";
 import { NotificationType } from "../entities/Notification.js";
 import { PaymentStatus } from "../entities/PaymentConstants.js";
-import { NotFoundError } from "../utils/Errors.js";
+import { NotFoundError, AppError } from "../utils/Errors.js";
 
 export class AdminService {
   constructor() {
     this.certificationRepository = new CertificationRepository();
     this.organizationRepository = new OrganizationRepository();
+    this.clientProfileRepository = new ClientProfileRepository();
     this.notificationService = new NotificationService();
     this.notificationRepository = new NotificationRepository();
     this.userRepository = new UserRepository();
     this.paymentRepository = new PaymentRepository();
+    this.userSubscriptionService = new UserSubscriptionService();
+    this.subscriptionPlanService = new SubscriptionPlanService();
+    this.paymentService = new PaymentService();
     this.userRepo = AppDataSource.getRepository(User);
   }
 
@@ -274,8 +282,16 @@ export class AdminService {
       organization
     );
 
-    // Send notification to owner if exists
+    // Also update client profile if exists
     if (organization.ownerUserId) {
+      const clientProfile = await this.clientProfileRepository.findByUserId(organization.ownerUserId);
+      if (clientProfile) {
+        clientProfile.licenseVerificationStatus = "approved";
+        clientProfile.accountStatus = "active";
+        await this.clientProfileRepository.repository.save(clientProfile);
+      }
+
+      // Send notification to owner if exists
       await this.notificationService.createNotification({
         recipientId: organization.ownerUserId,
         actorId: adminId,
@@ -309,8 +325,16 @@ export class AdminService {
       organization
     );
 
-    // Send notification to owner if exists
+    // Also update client profile if exists
     if (organization.ownerUserId) {
+      const clientProfile = await this.clientProfileRepository.findByUserId(organization.ownerUserId);
+      if (clientProfile) {
+        clientProfile.licenseVerificationStatus = "rejected";
+        clientProfile.accountStatus = "suspended";
+        await this.clientProfileRepository.repository.save(clientProfile);
+      }
+
+      // Send notification to owner if exists
       await this.notificationService.createNotification({
         recipientId: organization.ownerUserId,
         actorId: adminId,
@@ -826,6 +850,141 @@ export class AdminService {
         limit: parseInt(limit),
         totalPages: Math.ceil(total / parseInt(limit)),
       },
+    };
+  }
+
+  // Get payments with issues (processing, failed but might be paid)
+  async getProblematicPayments(filters = {}) {
+    const {
+      page = 1,
+      limit = 20,
+      userId = "",
+      paymentGateway = "",
+    } = filters;
+
+    const queryBuilder = this.paymentRepository.repository
+      .createQueryBuilder("payment")
+      .leftJoinAndSelect("payment.user", "user")
+      .leftJoinAndSelect("payment.plan", "plan")
+      .leftJoinAndSelect("payment.subscription", "subscription")
+      .where("payment.status IN (:...statuses)", {
+        statuses: [PaymentStatus.PROCESSING, PaymentStatus.FAILED],
+      })
+      .andWhere("payment.planId IS NOT NULL") // Only payments with plans
+      .orderBy("payment.createdAt", "DESC");
+
+    // Apply filters
+    if (userId) {
+      queryBuilder.andWhere("payment.userId = :userId", {
+        userId: parseInt(userId),
+      });
+    }
+    if (paymentGateway) {
+      queryBuilder.andWhere("payment.paymentGateway = :paymentGateway", {
+        paymentGateway,
+      });
+    }
+
+    queryBuilder
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .take(parseInt(limit));
+
+    const [payments, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      payments,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    };
+  }
+
+  // Manually restore payment and create subscription
+  async restorePayment(paymentId, adminId, reason = null) {
+    const payment = await this.paymentService.getPaymentById(paymentId);
+
+    if (!payment) {
+      throw new NotFoundError("Payment not found");
+    }
+
+    if (payment.status === PaymentStatus.COMPLETED) {
+      throw new AppError("Payment is already completed", 400);
+    }
+
+    if (!payment.planId) {
+      throw new AppError("Payment does not have a plan associated", 400);
+    }
+
+    // Check if subscription already exists for this payment
+    const existingSubscription = await this.userSubscriptionService
+      .getUserSubscriptionByUserId(payment.userId)
+      .catch(() => null);
+
+    if (existingSubscription && existingSubscription.paymentId === payment.id) {
+      throw new AppError("Subscription already exists for this payment", 400);
+    }
+
+    // Get plan details
+    const plan = await this.subscriptionPlanService.getSubscriptionPlanById(
+      payment.planId
+    );
+
+    if (!plan) {
+      throw new NotFoundError("Subscription plan not found");
+    }
+
+    // Update payment status to completed
+    const updatedPayment = await this.paymentService.updatePayment(
+      payment.id,
+      {
+        status: PaymentStatus.COMPLETED,
+        paidAt: new Date(),
+        // Store restoration info in description or add a note field
+        description: payment.description
+          ? `${payment.description} [Restored by Admin ${adminId}${reason ? `: ${reason}` : ""}]`
+          : `[Restored by Admin ${adminId}${reason ? `: ${reason}` : ""}]`,
+      }
+    );
+
+    // Create subscription
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + plan.duration);
+
+    const subscription = await this.userSubscriptionService.createUserSubscription({
+      userId: payment.userId,
+      planId: payment.planId,
+      paymentId: payment.id,
+      startDate,
+      endDate,
+      autoRenew: false,
+    });
+
+    // Send notification to user
+    await this.notificationService.createNotification({
+      recipientId: payment.userId,
+      actorId: adminId,
+      type: NotificationType.PAYMENT_SUCCESS,
+      title: `Payment restored for ${plan.name}`,
+      message: `Your payment has been manually restored by an administrator. Your ${
+        plan.name
+      } plan is now active until ${endDate.toLocaleDateString()}.`,
+      metadata: {
+        paymentId: payment.id,
+        planId: plan.id,
+        endDate,
+        restoredBy: adminId,
+        reason: reason || null,
+      },
+    });
+
+    return {
+      payment: updatedPayment,
+      subscription,
+      message: "Payment restored and subscription created successfully",
     };
   }
 }

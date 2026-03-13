@@ -13,6 +13,8 @@ import {
 import messageService from "../../services/messageService.js";
 import EmojiPicker from "emoji-picker-react";
 import JobCompletionWidget from "../JobCompletionWidget/JobCompletionWidget.jsx";
+import toastService from "../../services/toastService";
+import { useLanguage } from "../../translet/LanguageContext";
 
 function ChatWindow({
   conversation,
@@ -44,6 +46,7 @@ function ChatWindow({
   const typingTimeoutRef = useRef(null);
   const checkTypingIntervalRef = useRef(null);
   const broadcastChannelRef = useRef(null);
+  const { t } = useLanguage();
 
   // Update messagesRef when messages change
   useEffect(() => {
@@ -403,11 +406,110 @@ function ChatWindow({
     return () => clearInterval(pollInterval);
   }, [conversation?.id, currentUserId]);
 
+  // Validate message content for sensitive information
+  const validateMessage = (content) => {
+    const issues = [];
+
+    // Email regex pattern
+    const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/gi;
+    if (emailPattern.test(content)) {
+      issues.push("email");
+    }
+
+    // Phone number patterns
+    // Vietnamese phone: starts with 0 or +84, followed by 9-10 digits
+    // Format: 0xx-xxx-xxxx, 0xx.xxx.xxxx, 0xxxxxxxxx, +84xxxxxxxxx
+    const vnPhonePattern = /(\+84|0)[1-9]\d{8,9}\b/g;
+    // International phone: +[country code][number with spaces/dashes]
+    const intlPhonePattern = /\+\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{4,}/g;
+    // Phone with separators: (xxx) xxx-xxxx, xxx-xxx-xxxx, xxx.xxx.xxxx
+    const formattedPhonePattern = /[()]?\d{3,4}[()]?[\s.-]?\d{3,4}[\s.-]?\d{3,4}/g;
+    
+    // Check for phone numbers (but exclude years like 2024, 2025, etc.)
+    const yearPattern = new RegExp(`\\b(19|20)\\d{2}\\b`, 'g');
+    const years = content.match(yearPattern) || [];
+    const isYear = (num) => {
+      const numStr = num.toString();
+      return (numStr.length === 4 && (numStr.startsWith('19') || numStr.startsWith('20'))) ||
+             years.some(y => numStr.includes(y));
+    };
+
+    if (vnPhonePattern.test(content) || intlPhonePattern.test(content) || formattedPhonePattern.test(content)) {
+      const phoneMatches = [
+        ...content.matchAll(vnPhonePattern),
+        ...content.matchAll(intlPhonePattern),
+        ...content.matchAll(formattedPhonePattern)
+      ];
+      
+      // Check if matches are not years or common non-phone numbers
+      const hasPhone = phoneMatches.some(match => {
+        const num = match[0].replace(/[\s.()-]/g, '');
+        return num.length >= 8 && !isYear(num) && !num.match(/^[12]\d{3}$/); // Exclude years
+      });
+      
+      if (hasPhone) {
+        issues.push("phone");
+      }
+    }
+
+    // Bank account number (STK) pattern: typically 10-16 digits
+    // Look for sequences of 10+ consecutive digits that might be account numbers
+    const accountPattern = /\b\d{10,16}\b/g;
+    if (accountPattern.test(content)) {
+      const matches = content.match(accountPattern) || [];
+      // Exclude years and common number patterns
+      const hasAccount = matches.some(m => {
+        const num = m;
+        // Exclude if it's a year (4 digits starting with 19 or 20)
+        if (num.length === 4 && (num.startsWith('19') || num.startsWith('20'))) {
+          return false;
+        }
+        // Exclude if it's a date pattern (8 digits like 20240101)
+        if (num.length === 8 && num.startsWith('20')) {
+          return false;
+        }
+        // Account numbers are typically 10-16 digits
+        return num.length >= 10;
+      });
+      
+      if (hasAccount) {
+        issues.push("account");
+      }
+    }
+
+    return issues;
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || sending || !conversation?.id) return;
 
     const messageContent = newMessage.trim();
+    
+    // Validate message for sensitive information
+    const validationIssues = validateMessage(messageContent);
+    if (validationIssues.length > 0) {
+      let warningMessage = t("chat.warning.containsSensitive") || "Cảnh báo: Tin nhắn của bạn có chứa thông tin nhạy cảm: ";
+      const issueLabels = [];
+      
+      if (validationIssues.includes("email")) {
+        issueLabels.push(t("chat.warning.email") || "Email");
+      }
+      if (validationIssues.includes("phone")) {
+        issueLabels.push(t("chat.warning.phone") || "Số điện thoại");
+      }
+      if (validationIssues.includes("account")) {
+        issueLabels.push(t("chat.warning.account") || "Số tài khoản");
+      }
+      
+      warningMessage += issueLabels.join(", ");
+      warningMessage += ". " + (t("chat.warning.recommendation") || "Vui lòng không chia sẻ thông tin cá nhân qua tin nhắn.");
+      
+      toastService.warning(warningMessage, 7000);
+      setNewMessage(messageContent); // Keep the message so user can edit
+      return;
+    }
+
     setNewMessage("");
     setSending(true);
 

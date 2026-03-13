@@ -113,13 +113,17 @@
 }
 
 .statusInactive {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  background: #ffebee;
-  color: #c62828;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  box-shadow: 0 1px 2px rgba(153, 27, 27, 0.1);
+  letter-spacing: 0.02em;
 }
 
 .verified {

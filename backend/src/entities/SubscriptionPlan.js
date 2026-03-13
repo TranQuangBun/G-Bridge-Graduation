@@ -20,6 +20,7 @@ export class SubscriptionPlan {
   features;
   maxInterpreterViews;
   maxJobPosts;
+  allowedRoles;
   isActive;
   sortOrder;
   createdAt;
@@ -80,6 +81,10 @@ export const SubscriptionPlanSchema = new EntitySchema({
     },
     maxJobPosts: {
       type: "int",
+      nullable: true,
+    },
+    allowedRoles: {
+      type: "json",
       nullable: true,
     },
     isActive: {

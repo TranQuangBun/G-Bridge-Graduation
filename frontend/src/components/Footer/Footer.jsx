@@ -181,13 +181,10 @@ const Footer = () => {
                   <Link to={ROUTES.FIND_JOB}>{t.findJob}</Link>
                 </li>
                 <li>
-                  <Link to="/candidates">{t.candidates}</Link>
+                  <Link to={ROUTES.FIND_INTERPRETER}>{t.candidates}</Link>
                 </li>
                 <li>
-                  <Link to="/pricing">{t.pricing}</Link>
-                </li>
-                <li>
-                  <Link to="/pricing">{t.pricing}</Link>
+                  <Link to={ROUTES.PRICING}>{t.pricing}</Link>
                 </li>
               </ul>
             </div>
@@ -200,13 +197,10 @@ const Footer = () => {
                   <Link to={ROUTES.POST_JOB}>{t.postJob}</Link>
                 </li>
                 <li>
-                  <Link to="/search-candidates">{t.searchCandidates}</Link>
+                  <Link to={ROUTES.FIND_INTERPRETER}>{t.searchCandidates}</Link>
                 </li>
                 <li>
-                  <Link to="/pricing-plans">{t.pricingPlans}</Link>
-                </li>
-                <li>
-                  <Link to="/employer-support">Support</Link>
+                  <Link to={ROUTES.PRICING}>{t.pricingPlans}</Link>
                 </li>
               </ul>
             </div>

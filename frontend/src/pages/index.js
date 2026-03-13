@@ -17,6 +17,7 @@ export { default as OrganizationApprovalPage } from "./OrganizationApproval";
 export { default as SystemNotificationsPage } from "./SystemNotifications";
 export { default as UserManagementPage } from "./UserManagement";
 export { default as RevenueManagementPage } from "./RevenueManagement";
+export { default as AdminPaymentRecoveryPage } from "./AdminPaymentRecovery/AdminPaymentRecoveryPage";
 export { default as PostJobPage } from "./PostJob";
 export { default as JobDetailPage } from "./JobDetail/JobDetailPage";
 export { default as MessagesPage } from "./Messages/MessagesPage";

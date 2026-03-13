@@ -29,6 +29,7 @@ export class User {
   address;
   avatar;
   isActive;
+  isPublic;
   isVerified;
   isPremium;
   premiumExpiresAt;
@@ -98,6 +99,10 @@ export const UserSchema = new EntitySchema({
       nullable: true,
     },
     isActive: {
+      type: "boolean",
+      default: true,
+    },
+    isPublic: {
       type: "boolean",
       default: true,
     },

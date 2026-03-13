@@ -1,0 +1,241 @@
+.reviewList {
+  width: 100%;
+}
+
+.reviewSummary {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.ratingDisplay {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.averageRating {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.starsContainer {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.star {
+  font-size: 1.2rem;
+  cursor: default;
+}
+
+.starFilled {
+  color: #ffc107;
+}
+
+.starEmpty {
+  color: #ddd;
+}
+
+.totalReviews {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.reviewForm {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.formTitle {
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.ratingInput {
+  margin-bottom: 1.5rem;
+}
+
+.ratingInput label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.starsInputContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.starInput {
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.starInput:hover {
+  transform: scale(1.2);
+}
+
+.ratingValue {
+  margin-left: 0.5rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.commentInput {
+  margin-bottom: 1.5rem;
+}
+
+.commentInput label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.commentInput textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.commentInput textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.submitBtn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.submitBtn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.reviewsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reviewItem {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.reviewerInfo {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #007bff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.reviewerDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewerName {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.reviewDate {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.reviewComment {
+  color: #555;
+  line-height: 1.6;
+  margin-top: 0.5rem;
+}
+
+.reviewActions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.ownerBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #e7f3ff;
+  color: #007bff;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.loading,
+.noReviews,
+.loginPrompt {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.loadMoreBtn {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.loadMoreBtn:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}
+

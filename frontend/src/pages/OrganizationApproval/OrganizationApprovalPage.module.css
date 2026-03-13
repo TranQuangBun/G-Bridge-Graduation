@@ -209,18 +209,42 @@
 }
 
 .statusPending {
-  background: #fef3c7;
-  color: #92400e;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f59e0b;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusApproved {
-  background: #d1fae5;
-  color: #065f46;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #10b981;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusRejected {
-  background: #fee2e2;
-  color: #991b1b;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #ef4444;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .noAction {

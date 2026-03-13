@@ -12,7 +12,6 @@ import toastService from "../../services/toastService";
 import {
   FaChartBar,
   FaClipboardList,
-  FaStar,
   FaUser,
   FaCog,
   FaCamera,
@@ -21,7 +20,12 @@ import {
   FaBookmark,
   FaEdit,
   FaQuestionCircle,
+  FaUpload,
+  FaFilePdf,
+  FaFileImage,
+  FaTimes,
 } from "react-icons/fa";
+import ReviewList from "../../components/Review/ReviewList";
 
 // Sidebar menu for Interpreter role
 const INTERPRETER_SIDEBAR_MENU = [
@@ -197,6 +201,8 @@ const ProfilePage = () => {
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
   const [isEditingProfessional, setIsEditingProfessional] = useState(false);
   const [isEditingCompanyInfo, setIsEditingCompanyInfo] = useState(false);
+  const [isEditingBusinessLicense, setIsEditingBusinessLicense] = useState(false);
+  const [isDraggingLicense, setIsDraggingLicense] = useState(false);
   const [isAddingLanguage, setIsAddingLanguage] = useState(false);
   const [isAddingCertification, setIsAddingCertification] = useState(false);
   const [editingCertificationIndex, setEditingCertificationIndex] =
@@ -364,6 +370,23 @@ const ProfilePage = () => {
   };
 
   const profileCompleteness = calculateProfileCompleteness();
+
+  // Format company size value to readable text
+  const formatCompanySize = (sizeValue) => {
+    if (!sizeValue) return t("profile.company.notProvided") || "Not provided";
+    
+    const sizeMap = {
+      "size_1_10": "1-10",
+      "size_11_50": "11-50",
+      "size_51_200": "51-200",
+      "size_201_500": "201-500",
+      "size_501_1000": "501-1000",
+      "size_1000_plus": "1001+",
+    };
+    
+    const sizeText = sizeMap[sizeValue] || sizeValue;
+    return `${sizeText} ${t("profile.company.employees") || "employees"}`;
+  };
 
   // Get missing fields for completeness alert
   const getMissingFields = () => {
@@ -599,30 +622,124 @@ const ProfilePage = () => {
     }
   };
 
-  // Handle toggle active status
-  const handleToggleActiveStatus = async () => {
-    // Allow both interpreter and client to toggle active status
+  // Handle file selection for business license
+  const handleLicenseFileSelect = (file) => {
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+    if (!validTypes.includes(file.type)) {
+      toastService.error(
+        t("profile.company.invalidFileType") || "Please select a PDF, JPG, or PNG file"
+      );
+      return;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toastService.error(
+        t("profile.company.fileTooLarge") || "File size must be less than 10MB"
+      );
+      return;
+    }
+
+    setCompanyInfoForm({
+      ...companyInfoForm,
+      businessLicense: file,
+    });
+  };
+
+  // Handle drag and drop for business license
+  const handleLicenseDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingLicense(true);
+  };
+
+  const handleLicenseDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingLicense(false);
+  };
+
+  const handleLicenseDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingLicense(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleLicenseFileSelect(file);
+    }
+  };
+
+  // Handle upload business license
+  const handleUploadBusinessLicense = async (e) => {
+    e.preventDefault();
+    if (!companyInfoForm.businessLicense) {
+      toastService.error(
+        t("profile.company.licenseRequired") || "Please select a file to upload"
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("businessLicense", companyInfoForm.businessLicense);
+
+      await authService.uploadBusinessLicense(formData);
+      await refreshUser();
+      
+      setIsEditingBusinessLicense(false);
+      setCompanyInfoForm({
+        ...companyInfoForm,
+        businessLicense: null,
+      });
+
+      toastService.success(
+        t("profile.company.licenseUploaded") || "Business license uploaded successfully. Please wait for admin approval."
+      );
+    } catch (error) {
+      toastService.error(
+        error.message ||
+          t("profile.company.licenseUploadFailed") || "Failed to upload business license"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle toggle profile visibility (public/private)
+  const handleToggleProfileVisibility = async () => {
+    // Allow both interpreter and client to toggle profile visibility
     if (user.role !== "interpreter" && user.role !== "client") return;
 
-    const currentStatus = user.isActive !== false;
+    const isCurrentlyPublic = user.isPublic !== false;
     
-    // If trying to deactivate, show confirmation
-    if (currentStatus) {
+    // If trying to make private, show confirmation
+    if (isCurrentlyPublic) {
       showConfirmModal(
-        t("profile.activeStatus.deactivateTitle") || "Deactivate Profile",
-        t("profile.activeStatus.deactivateMessage") || "Are you sure you want to deactivate your profile? Your profile will not appear in search results.",
+        t("profile.visibility.makePrivateTitle") || "Make Profile Private",
+        t("profile.visibility.makePrivateMessage") || "Are you sure you want to make your profile private? Other users will not be able to view your profile.",
         async () => {
           setLoading(true);
           try {
-            await authService.toggleActiveStatus();
-            await refreshUser();
-            toastService.success(
-              t("profile.activeStatus.deactivated") || "Profile deactivated"
-            );
+            await authService.toggleProfileVisibility();
+            // Wait for refreshUser to complete to ensure state is updated
+            const refreshResult = await refreshUser();
+            if (refreshResult.success) {
+              toastService.success(
+                t("profile.visibility.madePrivate") || "Profile is now private"
+              );
+            } else {
+              throw new Error(refreshResult.error || "Failed to refresh user data");
+            }
           } catch (error) {
             toastService.error(
               error.message ||
-                t("profile.activeStatus.toggleFailed") || "Failed to toggle active status"
+                t("profile.visibility.toggleFailed") || "Failed to change profile visibility"
             );
           } finally {
             setLoading(false);
@@ -630,18 +747,23 @@ const ProfilePage = () => {
         }
       );
     } else {
-      // Activate directly without confirmation
+      // Make public directly without confirmation
       setLoading(true);
       try {
-        await authService.toggleActiveStatus();
-        await refreshUser();
-        toastService.success(
-          t("profile.activeStatus.activated") || "Profile activated"
-        );
+        await authService.toggleProfileVisibility();
+        // Wait for refreshUser to complete to ensure state is updated
+        const refreshResult = await refreshUser();
+        if (refreshResult.success) {
+          toastService.success(
+            t("profile.visibility.madePublic") || "Profile is now public"
+          );
+        } else {
+          throw new Error(refreshResult.error || "Failed to refresh user data");
+        }
       } catch (error) {
         toastService.error(
           error.message ||
-            t("profile.activeStatus.toggleFailed") || "Failed to toggle active status"
+            t("profile.visibility.toggleFailed") || "Failed to change profile visibility"
         );
       } finally {
         setLoading(false);
@@ -669,9 +791,9 @@ const ProfilePage = () => {
     });
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (confirmModal.onConfirm) {
-      confirmModal.onConfirm();
+      await confirmModal.onConfirm();
     }
     hideConfirmModal();
   };
@@ -1302,22 +1424,20 @@ const ProfilePage = () => {
                           <p>{user.email}</p>
                         </div>
                       )}
-                      {user.phone && (
-                        <div className={styles.infoItem}>
-                          <label className={styles.basicInfoLabel}>
-                            {t("profile.basicInfo.phone") || "Phone"}
-                          </label>
-                          <p>{user.phone}</p>
-                        </div>
-                      )}
-                      {/* Active Status Toggle - For interpreters and clients */}
+                      <div className={styles.infoItem}>
+                        <label className={styles.basicInfoLabel}>
+                          {t("profile.basicInfo.phone") || "Phone"}
+                        </label>
+                        <p>{user.phone || (t("profile.basicInfo.notProvided") || "Not provided")}</p>
+                      </div>
+                      {/* Profile Visibility Toggle - For interpreters and clients */}
                       {(user.role === "interpreter" || user.role === "client") && (
                         <div className={styles.infoItem}>
                           <label className={styles.basicInfoLabel}>
-                            {t("profile.activeStatus.label") || "ACTIVE STATUS"}
+                            {t("profile.visibility.label") || "PROFILE VISIBILITY"}
                             <span
                               className={styles.infoIcon}
-                              title={t("profile.activeStatus.whenOff") || "When off, your profile will not appear in search results"}
+                              title={t("profile.visibility.whenPrivate") || "When private, your profile will not be visible to other users"}
                             >
                               <FaQuestionCircle />
                             </span>
@@ -1326,16 +1446,16 @@ const ProfilePage = () => {
                             <label className={styles.toggleSwitch}>
                               <input
                                 type="checkbox"
-                                checked={user.isActive !== false}
-                                onChange={handleToggleActiveStatus}
+                                checked={user.isPublic !== false}
+                                onChange={handleToggleProfileVisibility}
                                 disabled={loading}
                               />
                               <span className={styles.toggleSlider}></span>
                             </label>
                             <span className={styles.toggleLabel}>
-                              {(user.isActive !== false)
-                                ? t("profile.activeStatus.active") || "Active"
-                                : t("profile.activeStatus.inactive") || "Inactive"}
+                              {(user.isPublic !== false)
+                                ? t("profile.visibility.public") || "Public"
+                                : t("profile.visibility.private") || "Private"}
                             </span>
                           </div>
                         </div>
@@ -2177,8 +2297,7 @@ const ProfilePage = () => {
                           {t("profile.company.companySize") || "Company Size"}
                         </label>
                         <p>
-                          {userProfile?.companySize ||
-                            (t("profile.company.notProvided") || "Not provided")}
+                          {formatCompanySize(userProfile?.companySize)}
                         </p>
                       </div>
                       <div className={styles.infoItem}>
@@ -2232,46 +2351,215 @@ const ProfilePage = () => {
                             (t("profile.company.notProvided") || "Not provided")}
                         </p>
                       </div>
-                      <div className={styles.infoItem}>
+                      <div className={`${styles.infoItem} ${styles.infoItemFullWidth}`}>
                         <label>
                           {t("profile.company.businessLicense") || "Business License"}
                         </label>
-                        {userProfile?.businessLicense ? (
+                        {!isEditingBusinessLicense ? (
+                          userProfile?.businessLicense ? (
                           <div className={styles.licenseInfo}>
-                            <a
-                              href={
-                                userProfile.businessLicense.startsWith("http")
-                                  ? userProfile.businessLicense
-                                  : `http://localhost:4000${userProfile.businessLicense}`
-                              }
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.viewCertBtn}
-                            >
-                              {t("profile.company.viewLicense") || "View License"}
-                            </a>
+                              {/* File Info Section */}
+                              {(() => {
+                                const licenseUrl = userProfile.businessLicense;
+                                const fileName = licenseUrl.split('/').pop() || '';
+                                const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+                                const isPdf = fileExtension === 'pdf';
+                                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
+                                const fileTypeDisplay = isPdf 
+                                  ? 'PDF Document' 
+                                  : isImage 
+                                    ? fileExtension.toUpperCase() + ' Image' 
+                                    : 'File';
+                                const fullLicenseUrl = licenseUrl.startsWith("http")
+                                  ? licenseUrl
+                                  : `http://localhost:4000${licenseUrl}`;
+                                
+                                return (
+                                  <div className={styles.licenseFileInfo}>
+                                    <div className={styles.licenseFileIcon}>
+                                      {isPdf ? (
+                                        <FaFilePdf data-file-type="pdf" />
+                                      ) : (
+                                        <FaFileImage data-file-type="image" />
+                                      )}
+                                    </div>
+                                    <div className={styles.licenseFileDetails}>
+                                      <a
+                                        href={fullLicenseUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.licenseFileName}
+                                      >
+                                        {fileName || t("profile.company.businessLicense") || "Business License"}
+                                      </a>
+                                      <p className={styles.licenseFileType}>
+                                        {fileTypeDisplay}
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsEditingBusinessLicense(true)}
+                                      className={styles.licenseEditBtn}
+                                      disabled={loading}
+                                      title={t("profile.company.editLicense") || "Edit"}
+                                    >
+                                      <FaEdit />
+                                    </button>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Status Section */}
                             {userProfile?.licenseVerificationStatus && (
-                              <span
-                                className={`${styles.statusBadge} ${
-                                  styles[userProfile.licenseVerificationStatus]
-                                }`}
-                              >
-                                {(userProfile.licenseVerificationStatus ===
-                                  "pending" &&
-                                  t("profile.verificationStatus.pending")) || "Pending"}
-                                {(userProfile.licenseVerificationStatus ===
-                                  "approved" &&
-                                  (t("profile.verificationStatus.verified") || "Verified"))}
-                                {(userProfile.licenseVerificationStatus ===
-                                  "rejected" &&
-                                  (t("profile.verificationStatus.rejected") || "Rejected"))}
-                              </span>
+                              <div className={styles.licenseStatusWrapper}>
+                                <span className={styles.licenseStatusLabel}>
+                                  {t("profile.verificationStatus.status") || "Status:"}
+                                </span>
+                                <span
+                                  className={`${styles.statusBadge} ${
+                                    styles[userProfile.licenseVerificationStatus]
+                                  }`}
+                                >
+                                  {(userProfile.licenseVerificationStatus ===
+                                    "pending" &&
+                                    t("profile.verificationStatus.pending")) || "Pending"}
+                                  {(userProfile.licenseVerificationStatus ===
+                                    "approved" &&
+                                    (t("profile.verificationStatus.verified") || "Verified"))}
+                                  {(userProfile.licenseVerificationStatus ===
+                                    "rejected" &&
+                                    (t("profile.verificationStatus.rejected") || "Rejected"))}
+                                </span>
+                              </div>
                             )}
                           </div>
                         ) : (
-                          <p>
+                            <div className={styles.licenseEmptyState}>
+                          <p className={styles.licenseEmptyText}>
                             {t("profile.company.notUploaded") || "Not uploaded"}
-                          </p>
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setIsEditingBusinessLicense(true)}
+                                className={styles.uploadBtn}
+                                disabled={loading}
+                              >
+                                <FaUpload style={{ marginRight: "8px" }} />
+                                {t("profile.company.uploadLicense") || "Upload License"}
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <form
+                            onSubmit={handleUploadBusinessLicense}
+                            className={styles.licenseEditForm}
+                          >
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>
+                                {t("profile.company.selectLicenseFile") || "CHỌN FILE GIẤY PHÉP KINH DOANH"} *
+                              </label>
+                              
+                              <div
+                                className={`${styles.fileUploadArea} ${
+                                  isDraggingLicense ? styles.fileUploadAreaDragging : ""
+                                } ${companyInfoForm.businessLicense ? styles.fileUploadAreaHasFile : ""}`}
+                                onDragOver={handleLicenseDragOver}
+                                onDragLeave={handleLicenseDragLeave}
+                                onDrop={handleLicenseDrop}
+                                onClick={() => document.getElementById("business-license-input")?.click()}
+                              >
+                                <input
+                                  id="business-license-input"
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  onChange={(e) => handleLicenseFileSelect(e.target.files[0])}
+                                  required
+                                  style={{ display: "none" }}
+                                />
+                                
+                                {companyInfoForm.businessLicense ? (
+                                  <div className={styles.fileSelected}>
+                                    <div className={styles.fileIcon}>
+                                      {companyInfoForm.businessLicense.type === "application/pdf" ? (
+                                        <FaFilePdf />
+                                      ) : (
+                                        <FaFileImage />
+                                      )}
+                                    </div>
+                                    <div className={styles.fileDetails}>
+                                      <span className={styles.fileName}>
+                                        {companyInfoForm.businessLicense.name}
+                                      </span>
+                                      <span className={styles.fileSize}>
+                                        {(companyInfoForm.businessLicense.size / 1024 / 1024).toFixed(2)} MB
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className={styles.fileRemoveBtn}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCompanyInfoForm({
+                                          ...companyInfoForm,
+                                          businessLicense: null,
+                                        });
+                                      }}
+                                    >
+                                      <FaTimes />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className={styles.fileUploadPlaceholder}>
+                                    <FaUpload className={styles.uploadIcon} />
+                                    <p className={styles.uploadText}>
+                                      {t("profile.company.dragDropFile") || "Kéo thả file vào đây hoặc click để chọn"}
+                                    </p>
+                                    <button
+                                      type="button"
+                                      className={styles.chooseFileBtn}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        document.getElementById("business-license-input")?.click();
+                                      }}
+                                    >
+                                      {t("profile.company.chooseFile") || "Chọn tệp"}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <p className={styles.fileHint}>
+                                {t("profile.company.licenseFileHint") || "Định dạng chấp nhận: PDF, JPG, PNG (Tối đa 10MB)"}
+                              </p>
+                            </div>
+                            
+                            <div className={styles.formActions}>
+                              <button
+                                type="submit"
+                                className={styles.saveBtn}
+                                disabled={loading || !companyInfoForm.businessLicense}
+                              >
+                                <FaUpload style={{ marginRight: "8px" }} />
+                                {loading
+                                  ? t("profile.company.uploading") || "Đang tải lên..."
+                                  : t("profile.company.upload") || "Tải lên"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsEditingBusinessLicense(false);
+                                  setCompanyInfoForm({
+                                    ...companyInfoForm,
+                                    businessLicense: null,
+                                  });
+                                }}
+                                className={styles.cancelBtn}
+                                disabled={loading}
+                              >
+                                {t("profile.company.cancel") || "Hủy"}
+                              </button>
+                            </div>
+                          </form>
                         )}
                       </div>
                     </div>
@@ -2481,46 +2769,20 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* Stats Card */}
-            {user.role === "interpreter" && (
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <h3 className={styles.cardTitle}>
-                    {t("profile.stats.title")}
-                  </h3>
-                </div>
-
-                <div className={styles.cardContent}>
-                  <div className={styles.statsGrid}>
-                    <div className={styles.statItem}>
-                      <div className={styles.statIcon}>
-                        <FaStar />
-                      </div>
-                      <div className={styles.statInfo}>
-                        <h4>{userProfile?.rating || "0.0"}</h4>
-                        <p>{t("profile.stats.rating")}</p>
-                      </div>
-                    </div>
-
-                    <div className={styles.statItem}>
-                      <div className={styles.statIcon}></div>
-                      <div className={styles.statInfo}>
-                        <h4>{userProfile?.completedJobs || 0}</h4>
-                        <p>{t("profile.stats.totalJobs")}</p>
-                      </div>
-                    </div>
-
-                    <div className={styles.statItem}>
-                      <div className={styles.statIcon}></div>
-                      <div className={styles.statInfo}>
-                        <h4>{userProfile?.totalReviews || 0}</h4>
-                        <p>{t("profile.stats.completionRate")}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Reviews Section */}
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h3 className={styles.cardTitle}>
+                  {t("reviews.title") || t("profile.reviews.title") || "Reviews"}
+                </h3>
               </div>
-            )}
+              <div className={styles.cardContent}>
+                <ReviewList
+                  revieweeId={user.id}
+                  showForm={false}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2539,19 +2801,19 @@ const ProfilePage = () => {
               <p>{confirmModal.message}</p>
             </div>
             <div className={styles.confirmModalFooter}>
-              {confirmModal.onCancel ? (
+              {confirmModal.onConfirm ? (
                 <>
                   <button
                     className={styles.confirmCancelBtn}
                     onClick={hideConfirmModal}
                   >
-                    {t("profile.cancel") || "Cancel"}
+                    {t("profile.cancel") || t("common.cancel") || "Cancel"}
                   </button>
                   <button
                     className={styles.confirmDeleteBtn}
                     onClick={handleConfirm}
                   >
-                    {t("profile.delete") || "Delete"}
+                    {t("common.confirm") || "Confirm"}
                   </button>
                 </>
               ) : (

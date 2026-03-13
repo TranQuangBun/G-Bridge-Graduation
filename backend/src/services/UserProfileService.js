@@ -1,14 +1,19 @@
 import { UserRepository } from "../repositories/UserRepository.js";
 import { InterpreterProfileRepository } from "../repositories/InterpreterProfileRepository.js";
+import { ClientProfileRepository } from "../repositories/ClientProfileRepository.js";
+import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
 import { AppDataSource } from "../config/DataSource.js";
 import { User } from "../entities/User.js";
-import { NotFoundError } from "../utils/Errors.js";
+import { NotFoundError, AppError } from "../utils/Errors.js";
 import { updateProfileCompleteness } from "../utils/ProfileCompleteness.js";
+import { OrganizationStatus } from "../entities/Organization.js";
 
 export class UserProfileService {
   constructor() {
     this.userRepository = new UserRepository();
     this.interpreterProfileRepository = new InterpreterProfileRepository();
+    this.clientProfileRepository = new ClientProfileRepository();
+    this.organizationRepository = new OrganizationRepository();
   }
 
   async getUserById(userId) {
@@ -193,26 +198,54 @@ export class UserProfileService {
       throw new AppError("Only clients can upload business license", 403);
     }
 
-    // Get or create client profile
-    let clientProfile = user.clientProfile;
+    // Check if client profile already exists
+    let clientProfile = await this.clientProfileRepository.findByUserId(parseInt(userId));
+    
     if (!clientProfile) {
       // Create new client profile if doesn't exist
-      const ClientProfileRepository =
-        require("../repositories/ClientProfileRepository.js").ClientProfileRepository;
-      const clientProfileRepo = new ClientProfileRepository();
-      clientProfile = await clientProfileRepo.create({
+      clientProfile = await this.clientProfileRepository.create({
         userId: parseInt(userId),
         businessLicense: licenseUrl,
         licenseVerificationStatus: "pending",
       });
     } else {
       // Update existing client profile
-      const ClientProfileRepository =
-        require("../repositories/ClientProfileRepository.js").ClientProfileRepository;
-      const clientProfileRepo = new ClientProfileRepository();
-      clientProfile = await clientProfileRepo.update(clientProfile.id, {
+      clientProfile = await this.clientProfileRepository.update(clientProfile.id, {
         businessLicense: licenseUrl,
         licenseVerificationStatus: "pending",
+      });
+    }
+
+    // Check if organization already exists for this client
+    const existingOrganizations = await this.organizationRepository.findByOwnerUserId(parseInt(userId));
+    
+    if (existingOrganizations && existingOrganizations.length > 0) {
+      // Update existing organization with new business license
+      const organization = existingOrganizations[0];
+      await this.organizationRepository.update(organization.id, {
+        businessLicense: licenseUrl,
+        licenseVerificationStatus: "pending",
+        approvalStatus: OrganizationStatus.PENDING,
+        isActive: false,
+      });
+    } else {
+      // Create new organization from client profile data
+      // Use companyName from clientProfile, fallback to user fullName
+      const orgName = clientProfile.companyName || user.fullName || "Organization";
+      
+      await this.organizationRepository.create({
+        ownerUserId: parseInt(userId),
+        name: orgName,
+        description: clientProfile.description || null,
+        logo: clientProfile.logo || null,
+        website: clientProfile.website || null,
+        email: user.email || null,
+        phone: user.phone || null,
+        address: user.address || null,
+        businessLicense: licenseUrl,
+        licenseVerificationStatus: "pending",
+        approvalStatus: OrganizationStatus.PENDING,
+        isActive: false,
       });
     }
 
@@ -231,6 +264,43 @@ export class UserProfileService {
       isActive: newStatus,
     });
     const userResponse = { ...updated };
+    delete userResponse.passwordHash;
+    return userResponse;
+  }
+
+  async toggleUserProfileVisibility(userId) {
+    // Use findByIdWithProfiles to ensure isPublic is included
+    const user = await this.userRepository.findByIdWithProfiles(parseInt(userId));
+    if (!user) {
+      throw new NotFoundError("User");
+    }
+
+    // Toggle isPublic status (profile visibility)
+    // Handle null/undefined as true (public by default)
+    const currentStatus = user.isPublic === null || user.isPublic === undefined ? true : user.isPublic;
+    const newStatus = !currentStatus;
+    
+    console.log("Toggle profile visibility:", {
+      userId,
+      currentIsPublic: user.isPublic,
+      currentStatus,
+      newStatus,
+    });
+
+    const updated = await this.userRepository.update(parseInt(userId), {
+      isPublic: newStatus,
+    });
+    
+    // Reload with profiles to ensure we get the updated isPublic value
+    const reloadedUser = await this.userRepository.findByIdWithProfiles(parseInt(userId));
+    
+    console.log("Updated user:", {
+      userId,
+      updatedIsPublic: updated?.isPublic,
+      reloadedIsPublic: reloadedUser?.isPublic,
+    });
+    
+    const userResponse = { ...reloadedUser };
     delete userResponse.passwordHash;
     return userResponse;
   }
@@ -266,4 +336,8 @@ export async function updateClientProfileBusinessLicense(userId, licenseUrl) {
 
 export async function toggleUserActiveStatus(userId) {
   return await userProfileService.toggleUserActiveStatus(userId);
+}
+
+export async function toggleUserProfileVisibility(userId) {
+  return await userProfileService.toggleUserProfileVisibility(userId);
 }

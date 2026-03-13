@@ -374,10 +374,10 @@ function MyJobsPage() {
                   }}
                   className={styles.filterSelect}
                 >
-                  <option value="all">All Status</option>
-                  <option value="open">Open</option>
-                  <option value="closed">Closed</option>
-                  <option value="expired">Expired</option>
+                  <option value="all">{t("myJobs.filters.allStatus") || "All Status"}</option>
+                  <option value="open">{t("myJobs.status.open") || "Open"}</option>
+                  <option value="closed">{t("myJobs.status.closed") || "Closed"}</option>
+                  <option value="expired">{t("myJobs.status.expired") || "Expired"}</option>
                 </select>
               </div>
 
@@ -390,10 +390,10 @@ function MyJobsPage() {
                   }}
                   className={styles.filterSelect}
                 >
-                  <option value="all">All Reviews</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="all">{t("myJobs.filters.allReviews") || "All Reviews"}</option>
+                  <option value="pending">{t("myJobs.reviewStatus.pending") || "Pending"}</option>
+                  <option value="approved">{t("myJobs.reviewStatus.approved") || "Approved"}</option>
+                  <option value="rejected">{t("myJobs.reviewStatus.rejected") || "Rejected"}</option>
                 </select>
               </div>
 
@@ -403,9 +403,9 @@ function MyJobsPage() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className={styles.filterSelect}
                 >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="title">Title A-Z</option>
+                  <option value="newest">{t("myJobs.sort.newestFirst") || "Newest First"}</option>
+                  <option value="oldest">{t("myJobs.sort.oldestFirst") || "Oldest First"}</option>
+                  <option value="title">{t("myJobs.sort.titleAZ") || "Title A-Z"}</option>
                 </select>
               </div>
             </div>

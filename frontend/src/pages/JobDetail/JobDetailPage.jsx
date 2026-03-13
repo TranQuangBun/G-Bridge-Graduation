@@ -505,6 +505,12 @@ export default function JobDetailPage() {
   // Check if current user is the owner of this job (via organization)
   const isJobOwner = user?.role === "client" && job?.organization?.ownerUserId === user?.id;
 
+  // Check if user can view contact information
+  // - Job owner (client) can always view
+  // - Interpreter with active subscription can view
+  // - User with premium flag can view
+  const canViewContactInfo = isJobOwner || hasActiveSubscription || hasPremium;
+
   // Fetch AI suggested interpreters for client role
   // Fetch pre-filtered interpreters only (without AI)
   const handleFetchPreFilteredInterpreters = async () => {
@@ -595,10 +601,13 @@ export default function JobDetailPage() {
         setAiSuggestionsFetched(true);
         const matchCount = aiResponse.data.matched_interpreters?.length || 0;
         const preFilteredCount = aiResponse.data.pre_filtered_interpreters?.length || aiResponse.data.preFilteredInterpreters?.length || 0;
-        toastService.success(`Found ${matchCount} AI-matched interpreters and ${preFilteredCount} pre-filtered interpreters`);
+        const successMessage = (t("jobDetail.foundAiMatched") || "Found {matchCount} AI-matched interpreters and {preFilteredCount} pre-filtered interpreters")
+          .replace("{matchCount}", matchCount)
+          .replace("{preFilteredCount}", preFilteredCount);
+        toastService.success(successMessage);
       } else {
         console.log("AI response not successful:", aiResponse);
-        toastService.error("No AI suggestions available");
+        toastService.error(t("jobDetail.noAiSuggestionsError") || "No AI suggestions available");
       }
     } catch (error) {
       console.error("Error fetching AI suggestions:", error);
@@ -614,6 +623,13 @@ export default function JobDetailPage() {
       return;
     }
 
+    // Check if user has active subscription
+    if (!hasActiveSubscription) {
+      toastService.error(t("jobDetail.subscriptionRequiredForAI") || "Please subscribe to a plan to use AI features");
+      navigate(ROUTES.PRICING);
+      return;
+    }
+
     setLoadingInterpreterScore(true);
     try {
       // Get interpreter profile ID
@@ -626,7 +642,7 @@ export default function JobDetailPage() {
         setInterpreterSuitabilityScore(scoreResponse.data.suitability_score);
         setInterpreterScoreFetched(true);
       } else {
-        toastService.error("Unable to calculate suitability score");
+        toastService.error(t("jobDetail.unableToCalculateScore") || "Unable to calculate suitability score");
       }
     } catch (error) {
       console.error("Error fetching interpreter score:", error);
@@ -974,7 +990,7 @@ export default function JobDetailPage() {
                     <>
                       {loadingAISuggestions ? (
                         <div className={styles.aiLoadingState}>
-                          <p>AI is analyzing and finding the best interpreters...</p>
+                          <p>{t("jobDetail.aiAnalyzing") || "AI is analyzing and finding the best interpreters..."}</p>
                         </div>
                       ) : aiMatches.length > 0 ? (
                         <div className={styles.aiMatchesList}>
@@ -1022,10 +1038,10 @@ export default function JobDetailPage() {
                                       e.stopPropagation();
                                       setSelectedMatchDetails(match);
                                     }}
-                                    title={t("common.viewDetails") || "Xem phân tích chi tiết"}
+                                    title={t("jobDetail.viewAnalysis") || "View Analysis"}
                                     style={{ width: "100%" }}
                                   >
-                                    <FaEye /> {t("common.viewDetails") || "Xem phân tích chi tiết"}
+                                    <FaEye /> {t("jobDetail.viewAnalysis") || "View Analysis"}
                                   </button>
                                 )}
                                 <button
@@ -1034,10 +1050,10 @@ export default function JobDetailPage() {
                                     e.stopPropagation();
                                     handleOpenConnectionModal(match);
                                   }}
-                                  title="Connect with this interpreter"
+                                  title={t("jobDetail.connectWithInterpreter") || "Connect with this interpreter"}
                                   style={{ width: "100%" }}
                                 >
-                                  <FaUserPlus /> Connect
+                                  <FaUserPlus /> {t("jobDetail.connect") || "Connect"}
                                 </button>
                               </div>
                             </div>
@@ -1045,11 +1061,11 @@ export default function JobDetailPage() {
                         </div>
                       ) : aiSuggestionsFetched && !loadingAISuggestions ? (
                         <div className={styles.noSuggestions}>
-                          <p>No AI suggestions available at this time.</p>
+                          <p>{t("jobDetail.noAiSuggestions") || "No AI suggestions available at this time."}</p>
                         </div>
                       ) : (
                         <div className={styles.aiPrompt}>
-                          <p>Toggle to AI to get AI-powered interpreter suggestions for this job.</p>
+                          <p>{t("jobDetail.aiPrompt") || "Toggle to AI to get AI-powered interpreter suggestions for this job."}</p>
                         </div>
                       )}
                     </>
@@ -1065,7 +1081,7 @@ export default function JobDetailPage() {
                       })()}
                       {loadingAISuggestions ? (
                         <div className={styles.aiLoadingState}>
-                          <p>Loading interpreters...</p>
+                          <p>{t("jobDetail.loadingInterpreters") || "Loading interpreters..."}</p>
                         </div>
                       ) : preFilteredInterpreters.length > 0 ? (
                         <div className={styles.aiMatchesList}>
@@ -1140,7 +1156,7 @@ export default function JobDetailPage() {
               <div className={styles.contactInfo}>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
+                    !user || !canViewContactInfo ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}>
@@ -1152,7 +1168,7 @@ export default function JobDetailPage() {
                 </div>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
+                    !user || !canViewContactInfo ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}>
@@ -1164,7 +1180,7 @@ export default function JobDetailPage() {
                 </div>
                 <div
                   className={`${styles.contactItem} ${
-                    !user || (!hasPremium && !isJobOwner) ? styles.blurred : ""
+                    !user || !canViewContactInfo ? styles.blurred : ""
                   }`}
                 >
                   <span className={styles.contactLabel}>
@@ -1176,7 +1192,7 @@ export default function JobDetailPage() {
                 </div>
               </div>
 
-              {(!user || (!hasPremium && !isJobOwner)) && (
+              {(!user || !canViewContactInfo) && (
                 <div className={styles.premiumNotice}>
                   <p>{t("jobDetail.premiumNotice")}</p>
                   <button
@@ -1370,7 +1386,7 @@ export default function JobDetailPage() {
                   <div className={styles.aiSuitabilityContent}>
                     <div className={styles.aiLoadingState}>
                       <FaSpinner className={styles.spinner} />
-                      <p>AI is analyzing your profile against this job...</p>
+                      <p>{t("jobDetail.aiAnalyzingProfile") || "AI is analyzing your profile against this job..."}</p>
                     </div>
                   </div>
                 ) : interpreterSuitabilityScore ? (
@@ -1398,12 +1414,12 @@ export default function JobDetailPage() {
                 ) : interpreterScoreFetched && !loadingInterpreterScore ? (
                   <div className={styles.aiSuitabilityContent}>
                     <div className={styles.aiErrorState}>
-                      <p>Unable to calculate suitability score.</p>
+                      <p>{t("jobDetail.unableToCalculateScore") || "Unable to calculate suitability score."}</p>
                       <button
                         className={styles.aiFetchButton}
                         onClick={handleFetchInterpreterScore}
                       >
-                        <FaSpinner /> Try Again
+                        <FaSpinner /> {t("jobDetail.tryAgain") || "Try Again"}
                       </button>
                     </div>
                   </div>
@@ -1413,12 +1429,20 @@ export default function JobDetailPage() {
                       <p className={styles.aiPromptText}>
                         {t("jobDetail.aiSuitabilityPrompt") || "Click the button below to see how well your profile matches this job."}
                       </p>
+                      {!hasActiveSubscription && (
+                        <p className={styles.aiSubscriptionRequired}>
+                          {t("jobDetail.subscriptionRequiredForAI") || "Please subscribe to a plan to use AI features"}
+                        </p>
+                      )}
                       <button
                         className={styles.aiFetchButton}
-                        onClick={handleFetchInterpreterScore}
-                        disabled={loadingInterpreterScore}
+                        onClick={hasActiveSubscription ? handleFetchInterpreterScore : () => navigate(ROUTES.PRICING)}
+                        disabled={loadingInterpreterScore || !hasActiveSubscription}
+                        style={!hasActiveSubscription ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                       >
-                        <FaUserCheck /> {t("jobDetail.checkSuitability") || "Check My Suitability"}
+                        <FaUserCheck /> {hasActiveSubscription 
+                          ? (t("jobDetail.checkSuitability") || "Check My Suitability")
+                          : (t("jobDetail.subscribeToUseAI") || "Subscribe to Use AI")}
                       </button>
                     </div>
                   </div>
@@ -1434,7 +1458,7 @@ export default function JobDetailPage() {
         <div className={styles.matchDetailsOverlay} onClick={() => setSelectedMatchDetails(null)}>
           <div className={styles.matchDetailsModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.matchDetailsHeader}>
-              <h2>AI Match Analysis</h2>
+              <h2>{t("jobDetail.aiMatchAnalysis") || "AI Match Analysis"}</h2>
               <button onClick={() => setSelectedMatchDetails(null)}>×</button>
             </div>
             <div className={styles.matchDetailsContent}>

@@ -291,3 +291,41 @@ export async function getAllPayments(req, res) {
     return sendError(res, "Error fetching payments", 500, error);
   }
 }
+
+// Get payments with issues (processing, failed but might be paid)
+export async function getProblematicPayments(req, res) {
+  try {
+    const result = await adminService.getProblematicPayments(req.query);
+    return sendPaginated(
+      res,
+      result.payments,
+      result.pagination,
+      "Problematic payments fetched successfully"
+    );
+  } catch (error) {
+    logError(error, "Fetching problematic payments");
+    return sendError(res, "Error fetching problematic payments", 500, error);
+  }
+}
+
+// Manually restore/complete payment and create subscription
+export async function restorePayment(req, res) {
+  try {
+    const { id } = req.params;
+    const adminId = req.user?.sub || req.user?.id;
+    const { reason } = req.body; // Optional reason for restoration
+    
+    const result = await adminService.restorePayment(id, adminId, reason);
+    return sendSuccess(
+      res,
+      result,
+      "Payment restored and subscription created successfully"
+    );
+  } catch (error) {
+    if (error instanceof AppError) {
+      return sendError(res, error.message, error.statusCode || 404);
+    }
+    logError(error, "Restoring payment");
+    return sendError(res, "Error restoring payment", 500, error);
+  }
+}

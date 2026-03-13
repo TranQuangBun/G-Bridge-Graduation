@@ -3,14 +3,17 @@ import jwt from "jsonwebtoken";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { InterpreterProfileRepository } from "../repositories/InterpreterProfileRepository.js";
 import { ClientProfileRepository } from "../repositories/ClientProfileRepository.js";
+import { OrganizationRepository } from "../repositories/OrganizationRepository.js";
 import { AppError, NotFoundError } from "../utils/Errors.js";
 import { updateProfileCompleteness } from "../utils/ProfileCompleteness.js";
+import { OrganizationStatus } from "../entities/Organization.js";
 
 export class AuthService {
   constructor() {
     this.userRepository = new UserRepository();
     this.interpreterProfileRepository = new InterpreterProfileRepository();
     this.clientProfileRepository = new ClientProfileRepository();
+    this.organizationRepository = new OrganizationRepository();
   }
 
   async registerUser(userData) {
@@ -46,11 +49,23 @@ export class AuthService {
       // Calculate initial profile completeness
       await updateProfileCompleteness(user.id);
     } else if (role === "client") {
-      await this.clientProfileRepository.create({
+      // Create ClientProfile
+      const clientProfile = await this.clientProfileRepository.create({
         userId: user.id,
         companyName: fullName,
         verificationStatus: "pending",
         accountStatus: "pending_approval",
+      });
+
+      // Automatically create Organization for client
+      await this.organizationRepository.create({
+        ownerUserId: user.id,
+        name: fullName || "Organization",
+        email: email,
+        phone: phone || null,
+        address: address || null,
+        approvalStatus: OrganizationStatus.PENDING,
+        isActive: false,
       });
     }
 

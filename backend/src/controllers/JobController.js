@@ -1,6 +1,7 @@
 import { AppDataSource } from "../config/DataSource.js";
 import { Job, JobStatus } from "../entities/Job.js";
 import { Organization } from "../entities/Organization.js";
+import { ClientProfile } from "../entities/ClientProfile.js";
 import { WorkingMode } from "../entities/WorkingMode.js";
 import { Domain } from "../entities/Domain.js";
 import { JobDomain } from "../entities/JobDomain.js";
@@ -73,15 +74,26 @@ export async function getJobs(req, res) {
       .leftJoinAndSelect("job.requiredCertificates", "requiredCertificates")
       .leftJoinAndSelect("requiredCertificates.certificate", "certificate");
 
-    // Always start with a base WHERE clause to avoid andWhere issues
-    // For public users, only show approved jobs with open status
+    // Check if user is admin - admins can see all jobs, public users only see approved
+    const userRole = req.user?.role;
+    const isAdmin = userRole === "admin";
+    
     let hasWhere = false;
     
-    // Default filter: only show approved jobs (unless reviewStatus is explicitly provided)
-    if (!reviewStatus) {
-      queryBuilder.where("job.reviewStatus = :reviewStatus", { reviewStatus: "approved" });
+    // Filter by reviewStatus if provided
+    if (reviewStatus) {
+      queryBuilder.where("job.reviewStatus = :reviewStatus", {
+        reviewStatus,
+      });
+      hasWhere = true;
+    } else if (!isAdmin) {
+      // For non-admin users, only show approved jobs by default
+      queryBuilder.where("job.reviewStatus = :reviewStatus", { 
+        reviewStatus: "approved" 
+      });
       hasWhere = true;
     }
+    // If admin and no reviewStatus filter, show all jobs (no filter)
 
     if (search) {
       const condition = hasWhere ? "andWhere" : "where";
@@ -146,14 +158,6 @@ export async function getJobs(req, res) {
       const condition = hasWhere ? "andWhere" : "where";
       queryBuilder[condition]("level.id = :levelId", {
         levelId: parseInt(levelId),
-      });
-      hasWhere = true;
-    }
-
-    if (reviewStatus) {
-      const condition = hasWhere ? "andWhere" : "where";
-      queryBuilder[condition]("job.reviewStatus = :reviewStatus", {
-        reviewStatus,
       });
       hasWhere = true;
     }
@@ -316,12 +320,48 @@ export async function createJob(req, res) {
 
     const jobRepository = AppDataSource.getRepository(Job);
     const organizationRepository = AppDataSource.getRepository(Organization);
+    const clientProfileRepository = AppDataSource.getRepository(ClientProfile);
     const jobDomainRepository = AppDataSource.getRepository(JobDomain);
     const jobRequiredLanguageRepository =
       AppDataSource.getRepository(JobRequiredLanguage);
     const jobRequiredCertificateRepository = AppDataSource.getRepository(
       JobRequiredCertificate
     );
+
+    // Get current user ID
+    const userId = req.user?.sub || req.user?.id;
+    if (!userId) {
+      return sendError(res, "User not authenticated", 401);
+    }
+
+    // Check if client account is approved
+    const clientProfile = await clientProfileRepository.findOne({
+      where: { userId: parseInt(userId) },
+    });
+
+    if (clientProfile) {
+      if (clientProfile.accountStatus === "pending_approval") {
+        return sendError(
+          res,
+          "Your account is pending approval. Please wait for admin approval before posting jobs.",
+          403
+        );
+      }
+      if (clientProfile.accountStatus === "suspended") {
+        return sendError(
+          res,
+          "Your account has been suspended. Please contact support.",
+          403
+        );
+      }
+      if (clientProfile.accountStatus !== "active") {
+        return sendError(
+          res,
+          "Your account is not active. Please contact support.",
+          403
+        );
+      }
+    }
 
     // Verify organization exists and is approved
     const organization = await organizationRepository.findOne({
@@ -545,6 +585,69 @@ export async function updateJob(req, res) {
 
     if (!job) {
       return sendError(res, "Job not found", 404);
+    }
+
+    // Get current user ID
+    const userId = req.user?.sub || req.user?.id;
+    if (!userId) {
+      return sendError(res, "User not authenticated", 401);
+    }
+
+    // Check if client account is approved
+    const clientProfileRepository = AppDataSource.getRepository(ClientProfile);
+    const clientProfile = await clientProfileRepository.findOne({
+      where: { userId: parseInt(userId) },
+    });
+
+    if (clientProfile) {
+      if (clientProfile.accountStatus === "pending_approval") {
+        return sendError(
+          res,
+          "Your account is pending approval. Please wait for admin approval before updating jobs.",
+          403
+        );
+      }
+      if (clientProfile.accountStatus === "suspended") {
+        return sendError(
+          res,
+          "Your account has been suspended. Please contact support.",
+          403
+        );
+      }
+      if (clientProfile.accountStatus !== "active") {
+        return sendError(
+          res,
+          "Your account is not active. Please contact support.",
+          403
+        );
+      }
+    }
+
+    // Check organization approval status (for existing job or if organizationId is being updated)
+    const organizationRepository = AppDataSource.getRepository(Organization);
+    const orgIdToCheck = organizationId ? parseInt(organizationId) : job.organizationId;
+    const organization = await organizationRepository.findOne({
+      where: { id: orgIdToCheck },
+    });
+
+    if (organization) {
+      // Check if organization is approved (required before posting/updating jobs)
+      if (organization.approvalStatus !== "approved") {
+        return sendError(
+          res,
+          "Organization must be approved before posting jobs. Please wait for admin approval.",
+          403
+        );
+      }
+
+      // Check if organization is active
+      if (!organization.isActive) {
+        return sendError(
+          res,
+          "Organization is not active. Please contact support.",
+          403
+        );
+      }
     }
 
     // Validate and prepare update data

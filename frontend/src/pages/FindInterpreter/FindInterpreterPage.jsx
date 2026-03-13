@@ -75,14 +75,14 @@ const FindInterpreterPage = () => {
     sortBy: "createdAt",
     sortOrder: "DESC",
     page: 1,
-    limit: 12,
+    limit: 9,
   });
 
   // Pagination
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
-    limit: 12,
+    limit: 9,
     totalPages: 0,
   });
 
@@ -345,7 +345,7 @@ const FindInterpreterPage = () => {
       sortBy: "createdAt",
       sortOrder: "DESC",
       page: 1,
-      limit: 12,
+      limit: 9,
     });
     fetchInterpreters();
   };

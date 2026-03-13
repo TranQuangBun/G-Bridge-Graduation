@@ -592,11 +592,6 @@
   margin-bottom: 0;
 }
 
-.card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: #cbd5e1;
-}
 
 /* Two Column Grid Layout for Languages & Certifications */
 .twoColumnGrid {
@@ -640,6 +635,7 @@
 
 .cardContent {
   padding: 20px;
+  overflow: hidden;
 }
 
 /* Basic Info Container - New Layout */
@@ -788,11 +784,6 @@
   gap: 6px;
 }
 
-.infoItem:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  transform: translateX(2px);
-}
 
 .infoItem label {
   font-size: 0.688rem;
@@ -876,8 +867,18 @@
 }
 
 .infoItemFullWidth {
-  grid-column: 1 / -1;
-  width: 100%;
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* Ensure form inside full width infoItem doesn't shrink */
+.infoItemFullWidth .licenseEditForm {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 @media (max-width: 968px) {
@@ -1037,6 +1038,52 @@
   gap: 16px 20px;
 }
 
+/* Full width card - Company Information card always takes full width */
+/* Break out of profileContentWrapper to fill mainContent width */
+.cardFullWidth {
+  width: calc(100vw - 280px) !important;
+  max-width: calc(100vw - 280px) !important;
+  margin-left: calc(-50vw + 50% + 140px) !important;
+  margin-right: calc(-50vw + 50% + 140px) !important;
+  grid-column: 1 / -1 !important;
+  flex: 1 1 100% !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+/* For responsive - when profileContentWrapper is smaller than viewport */
+@media (max-width: 1336px) {
+  .cardFullWidth {
+    margin-left: -32px !important;
+    margin-right: -32px !important;
+  }
+}
+
+/* Adjust padding for card content when full width */
+.cardFullWidth .cardHeader,
+.cardFullWidth .cardContent {
+  padding-left: 32px !important;
+  padding-right: 32px !important;
+}
+
+/* Ensure card content expands when form is open */
+.cardFullWidth .cardContent {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Make the infoItem containing the form full width within the grid */
+.cardFullWidth .infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 20px;
+}
+
+.cardFullWidth .infoItem:has(.licenseEditForm) {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
 .infoItem {
   display: flex;
   flex-direction: column;
@@ -1045,13 +1092,9 @@
   background: #f8fafc;
   border-radius: 6px;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.infoItem:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
 
 .infoItem label {
   font-size: 0.688rem;
@@ -1644,32 +1687,37 @@
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.65rem;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .statusBadge.draft {
   background: #f1f5f9;
   color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 .statusBadge.pending {
   background: #fef3c7;
   color: #92400e;
+  border: 1px solid #fde68a;
 }
 
 .statusBadge.approved {
   background: #d1fae5;
   color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 .statusBadge.rejected {
   background: #fee2e2;
   color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .languageLevel {
@@ -1699,39 +1747,498 @@
 
 .certificationImage a,
 .viewCertBtn {
-  display: inline-block;
-  padding: 6px 14px;
-  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white !important;
   text-decoration: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+  border: none;
+  outline: none;
 }
 
 .certificationImage a:hover,
 .viewCertBtn:hover {
-  background: linear-gradient(135deg, #075985 0%, #0369a1 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
   text-decoration: none;
   color: white !important;
 }
 
+.viewCertBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+}
+
 .licenseInfo {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.licenseFileInfo {
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  position: relative;
+}
+
+.licenseFileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.licenseFileIcon svg[data-file-type="pdf"] {
+  color: #ef4444;
+}
+
+.licenseFileIcon svg[data-file-type="image"] {
+  color: #3b82f6;
+}
+
+.licenseFileIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.licenseFileDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.licenseFileName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0ea5e9;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: block;
+  text-align: left;
+  text-indent: 0;
+  width: 100%;
+}
+
+.licenseFileName:hover {
+  color: #0284c7;
+  text-decoration: underline;
+}
+
+.licenseFileType {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+  text-align: left;
+  text-indent: 0;
+  width: 100%;
+}
+
+.licenseActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
+}
+
+.licenseEditBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.licenseEditBtn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.licenseEditBtn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.licenseEditBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.licenseStatusWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.licenseStatusLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.licenseEmptyState {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.licenseEmptyText {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0;
+  font-weight: 400;
+}
+
+.editBtn,
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+  align-self: flex-start;
+}
+
+.editBtn:hover:not(:disabled),
+.uploadBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+}
+
+.uploadBtn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+}
+
+.editBtn:disabled,
+.uploadBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.licenseEditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-top: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* Ensure form fits properly inside infoItem without overflowing */
+.infoItem .licenseEditForm {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 16px;
+}
+
+.licenseEditForm .formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.licenseEditForm .formLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* File Upload Area */
+.fileUploadArea {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 20px;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.fileUploadArea:hover {
+  border-color: var(--primary-light);
+  background: #f0f9ff;
+}
+
+.fileUploadAreaDragging {
+  border-color: var(--primary);
+  background: #e0f2fe;
+  border-style: solid;
+  transform: scale(1.02);
+}
+
+.fileUploadAreaHasFile {
+  border-color: var(--success);
+  background: #f0fdf4;
+  border-style: solid;
+}
+
+/* File Upload Placeholder */
+.fileUploadPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  width: 100%;
+}
+
+.uploadIcon {
+  font-size: 48px;
+  color: var(--primary-light);
+  margin-bottom: 8px;
+}
+
+.uploadText {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.chooseFileBtn {
+  padding: 10px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.chooseFileBtn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+/* File Selected State */
+.fileSelected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.fileIcon {
+  font-size: 32px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.fileDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.fileSize {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.fileRemoveBtn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.fileRemoveBtn:hover {
+  background: #fecaca;
+  transform: scale(1.1);
+}
+
+.fileHint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  padding-left: 4px;
+}
+
+.formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.licenseEditForm .saveBtn,
+.licenseEditForm .cancelBtn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.licenseEditForm .saveBtn {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.2);
+}
+
+.licenseEditForm .saveBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #075985 0%, #0369a1 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.licenseEditForm .saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.licenseEditForm .cancelBtn {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.licenseEditForm .cancelBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
 }
 
 .fileInfo {
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--text-secondary);
-  font-size: 0.688rem;
+  font-size: 0.813rem;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  word-break: break-all;
 }
 
 .emptyMessage {
@@ -3220,30 +3727,42 @@
 }
 
 .statusApproved {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #10b981;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusPending {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #f59e0b;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .statusRejected {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #ef4444;
+  color: #1e293b;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .removeBtn {

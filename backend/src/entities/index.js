@@ -46,4 +46,5 @@ export { PaymentRefund, RefundStatus, PaymentRefundSchema } from "./PaymentRefun
 export { Notification, NotificationType, NotificationSchema } from "./Notification.js";
 export { Conversation, ConversationSchema } from "./Conversation.js";
 export { Message, MessageSchema } from "./Message.js";
+export { Review, ReviewSchema } from "./Review.js";
 

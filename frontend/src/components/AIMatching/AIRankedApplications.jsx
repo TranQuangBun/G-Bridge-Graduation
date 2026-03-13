@@ -103,11 +103,11 @@ export default function AIRankedApplications({
         }
         return;
       }
-      // If not fetched yet, fetch now
-      if (!hasFetchedAI) {
-        await fetchAIRankedApplications();
-      }
-      setShowAIResults(true);
+    // If not fetched yet, fetch now
+    if (!hasFetchedAI) {
+      await fetchAIRankedApplications();
+    }
+    setShowAIResults(true);
     } else {
       setShowAIResults(false);
     }

@@ -3,75 +3,18 @@ import styles from "./PricingPage.module.css";
 import { MainLayout } from "../../layouts";
 import { useLanguage } from "../../translet/LanguageContext";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import paymentService from "../../services/paymentService";
 import subscriptionPlanService from "../../services/subscriptionPlanService";
 import toastService from "../../services/toastService";
 
-const planDefinitions = (t) => [
-  {
-    key: "free",
-    name: t("pricingPage.plan.starterName"),
-    tag: t("pricingPage.plan.freeTag"),
-    monthly: 0,
-    desc: t("pricingPage.plan.starterDesc"),
-    features: [
-      t("pricingPage.plan.feature.profile"),
-      t("pricingPage.plan.feature.apply1"),
-      t("pricingPage.plan.feature.basicEmailNotifications"),
-      t("pricingPage.plan.feature.communityAccess"),
-    ],
-    outline: true,
-  },
-  {
-    key: "pro",
-    name: t("pricingPage.plan.proName"),
-    tag: t("pricingPage.plan.popularTag"),
-    monthly: 10,
-    desc: t("pricingPage.plan.proDesc"),
-    features: [
-      t("pricingPage.plan.feature.unlimitedApply"),
-      t("pricingPage.plan.feature.aiMatch"),
-      t("pricingPage.plan.feature.advFilters"),
-      t("pricingPage.plan.feature.prioritySupport"),
-      t("pricingPage.plan.feature.export"),
-    ],
-    popular: true,
-  },
-  {
-    key: "team",
-    name: t("pricingPage.plan.teamName"),
-    tag: t("pricingPage.plan.growthTag"),
-    monthly: 15,
-    desc: t("pricingPage.plan.teamDesc"),
-    features: [
-      t("pricingPage.plan.feature.teamMembers"),
-      t("pricingPage.plan.feature.analytics"),
-      t("pricingPage.plan.feature.sharedPool"),
-      t("pricingPage.plan.feature.bulk"),
-      t("pricingPage.plan.feature.roles"),
-      t("pricingPage.plan.feature.prioritySearch"),
-    ],
-  },
-  {
-    key: "enterprise",
-    name: t("pricingPage.plan.enterpriseName"),
-    tag: t("pricingPage.plan.customTag"),
-    monthly: 21,
-    desc: t("pricingPage.plan.enterpriseDesc"),
-    features: [
-      t("pricingPage.plan.feature.unlimitedMembers"),
-      t("pricingPage.plan.feature.successManager"),
-      t("pricingPage.plan.feature.integrations"),
-      t("pricingPage.plan.feature.securityReports"),
-      t("pricingPage.plan.feature.sla"),
-      t("pricingPage.plan.feature.earlyAccess"),
-    ],
-  },
-];
+// Plans are now loaded from database via seed-subscription-plans.js
+// No hardcoded plans needed
 
 export default function PricingPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [billing, setBilling] = useState("monthly");
   const [openPlan, setOpenPlan] = useState(null); // plan key for payment modal
   const [purchased, setPurchased] = useState({}); // { planKey: true }
@@ -83,6 +26,9 @@ export default function PricingPage() {
   const [loadingPlans, setLoadingPlans] = useState(true);
 
   const YEARLY_DISCOUNT = 10; // percent
+
+  // Get user role, default to 'interpreter' if not authenticated
+  const userRole = user?.role || "interpreter";
 
   // Load plans from database
   useEffect(() => {
@@ -104,13 +50,15 @@ export default function PricingPage() {
           }
         }
         
+        console.log("Loaded plans from DB:", plansData);
+        
         // Sort by sortOrder
         const sortedPlans = plansData.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
         setPlansFromDB(sortedPlans);
       } catch (error) {
         console.error("Failed to load plans from database:", error);
         toastService.error(t("pricingPage.pay.errors.loadFailed"));
-        // Fallback to empty array, will use hardcoded plans
+        // Fallback to empty array
         setPlansFromDB([]);
       } finally {
         setLoadingPlans(false);
@@ -122,14 +70,11 @@ export default function PricingPage() {
 
   // Map database plans to frontend format
   const mapPlanFromDB = (dbPlan, t) => {
-    // Map plan name to key
-    const nameToKeyMap = {
-      free: "free",
-      pro: "pro",
-      team: "team",
-      enterprise: "enterprise",
-    };
-    const key = nameToKeyMap[dbPlan.name] || dbPlan.name;
+    // Extract key from plan name (e.g., "free-interpreter" -> "free", "free-client" -> "free")
+    // Also handle old plans without suffix (e.g., "free" -> "free")
+    const key = dbPlan.name.includes("-") 
+      ? dbPlan.name.split("-")[0] 
+      : dbPlan.name;
 
     // Parse features from JSON string or array
     let features = [];
@@ -143,7 +88,28 @@ export default function PricingPage() {
       features = dbPlan.features;
     }
 
-    // Map tags based on plan name
+    // Parse allowedRoles from JSON string or array
+    let allowedRoles = [];
+    console.log(`Plan ${dbPlan.name} - raw allowedRoles:`, dbPlan.allowedRoles, typeof dbPlan.allowedRoles);
+    
+    if (dbPlan.allowedRoles !== null && dbPlan.allowedRoles !== undefined) {
+      if (typeof dbPlan.allowedRoles === "string") {
+        try {
+          allowedRoles = JSON.parse(dbPlan.allowedRoles);
+          console.log(`Plan ${dbPlan.name} - parsed allowedRoles from string:`, allowedRoles);
+        } catch (e) {
+          console.warn(`Failed to parse allowedRoles for plan ${dbPlan.name}:`, e);
+          allowedRoles = [];
+        }
+      } else if (Array.isArray(dbPlan.allowedRoles)) {
+        allowedRoles = dbPlan.allowedRoles;
+        console.log(`Plan ${dbPlan.name} - allowedRoles is array:`, allowedRoles);
+      }
+    } else {
+      console.log(`Plan ${dbPlan.name} - allowedRoles is null/undefined`);
+    }
+
+    // Map tags based on plan key
     const tagMap = {
       free: t("pricingPage.plan.freeTag"),
       pro: t("pricingPage.plan.popularTag"),
@@ -161,17 +127,50 @@ export default function PricingPage() {
       features: features,
       popular: key === "pro",
       outline: key === "free",
+      allowedRoles: allowedRoles.length > 0 ? allowedRoles : [],
     };
   };
 
-  // Use database plans if available, otherwise fallback to hardcoded
+  // Use database plans filtered by user role
   const basePlans = useMemo(() => {
     if (plansFromDB.length > 0) {
-      return plansFromDB.map((plan) => mapPlanFromDB(plan, t));
+      const mappedPlans = plansFromDB.map((plan) => mapPlanFromDB(plan, t));
+      console.log("Mapped plans:", mappedPlans);
+      console.log("User role:", userRole);
+      
+      // Filter plans based on user role
+      const filteredPlans = mappedPlans.filter((plan) => {
+        // If plan has allowedRoles, check if user role is included
+        if (plan.allowedRoles && plan.allowedRoles.length > 0) {
+          const isAllowed = plan.allowedRoles.includes(userRole);
+          console.log(`Plan ${plan.name} (${plan.key}): allowedRoles=${JSON.stringify(plan.allowedRoles)}, userRole=${userRole}, isAllowed=${isAllowed}`);
+          return isAllowed;
+        }
+        // If no allowedRoles specified, infer from plan name
+        // Plans with name ending in "-client" are for clients, "-interpreter" for interpreters
+        const planName = plan.key || plan.name || "";
+        if (planName.includes("client")) {
+          const isClientPlan = userRole === "client";
+          console.log(`Plan ${plan.name} (${plan.key}): No allowedRoles, inferred from name (contains "client"), userRole=${userRole}, isAllowed=${isClientPlan}`);
+          return isClientPlan;
+        } else if (planName.includes("interpreter")) {
+          const isInterpreterPlan = userRole === "interpreter";
+          console.log(`Plan ${plan.name} (${plan.key}): No allowedRoles, inferred from name (contains "interpreter"), userRole=${userRole}, isAllowed=${isInterpreterPlan}`);
+          return isInterpreterPlan;
+        }
+        // If no allowedRoles and can't infer from name, don't show (safety measure)
+        console.log(`Plan ${plan.name} (${plan.key}): No allowedRoles and can't infer from name, skipping`);
+        return false;
+      });
+      
+      console.log("Filtered plans:", filteredPlans);
+      return filteredPlans;
     }
-    // Fallback to hardcoded plans
-    return planDefinitions(t);
-  }, [plansFromDB, t]);
+    
+    // If no plans from DB, return empty array (will show loading or empty state)
+    console.log("No plans from DB");
+    return [];
+  }, [plansFromDB, t, userRole]);
   const plans = useMemo(
     () =>
       basePlans.map((p) => {
@@ -203,15 +202,33 @@ export default function PricingPage() {
 
     // Check if user is authenticated
     const token = localStorage.getItem("authToken");
-    if (!token) {
+    if (!token || !isAuthenticated) {
       toastService.error(t("pricingPage.pay.errors.loginRequired"));
       navigate("/login", { state: { from: "/pricing" } });
       return;
     }
 
-    // Free plan cannot be paid via payment gateway
+    // Get the plan
     const plan = plans.find((p) => p.key === planKey);
-    if (plan && (plan.displayPrice === 0 || plan.monthly === 0)) {
+    if (!plan) {
+      toastService.error("Plan not found");
+      return;
+    }
+
+    // Validate role compatibility
+    if (plan.allowedRoles && plan.allowedRoles.length > 0) {
+      if (!plan.allowedRoles.includes(userRole)) {
+        toastService.error(
+          userRole === "client"
+            ? "This plan is only available for interpreters. Please select a plan suitable for clients."
+            : "This plan is only available for clients. Please select a plan suitable for interpreters."
+        );
+        return;
+      }
+    }
+
+    // Free plan cannot be paid via payment gateway
+    if (plan.displayPrice === 0 || plan.monthly === 0) {
       toastService.error(
         "Free plan cannot be purchased via payment gateway. Please contact support to activate free plan."
       );
@@ -340,6 +357,13 @@ export default function PricingPage() {
           {loadingPlans ? (
             <div className={styles.loadingContainer}>
               <p>Đang tải danh sách gói dịch vụ...</p>
+            </div>
+          ) : plans.length === 0 ? (
+            <div className={styles.loadingContainer}>
+              <p>Không có gói dịch vụ nào phù hợp với vai trò của bạn. Vui lòng liên hệ quản trị viên.</p>
+              <p style={{ fontSize: "0.875rem", color: "#64748b", marginTop: "0.5rem" }}>
+                (Debug: plansFromDB.length = {plansFromDB.length}, userRole = {userRole})
+              </p>
             </div>
           ) : (
             <div className={styles.plansGrid}>
